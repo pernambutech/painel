@@ -56,13 +56,19 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
       const argumentosShell = os.platform() === 'win32'
         ? ['/d', '/s', '/c', configuracao.comando, ...(configuracao.argumentos || [])]
         : ['-lc', [configuracao.comando, ...(configuracao.argumentos || [])].join(' ')];
+      // Injetar a porta indicada no painel como variável de ambiente PORT
+      // A maioria dos frameworks (Next.js, NestJS, Vite, Express) respeita process.env.PORT
+      const env = {
+        ...(configuracao.variaveisAmbiente || {}),
+        ...(configuracao.porta ? { PORT: String(configuracao.porta) } : {}),
+      };
       const processo = await this.executar<ProcessoPm2>((concluir) => {
         pm2.start({
           name: nome,
           script: shell,
           args: argumentosShell,
           cwd: configuracao.diretorio,
-          env: configuracao.variaveisAmbiente,
+          env,
           autorestart: true,
           max_restarts: configuracao.maxReinicios,
           restart_delay: configuracao.restartDelay,
