@@ -3,6 +3,7 @@
 
 import { io, Socket } from 'socket.io-client';
 import * as os from 'os';
+import { execSync } from 'child_process';
 
 // ===========================================
 // CONFIGURAÇÃO
@@ -26,6 +27,7 @@ const CONFIGURACAO = {
 let socket: Socket | null = null;
 let errosConsecutivos = 0;
 let intervaloHeartbeat: NodeJS.Timeout | null = null;
+let inicioAgent: Date = new Date();
 
 // ===========================================
 // IDENTIFICAÇÃO DA MÁQUINA
@@ -41,6 +43,7 @@ function obterInformacoesSistema() {
     memoriaLivre: os.freemem(),
     uptime: os.uptime(),
     usuario: os.userInfo().username,
+    nodeVersion: process.version,
   };
 }
 
@@ -61,6 +64,69 @@ function calcularUsoCpu(): number {
   }
 
   return Math.round((1 - totalIdle / totalTick) * 100);
+}
+
+// ===========================================
+// LISTAR PORTAS EM USO
+// ===========================================
+
+function listarPortasEmUso(): { porta: number; processo: string; pid: number }[] {
+  try {
+    const plataforma = os.platform();
+    let saida = '';
+
+    if (plataforma === 'win32') {
+      saida = execSync('netstat -ano | findstr LISTENING', { encoding: 'utf-8', timeout: 10000 });
+    } else {
+      saida = execSync('ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null', { encoding: 'utf-8', timeout: 10000 });
+    }
+
+    const portas: { porta: number; processo: string; pid: number }[] = [];
+    const linhas = saida.split('\n').filter((l) => l.trim());
+
+    for (const linha of linhas) {
+      if (plataforma === 'win32') {
+        // Formato: TCP    0.0.0.0:3001    0.0.0.0:0    LISTENING    1234
+        const partes = linha.trim().split(/\s+/);
+        if (partes.length >= 5 && partes[0] === 'TCP') {
+          const addrPorta = partes[1];
+          const ultimo = partes[partes.length - 1];
+          const portaNum = parseInt(addrPorta.split(':').pop() || '0', 10);
+          const pidNum = parseInt(ultimo, 10);
+          if (portaNum > 0 && !isNaN(pidNum)) {
+            portas.push({ porta: portaNum, processo: 'desconhecido', pid: pidNum });
+          }
+        }
+      }
+    }
+
+    return portas;
+  } catch {
+    return [];
+  }
+}
+
+// ===========================================
+// OBTER STATUS DO AGENTE
+// ===========================================
+
+function obterStatus() {
+  const informacoes = obterInformacoesSistema();
+  const usoCpu = calcularUsoCpu();
+  const memoriaUso = informacoes.memoriaTotal - informacoes.memoriaLivre;
+  const portas = listarPortasEmUso();
+
+  return {
+    conectado: socket?.connected || false,
+    conectadoEm: inicioAgent.toISOString(),
+    sistema: {
+      ...informacoes,
+      cpuUso: usoCpu,
+      memoriaUso,
+    },
+    portasEmUso: portas.length,
+    portas: portas.slice(0, 20), // Limitar a 20 para não sobrecarregar
+  };
 }
 
 // ===========================================
@@ -210,6 +276,14 @@ async function processarComando(comando: any): Promise<void> {
     switch (comando.tipo) {
       case 'OBTER_INFORMACOES_SISTEMA':
         resultado = obterInformacoesSistema();
+        break;
+
+      case 'OBTER_STATUS':
+        resultado = obterStatus();
+        break;
+
+      case 'LISTAR_PORTAS':
+        resultado = { portas: listarPortasEmUso() };
         break;
 
       default:

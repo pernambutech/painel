@@ -1,14 +1,18 @@
 // Controller de agentes
-// Endpoints para gestão de agentes (token, listagem, consulta)
+// Endpoints para gestão de agentes, comandos e operações
 
-import { Controller, Get, Post, Delete, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { AgentesServico } from './agentes.servico';
+import { ComandosServico, EnviarComandoDto, TipoComando } from '../comunicacao/comandos.servico';
 import { JwtAuthGuard } from '../autenticacao/jwt-auth.guard';
 
 @Controller('organizacoes/:organizacaoId/agentes')
 @UseGuards(JwtAuthGuard)
 export class AgentesController {
-  constructor(private agentesServico: AgentesServico) {}
+  constructor(
+    private agentesServico: AgentesServico,
+    private comandosServico: ComandosServico,
+  ) {}
 
   // ===========================================
   // GERAR TOKEN PARA AMBIENTE
@@ -69,5 +73,65 @@ export class AgentesController {
   ) {
     await this.agentesServico.desativar(id, organizacaoId, req.user.id);
     return { mensagem: 'Agente desativado com sucesso' };
+  }
+
+  // ===========================================
+  // ENVIAR COMANDO AO AGENTE
+  // ===========================================
+
+  @Post(':id/comandos')
+  async enviarComando(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('id') agenteId: string,
+    @Body() dados: { tipo: TipoComando; dados?: Record<string, unknown>; timeoutMs?: number },
+    @Request() req,
+  ) {
+    // Verificar se o agente pertence à organização
+    await this.agentesServico.obterPorId(agenteId, organizacaoId, req.user.id);
+
+    return this.comandosServico.enviarEAguardar({
+      agenteId,
+      tipo: dados.tipo,
+      dados: dados.dados,
+      timeoutMs: dados.timeoutMs,
+    });
+  }
+
+  // ===========================================
+  // LISTAR COMANDOS DO AGENTE
+  // ===========================================
+
+  @Get(':id/comandos')
+  async listarComandos(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('id') agenteId: string,
+    @Request() req,
+  ) {
+    // Verificar se o agente pertence à organização
+    await this.agentesServico.obterPorId(agenteId, organizacaoId, req.user.id);
+
+    return this.comandosServico.listarPorAgente(agenteId);
+  }
+
+  // ===========================================
+  // OBTER STATUS DE UM COMANDO
+  // ===========================================
+
+  @Get(':id/comandos/:comandoId')
+  async obterComando(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('id') agenteId: string,
+    @Param('comandoId') comandoId: string,
+    @Request() req,
+  ) {
+    // Verificar se o agente pertence à organização
+    await this.agentesServico.obterPorId(agenteId, organizacaoId, req.user.id);
+
+    const comando = this.comandosServico.obterComando(comandoId);
+    if (!comando || comando.agenteId !== agenteId) {
+      return { erro: 'Comando não encontrado' };
+    }
+
+    return comando;
   }
 }

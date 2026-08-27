@@ -11,7 +11,9 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { Inject, forwardRef } from '@nestjs/common';
 import { AgentesServico } from '../agentes/agentes.servico';
+import { ComandosServico } from './comandos.servico';
 
 // ===========================================
 // INTERFACE DO CLIENTE CONECTADO
@@ -43,7 +45,11 @@ export class ComunicacaoGateway implements OnGatewayConnection, OnGatewayDisconn
   // Clientes conectados (socketId → dados do agente)
   private clientes = new Map<string, ClienteAgente>();
 
-  constructor(private agentesServico: AgentesServico) {}
+  constructor(
+    private agentesServico: AgentesServico,
+    @Inject(forwardRef(() => ComandosServico))
+    private comandosServico: ComandosServico,
+  ) {}
 
   // ===========================================
   // CONEXÃO
@@ -166,7 +172,10 @@ export class ComunicacaoGateway implements OnGatewayConnection, OnGatewayDisconn
     const cliente = this.clientes.get(client.id);
 
     if (cliente) {
-      // Emitir para a organização
+      // Processar resposta no serviço de comandos (resolve promessas pendentes)
+      this.comandosServico.processarResposta(dados);
+
+      // Broadcast para a organização
       this.server.to(`org:${cliente.organizacaoId}`).emit('comando_respondido', {
         agenteId: cliente.agenteId,
         ambienteId: cliente.ambienteId,
@@ -194,14 +203,8 @@ export class ComunicacaoGateway implements OnGatewayConnection, OnGatewayDisconn
       return false; // Agente não está conectado
     }
 
-    const socket = this.server.sockets.sockets.get(cliente.socketId);
-
-    if (!socket) {
-      return false;
-    }
-
-    // Enviar comando
-    socket.emit('comando', comando);
+    // Usar to() para enviar ao socket específico via room
+    this.server.to(cliente.socketId).emit('comando', comando);
     return true;
   }
 

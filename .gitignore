@@ -36,3 +36,6 @@ coverage/
 # Temporário
 tmp/
 temp/
+
+# Arquivos de build incremental do TypeScript
+*.tsbuildinfo
