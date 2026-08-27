@@ -1,34 +1,98 @@
 // Agente de gerenciamento de máquinas
-// Este arquivo será expandido conforme as necessidades do projeto
+// Conecta-se à API central via WebSocket para receber comandos
 
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
-// Configurações do agente
+// ===========================================
+// CONFIGURAÇÃO
+// ===========================================
+
 const CONFIGURACAO = {
   URL_API: process.env.API_URL || 'http://localhost:3001',
   TOKEN_AGENTE: process.env.AGENT_TOKEN || '',
+  // Intervalo entre tentativas de reconexão (ms)
+  INTERVALO_TENTATIVA: 5000,
+  // Máximo de erros consecutivos antes de parar de logar
+  MAX_ERROS_LOG: 3,
 };
 
-// Conectar ao servidor
-const socket = io(CONFIGURACAO.URL_API, {
-  auth: {
-    token: CONFIGURACAO.TOKEN_AGENTE,
-  },
-});
+// ===========================================
+// ESTADO
+// ===========================================
 
-// Eventos de conexão
-socket.on('connect', () => {
-  console.log('✅ Agente conectado à API');
-});
+let socket: Socket | null = null;
+let errosConsecutivos = 0;
 
-socket.on('disconnect', () => {
-  console.log('❌ Agente desconectado da API');
-});
+// ===========================================
+// CONEXÃO
+// ===========================================
 
-socket.on('connect_error', (error) => {
-  console.error('Erro de conexão:', error.message);
-});
+function conectar(): void {
+  console.log('🤖 Agente iniciado');
+  console.log(`📡 Conectando em: ${CONFIGURACAO.URL_API}`);
 
-// Manter o processo ativo
-console.log('🤖 Agente iniciado');
-console.log(`📡 Conectando em: ${CONFIGURACAO.URL_API}`);
+  socket = io(CONFIGURACAO.URL_API, {
+    auth: {
+      token: CONFIGURACAO.TOKEN_AGENTE,
+    },
+    // Reconexão automática
+    reconnection: true,
+    // Intervalo entre reconexões
+    reconnectionDelay: CONFIGURACAO.INTERVALO_TENTATIVA,
+    // Máximo de tentativas (0 = infinito)
+    reconnectionAttempts: 0,
+    // Timeout da conexão
+    timeout: 10000,
+  });
+
+  // Evento: conectado
+  socket.on('connect', () => {
+    errosConsecutivos = 0;
+    console.log('✅ Agente conectado à API');
+    console.log(`   ID: ${socket?.id}`);
+  });
+
+  // Evento: desconectado
+  socket.on('disconnect', (motivo) => {
+    console.log(`⚠️  Agente desconectado da API`);
+    console.log(`   Motivo: ${motivo}`);
+    console.log(`   Tentando reconectar em ${CONFIGURACAO.INTERVALO_TENTATIVA / 1000}s...`);
+  });
+
+  // Evento: erro de conexão
+  socket.on('connect_error', (erro) => {
+    errosConsecutivos++;
+
+    // Só loga os primeiros erros para não poluir o terminal
+    if (errosConsecutivos <= CONFIGURACAO.MAX_ERROS_LOG) {
+      console.error(`❌ Erro de conexão: ${erro.message}`);
+
+      if (errosConsecutivos === CONFIGURACAO.MAX_ERROS_LOG) {
+        console.log(`   (... silenciando erros de conexão até reconectar)`);
+      }
+    }
+  });
+
+  // Evento: reconectando
+  socket.on('reconnect_attempt', (tentativa) => {
+    if (tentativa % 5 === 0) {
+      console.log(`🔄 Tentativa de reconexão #${tentativa}...`);
+    }
+  });
+
+  // Evento: reconectado
+  socket.on('reconnect', () => {
+    console.log('✅ Reconectado com sucesso!');
+  });
+
+  // Evento: falha definitiva de reconexão
+  socket.on('reconnect_failed', () => {
+    console.error('❌ Falha ao reconectar. Verifique se a API está rodando.');
+  });
+}
+
+// ===========================================
+// INICIALIZAÇÃO
+// ===========================================
+
+conectar();
