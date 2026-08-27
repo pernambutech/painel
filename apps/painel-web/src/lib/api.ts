@@ -351,6 +351,34 @@ export const servicosApi = {
 };
 
 // ===========================================
+// EXECUÇÕES / HISTÓRICO
+// ===========================================
+
+export const execucoesApi = {
+  // Listar histórico da organização
+  listarPorOrganizacao: async (organizacaoId: string, limite = 50) => {
+    const resposta = await api.get(`/organizacoes/${organizacaoId}/execucoes`, {
+      params: { limite },
+    });
+    return resposta.data;
+  },
+
+  // Listar histórico de um serviço
+  listarPorServico: async (organizacaoId: string, projetoId: string, servicoId: string) => {
+    const resposta = await api.get(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${servicoId}/execucoes`,
+    );
+    return resposta.data;
+  },
+
+  // Obter execução por ID
+  obterPorId: async (organizacaoId: string, id: string) => {
+    const resposta = await api.get(`/organizacoes/${organizacaoId}/execucoes/${id}`);
+    return resposta.data;
+  },
+};
+
+// ===========================================
 // EXPORTAÇÃO PADRÃO
 // ===========================================
 

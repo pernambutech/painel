@@ -8,6 +8,7 @@ import { AmbientesModule } from './modules/ambientes';
 import { AgentesModule } from './modules/agentes';
 import { ProjetosModule } from './modules/projetos';
 import { ServicosModule } from './modules/servicos';
+import { ExecucoesModule } from './modules/execucoes';
 import { ComunicacaoModule } from './modules/comunicacao';
 
 @Module({
@@ -19,6 +20,7 @@ import { ComunicacaoModule } from './modules/comunicacao';
     AgentesModule,
     ProjetosModule,
     ServicosModule,
+    ExecucoesModule,
     ComunicacaoModule,
   ],
   controllers: [AppController],

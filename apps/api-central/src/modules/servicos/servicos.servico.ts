@@ -16,6 +16,7 @@ import {
   RespostaServico,
 } from './dto/servico.dto';
 import { ComandosServico } from '../comunicacao/comandos.servico';
+import { ExecucoesServico } from '../execucoes/execucoes.servico';
 
 @Injectable()
 export class ServicosServico {
@@ -23,6 +24,7 @@ export class ServicosServico {
     private prisma: PrismaServico,
     @Inject(forwardRef(() => ComandosServico))
     private comandosServico: ComandosServico,
+    private execucoesServico: ExecucoesServico,
   ) {}
 
   // ===========================================
@@ -254,23 +256,46 @@ export class ServicosServico {
       throw new BadRequestException('Serviço sem diretório ou comando configurado');
     }
 
-    const comando = await this.comandosServico.enviarEAguardar({
-      agenteId: agente.id,
-      tipo: 'INICIAR_SERVICO',
-      dados: {
-        servicoId: servico.id,
-        configuracao: {
-          id: servico.id,
-          nome: servico.nome,
-          diretorio: servico.diretorio,
-          comando: servico.comando,
-          porta: servico.porta ?? undefined,
-          nomePm2: servico.id,
-        },
-      },
+    // Criar registro de execução (histórico)
+    const execucao = await this.execucoesServico.criar({
+      organizacaoId,
+      projetoId,
+      servicoId: servico.id,
+      ambienteId: servico.ambienteId,
+      acao: 'iniciar',
+      usuarioId,
     });
 
-    return (comando.resultado as Record<string, unknown>) || { mensagem: 'Serviço iniciado' };
+    try {
+      const comando = await this.comandosServico.enviarEAguardar({
+        agenteId: agente.id,
+        tipo: 'INICIAR_SERVICO',
+        dados: {
+          servicoId: servico.id,
+          configuracao: {
+            id: servico.id,
+            nome: servico.nome,
+            diretorio: servico.diretorio,
+            comando: servico.comando,
+            porta: servico.porta ?? undefined,
+            nomePm2: servico.id,
+          },
+        },
+      });
+
+      await this.execucoesServico.atualizar(execucao.id, {
+        status: 'sucesso',
+        resultado: comando.resultado as Record<string, unknown>,
+      });
+
+      return (comando.resultado as Record<string, unknown>) || { mensagem: 'Serviço iniciado' };
+    } catch (erro: any) {
+      await this.execucoesServico.atualizar(execucao.id, {
+        status: 'falhou',
+        erro: erro.message,
+      });
+      throw erro;
+    }
   }
 
   async parar(
@@ -286,13 +311,35 @@ export class ServicosServico {
       usuarioId,
     );
 
-    const comando = await this.comandosServico.enviarEAguardar({
-      agenteId: agente.id,
-      tipo: 'PARAR_SERVICO',
-      dados: { servicoId: servico.id },
+    const execucao = await this.execucoesServico.criar({
+      organizacaoId,
+      projetoId,
+      servicoId: servico.id,
+      ambienteId: servico.ambienteId,
+      acao: 'parar',
+      usuarioId,
     });
 
-    return (comando.resultado as Record<string, unknown>) || { mensagem: 'Serviço parado' };
+    try {
+      const comando = await this.comandosServico.enviarEAguardar({
+        agenteId: agente.id,
+        tipo: 'PARAR_SERVICO',
+        dados: { servicoId: servico.id },
+      });
+
+      await this.execucoesServico.atualizar(execucao.id, {
+        status: 'sucesso',
+        resultado: comando.resultado as Record<string, unknown>,
+      });
+
+      return (comando.resultado as Record<string, unknown>) || { mensagem: 'Serviço parado' };
+    } catch (erro: any) {
+      await this.execucoesServico.atualizar(execucao.id, {
+        status: 'falhou',
+        erro: erro.message,
+      });
+      throw erro;
+    }
   }
 
   async reiniciar(
@@ -308,13 +355,35 @@ export class ServicosServico {
       usuarioId,
     );
 
-    const comando = await this.comandosServico.enviarEAguardar({
-      agenteId: agente.id,
-      tipo: 'REINICIAR_SERVICO',
-      dados: { servicoId: servico.id },
+    const execucao = await this.execucoesServico.criar({
+      organizacaoId,
+      projetoId,
+      servicoId: servico.id,
+      ambienteId: servico.ambienteId,
+      acao: 'reiniciar',
+      usuarioId,
     });
 
-    return (comando.resultado as Record<string, unknown>) || { mensagem: 'Serviço reiniciado' };
+    try {
+      const comando = await this.comandosServico.enviarEAguardar({
+        agenteId: agente.id,
+        tipo: 'REINICIAR_SERVICO',
+        dados: { servicoId: servico.id },
+      });
+
+      await this.execucoesServico.atualizar(execucao.id, {
+        status: 'sucesso',
+        resultado: comando.resultado as Record<string, unknown>,
+      });
+
+      return (comando.resultado as Record<string, unknown>) || { mensagem: 'Serviço reiniciado' };
+    } catch (erro: any) {
+      await this.execucoesServico.atualizar(execucao.id, {
+        status: 'falhou',
+        erro: erro.message,
+      });
+      throw erro;
+    }
   }
 
   async obterStatusServico(

@@ -25,6 +25,7 @@ model Usuario {
 
   // Relacionamento com organizações
   membros MembroOrganizacao[]
+  execucoes Execucao[]
 
   @@map("usuarios")
 }
@@ -47,6 +48,7 @@ model Organizacao {
   agentes   Agente[]
   projetos  Projeto[]
   servicos  Servico[]
+  execucoes Execucao[]
 
   @@map("organizacoes")
 }
@@ -87,6 +89,7 @@ model Ambiente {
   // Relacionamento com agentes
   agentes Agente[]
   servicos Servico[]
+  execucoes Execucao[]
 
   @@map("ambientes")
 }
@@ -136,6 +139,7 @@ model Projeto {
   // Relacionamentos
   organizacao Organizacao @relation(fields: [organizacaoId], references: [id], onDelete: Cascade)
   servicos    Servico[]
+  execucoes   Execucao[]
 
   @@index([organizacaoId])
   @@map("projetos")
@@ -163,9 +167,42 @@ model Servico {
   projeto     Projeto     @relation(fields: [projetoId], references: [id], onDelete: Cascade)
   ambiente    Ambiente?   @relation(fields: [ambienteId], references: [id], onDelete: SetNull)
   organizacao Organizacao @relation(fields: [organizacaoId], references: [id], onDelete: Cascade)
+  execucoes   Execucao[]
 
   @@index([projetoId])
   @@index([ambienteId])
   @@index([organizacaoId])
   @@map("servicos")
+}
+
+// ===========================================
+// EXECUÇÃO / HISTÓRICO
+// ===========================================
+
+model Execucao {
+  id            String   @id @default(uuid()) @db.Uuid
+  organizacaoId String   @map("organizacao_id") @db.Uuid
+  projetoId     String?  @map("projeto_id") @db.Uuid
+  servicoId     String   @map("servico_id") @db.Uuid
+  ambienteId    String?  @map("ambiente_id") @db.Uuid
+  acao          String // iniciar, parar, reiniciar
+  status        String   @default("pendente") // pendente, sucesso, falhou
+  resultado     Json?
+  erro          String?
+  usuarioId     String   @map("usuario_id") @db.Uuid
+  criadoEm      DateTime @default(now()) @map("criado_em")
+  atualizadoEm  DateTime @updatedAt @map("atualizado_em")
+
+  // Relacionamentos
+  organizacao Organizacao @relation(fields: [organizacaoId], references: [id], onDelete: Cascade)
+  projeto     Projeto?    @relation(fields: [projetoId], references: [id], onDelete: SetNull)
+  servico     Servico     @relation(fields: [servicoId], references: [id], onDelete: Cascade)
+  ambiente    Ambiente?   @relation(fields: [ambienteId], references: [id], onDelete: SetNull)
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([organizacaoId])
+  @@index([servicoId])
+  @@index([usuarioId])
+  @@index([criadoEm])
+  @@map("execucoes")
 }

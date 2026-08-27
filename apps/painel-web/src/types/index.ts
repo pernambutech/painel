@@ -157,6 +157,29 @@ export interface AtualizarServicoDto {
 }
 
 // ===========================================
+// EXECUÇÃO / HISTÓRICO
+// ===========================================
+
+export interface Execucao {
+  id: string;
+  organizacaoId: string;
+  projetoId: string | null;
+  servicoId: string;
+  ambienteId: string | null;
+  acao: string; // iniciar, parar, reiniciar
+  status: string; // pendente, sucesso, falhou
+  resultado?: Record<string, unknown> | null;
+  erro?: string | null;
+  usuarioId: string;
+  criadoEm: string;
+  atualizadoEm: string;
+  usuario?: { id: string; nome: string; email: string };
+  servico?: { id: string; nome: string; tipo: string };
+  projeto?: { id: string; nome: string } | null;
+  ambiente?: { id: string; nome: string } | null;
+}
+
+// ===========================================
 // RESPOSTA DA API
 // ===========================================
 
