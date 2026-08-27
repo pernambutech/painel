@@ -13,17 +13,17 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="h-screen bg-zinc-950 flex">
       {/* Sidebar fixa à esquerda */}
       <Sidebar />
 
-      {/* Conteúdo principal */}
-      <div className="ml-64">
+      {/* Conteúdo principal com scroll */}
+      <div className="flex-1 flex flex-col ml-64 h-screen overflow-hidden">
         {/* Topbar fixa no topo */}
         <Topbar />
 
-        {/* Área de conteúdo */}
-        <main className="p-6">{children}</main>
+        {/* Área de conteúdo com scroll */}
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );
