@@ -5,6 +5,7 @@ node_modules/
 dist/
 build/
 .next/
+*.tsbuildinfo
 
 # Variáveis de ambiente
 .env
