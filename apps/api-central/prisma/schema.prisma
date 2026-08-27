@@ -1,0 +1,68 @@
+// Schema Prisma - Primeira versão do banco de dados
+// Entidades: Usuários, Organizações, Associação usuário-organização
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===========================================
+// USUÁRIO
+// ===========================================
+
+model Usuario {
+  id           String   @id @default(uuid()) @db.Uuid
+  nome         String
+  email        String   @unique
+  senha        String
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  // Relacionamento com organizações
+  membros MembroOrganizacao[]
+
+  @@map("usuarios")
+}
+
+// ===========================================
+// ORGANIZAÇÃO
+// ===========================================
+
+model Organizacao {
+  id           String   @id @default(uuid()) @db.Uuid
+  nome         String
+  slug         String   @unique
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  // Relacionamento com usuários
+  membros MembroOrganizacao[]
+
+  @@map("organizacoes")
+}
+
+// ===========================================
+// ASSOCIAÇÃO USUÁRIO ↔ ORGANIZAÇÃO
+// ===========================================
+
+model MembroOrganizacao {
+  id            String   @id @default(uuid()) @db.Uuid
+  usuarioId     String   @map("usuario_id") @db.Uuid
+  organizacaoId String   @map("organizacao_id") @db.Uuid
+  papel         String   @default("membro") // proprietario, admin, membro
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  // Relacionamentos
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  organizacao Organizacao @relation(fields: [organizacaoId], references: [id], onDelete: Cascade)
+
+  // Constraint de unicidade
+  @@unique([usuarioId, organizacaoId])
+  @@map("membros_organizacoes")
+}
