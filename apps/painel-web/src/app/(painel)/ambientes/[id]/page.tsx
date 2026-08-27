@@ -46,6 +46,7 @@ export default function AmbienteDetalhePage() {
   const [tokenAgente, setTokenAgente] = useState('');
   const [carregandoToken, setCarregandoToken] = useState(false);
   const [tokenCopiado, setTokenCopiado] = useState(false);
+  const [comandoCopiado, setComandoCopiado] = useState<string | null>(null);
 
   useEffect(() => {
     if (organizacao && ambienteId) {
@@ -131,6 +132,46 @@ export default function AmbienteDetalhePage() {
       setTokenCopiado(true);
       setTimeout(() => setTokenCopiado(false), 2000);
     }
+  };
+
+  const copiarTexto = async (texto: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(texto);
+      setComandoCopiado(id);
+      setTimeout(() => setComandoCopiado(null), 2000);
+    } catch {
+      const textArea = document.createElement('textarea');
+      textArea.value = texto;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setComandoCopiado(id);
+      setTimeout(() => setComandoCopiado(null), 2000);
+    }
+  };
+
+  const obterUrlApi = () => {
+    // Usa a mesma URL que o frontend usa para falar com a API
+    if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) {
+      return process.env.NEXT_PUBLIC_API_URL;
+    }
+    return 'http://localhost:3001';
+  };
+
+  const obterComandoWindows = () => {
+    const urlApi = obterUrlApi();
+    return `$env:AGENT_TOKEN="${tokenAgente}"\n$env:AGENT_API_URL="${urlApi}"\nSet-Location "C:\\caminho\\do\\agente"\nnpx tsx src/index.ts`;
+  };
+
+  const obterComandoLinux = () => {
+    const urlApi = obterUrlApi();
+    return `AGENT_TOKEN="${tokenAgente}" AGENT_API_URL="${urlApi}" npx tsx src/index.ts`;
+  };
+
+  const obterComandoWindowsUmaLinha = () => {
+    const urlApi = obterUrlApi();
+    return `$env:AGENT_TOKEN="${tokenAgente}"; $env:AGENT_API_URL="${urlApi}"; npx tsx src/index.ts`;
   };
 
   const obterIconeSO = (so: string) => {
@@ -385,20 +426,25 @@ export default function AmbienteDetalhePage() {
                 Gerar Token de Instalação
               </Button>
             ) : (
-              <div className="max-w-lg mx-auto space-y-4">
-                <div className="p-4 rounded-lg bg-zinc-800 border border-zinc-700">
-                  <p className="text-xs text-zinc-500 mb-2">1. Instale o agente:</p>
-                  <code className="block text-sm text-emerald-400 font-mono mb-3">
-                    npm install -g @painel/agente
-                  </code>
+              <div className="mx-auto max-w-2xl space-y-4 text-left">
+                {/* Alerta */}
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3">
+                  <p className="text-xs font-medium text-amber-300">Token gerado — copie agora</p>
+                  <p className="mt-1 text-xs text-zinc-400">
+                    Este token só é exibido uma vez. Guarde em local seguro. Se exposto, gere um novo.
+                  </p>
+                </div>
 
-                  <p className="text-xs text-zinc-500 mb-2">2. Execute com o token:</p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 text-sm text-zinc-300 font-mono bg-zinc-900 p-2 rounded overflow-x-auto">
-                      AGENT_TOKEN={tokenAgente.slice(0, 20)}... AGENT_API_URL=http://localhost:3001
-                      painel-agente
-                    </code>
-                    <Button variante="fantasma" tamanho="pequeno" onClick={copiarToken}>
+                {/* Token */}
+                <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-medium text-zinc-400">Token do agente</p>
+                    <Button
+                      variante="fantasma"
+                      tamanho="pequeno"
+                      onClick={copiarToken}
+                      title="Copiar token"
+                    >
                       {tokenCopiado ? (
                         <Check className="w-4 h-4 text-emerald-500" />
                       ) : (
@@ -406,11 +452,75 @@ export default function AmbienteDetalhePage() {
                       )}
                     </Button>
                   </div>
+                  <code className="block break-all rounded bg-zinc-900 p-3 text-sm font-mono text-emerald-300">
+                    {tokenAgente}
+                  </code>
                 </div>
 
-                <Button variante="fantasma" tamanho="pequeno" onClick={() => setTokenAgente('')}>
-                  Gerar novo token
-                </Button>
+                {/* Comando Windows */}
+                <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-medium text-zinc-400">
+                      Windows — PowerShell (recomendado)
+                    </p>
+                    <Button
+                      variante="fantasma"
+                      tamanho="pequeno"
+                      onClick={() => copiarTexto(obterComandoWindowsUmaLinha(), 'win')}
+                      title="Copiar comando Windows"
+                    >
+                      {comandoCopiado === 'win' ? (
+                        <Check className="w-4 h-4 text-emerald-500" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="mb-2 text-xs text-zinc-500">
+                    Cole no PowerShell <strong className="text-zinc-300">na máquina que quer controlar</strong>:
+                  </p>
+                  <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded bg-zinc-900 p-3 text-xs font-mono text-zinc-200">
+                    {obterComandoWindows()}
+                  </pre>
+                  <p className="mt-2 text-xs text-zinc-500">
+                    Linha única para copiar e colar direto:
+                  </p>
+                  <code className="mt-1 block break-all rounded bg-zinc-900 p-2 text-xs font-mono text-zinc-300">
+                    {obterComandoWindowsUmaLinha()}
+                  </code>
+                </div>
+
+                {/* Comando Linux */}
+                <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-medium text-zinc-400">Linux / macOS — bash</p>
+                    <Button
+                      variante="fantasma"
+                      tamanho="pequeno"
+                      onClick={() => copiarTexto(obterComandoLinux(), 'linux')}
+                      title="Copiar comando Linux"
+                    >
+                      {comandoCopiado === 'linux' ? (
+                        <Check className="w-4 h-4 text-emerald-500" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded bg-zinc-900 p-3 text-xs font-mono text-zinc-200">
+                    {obterComandoLinux()}
+                  </pre>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Button variante="fantasma" tamanho="pequeno" onClick={() => setTokenAgente('')}>
+                    Gerar novo token
+                  </Button>
+                  <span className="text-xs text-zinc-500">
+                    Se a API não for localhost, troque a URL em{' '}
+                    <code className="rounded bg-zinc-800 px-1 py-0.5 text-zinc-300">AGENT_API_URL</code>
+                  </span>
+                </div>
               </div>
             )}
           </div>
