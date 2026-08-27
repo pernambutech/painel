@@ -1,5 +1,5 @@
 // Schema Prisma - Primeira versão do banco de dados
-// Entidades: Usuários, Organizações, Associação usuário-organização
+// Entidades: Usuários, Organizações, Associação usuário-organização, Ambientes
 
 generator client {
   provider = "prisma-client-js"
@@ -41,8 +41,9 @@ model Organizacao {
   criadoEm     DateTime @default(now()) @map("criado_em")
   atualizadoEm DateTime @updatedAt @map("atualizado_em")
 
-  // Relacionamento com usuários
-  membros MembroOrganizacao[]
+  // Relacionamentos
+  membros    MembroOrganizacao[]
+  ambientes  Ambiente[]
 
   @@map("organizacoes")
 }
@@ -65,4 +66,24 @@ model MembroOrganizacao {
   // Constraint de unicidade
   @@unique([usuarioId, organizacaoId])
   @@map("membros_organizacoes")
+}
+
+// ===========================================
+// AMBIENTE
+// ===========================================
+
+model Ambiente {
+  id               String   @id @default(uuid()) @db.Uuid
+  nome             String
+  tipo             String   @default("local") // local, desenvolvimento, homologacao, producao
+  sistemaOperacional String @default("linux") // windows, linux, macos
+  organizacaoId    String   @map("organizacao_id") @db.Uuid
+  ativo            Boolean  @default(true)
+  criadoEm         DateTime @default(now()) @map("criado_em")
+  atualizadoEm     DateTime @updatedAt @map("atualizado_em")
+
+  // Relacionamento
+  organizacao Organizacao @relation(fields: [organizacaoId], references: [id], onDelete: Cascade)
+
+  @@map("ambientes")
 }
