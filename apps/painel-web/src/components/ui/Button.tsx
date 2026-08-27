@@ -23,16 +23,16 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 // ===========================================
 
 const estilosVariante: Record<Variante, string> = {
-  primario: 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20',
-  secundario: 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700',
-  perigo: 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20',
-  fantasma: 'bg-transparent hover:bg-zinc-800 text-zinc-300',
+  primario: 'bg-[#5b7cfa] hover:bg-[#6f8cff] text-white border border-[#5b7cfa]',
+  secundario: 'bg-[#1e1e24] hover:bg-[#28282f] text-zinc-100 border border-[#2a2a32]',
+  perigo: 'bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-400/25',
+  fantasma: 'bg-transparent hover:bg-[#28282f] text-zinc-300',
 };
 
 const estilosTamanho: Record<Tamanho, string> = {
   pequeno: 'px-3 py-1.5 text-xs',
   medio: 'px-4 py-2 text-sm',
-  grande: 'px-6 py-3 text-base',
+  grande: 'px-5 py-2.5 text-base',
 };
 
 // ===========================================
@@ -53,8 +53,8 @@ export function Button({
     <button
       className={`
         inline-flex items-center justify-center gap-2
-        rounded-lg font-medium transition-all duration-150
-        focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-zinc-900
+        rounded-full font-medium transition-colors duration-150
+        focus:outline-none
         disabled:opacity-50 disabled:cursor-not-allowed
         ${estilosVariante[variante]}
         ${estilosTamanho[tamanho]}

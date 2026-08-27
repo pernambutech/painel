@@ -25,28 +25,28 @@
 
 :root {
   /* Superfícies */
-  --cor-fundo: #0a0a0f;
-  --cor-superficie: #111118;
-  --cor-superficie-elevada: #1a1a24;
-  --cor-superficie-hover: #22222e;
-  --cor-borda: #2a2a38;
-  --cor-borda-fina: #1f1f2c;
+  --cor-fundo: #0d0d0f;
+  --cor-superficie: #16161a;
+  --cor-superficie-elevada: #1e1e24;
+  --cor-superficie-hover: #28282f;
+  --cor-borda: #2a2a32;
+  --cor-borda-fina: #202026;
 
   /* Texto */
-  --cor-texto: #f0f0f5;
-  --cor-texto-secundario: #9ca3af;
-  --cor-texto-terciario: #6b7280;
+  --cor-texto: #ececf0;
+  --cor-texto-secundario: #a8a8b3;
+  --cor-texto-terciario: #6e6e7a;
 
   /* Status */
-  --cor-online: #22c55e;
+  --cor-online: #3dd68c;
   --cor-offline: #6b7280;
   --cor-erro: #ef4444;
   --cor-aviso: #f59e0b;
   --cor-info: #3b82f6;
 
   /* Acento */
-  --cor-primaria: #6366f1;
-  --cor-primaria-hover: #818cf8;
+  --cor-primaria: #5b7cfa;
+  --cor-primaria-hover: #6f8cff;
 
   /* Espaçamento */
   --espacamento-xs: 0.25rem;
@@ -86,9 +86,24 @@ body {
     sans-serif;
   background-color: var(--cor-fundo);
   color: var(--cor-texto);
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 2px;
 }
 
 /* ===========================================

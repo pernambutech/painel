@@ -107,7 +107,7 @@ export default function AmbientesPage() {
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-zinc-100">Ambientes</h1>
           <p className="text-sm text-zinc-500 mt-1">Gerencie suas máquinas e servidores</p>
@@ -151,17 +151,17 @@ export default function AmbientesPage() {
 
       {/* Lista de ambientes */}
       {ambientes.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {ambientes.map((ambiente) => (
             <Link key={ambiente.id} href={`/ambientes/${ambiente.id}`}>
-              <Card className="hover:border-zinc-700 transition-colors cursor-pointer h-full">
+              <Card className="group h-full cursor-pointer transition-colors hover:border-zinc-600">
                 <div className="flex flex-col h-full">
                   {/* Cabeçalho do card */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="text-2xl">{obterIconeSO(ambiente.sistemaOperacional)}</div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1e1e24] text-xl">{obterIconeSO(ambiente.sistemaOperacional)}</div>
                       <div>
-                        <h3 className="font-medium text-zinc-100">{ambiente.nome}</h3>
+                        <h3 className="font-medium text-zinc-100 group-hover:text-white">{ambiente.nome}</h3>
                         <p className="text-xs text-zinc-500">{ambiente.sistemaOperacional}</p>
                       </div>
                     </div>
@@ -189,7 +189,7 @@ export default function AmbientesPage() {
                   </div>
 
                   {/* Informações */}
-                  <div className="mt-auto pt-4 border-t border-zinc-800">
+                  <div className="mt-auto pt-4 border-t border-[#2a2a32]">
                     <div className="flex items-center gap-4 text-xs text-zinc-500">
                       <div className="flex items-center gap-1">
                         <Server className="w-3 h-3" />

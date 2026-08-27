@@ -51,12 +51,12 @@ export default function NovoAmbientePage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="mx-auto max-w-2xl space-y-7">
       {/* Cabeçalho */}
       <div>
         <Link
           href="/ambientes"
-          className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-300 mb-4"
+          className="mb-5 inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-200"
         >
           <ArrowLeft className="w-4 h-4" />
           Voltar
@@ -69,7 +69,7 @@ export default function NovoAmbientePage() {
 
       {/* Formulário */}
       <Card>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {erro && (
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
               <p className="text-sm text-red-400">{erro}</p>
@@ -92,9 +92,9 @@ export default function NovoAmbientePage() {
               onChange={(e) => setTipo(e.target.value)}
               className="
                 w-full px-4 py-2.5 rounded-lg
-                bg-zinc-900 border border-zinc-700
+                bg-[#1e1e24] border border-[#2a2a32]
                 text-zinc-100
-                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
+                focus:outline-none focus:border-[#5b7cfa]
               "
             >
               <option value="local">Local</option>
@@ -111,9 +111,9 @@ export default function NovoAmbientePage() {
               onChange={(e) => setSistemaOperacional(e.target.value)}
               className="
                 w-full px-4 py-2.5 rounded-lg
-                bg-zinc-900 border border-zinc-700
+                bg-[#1e1e24] border border-[#2a2a32]
                 text-zinc-100
-                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
+                focus:outline-none focus:border-[#5b7cfa]
               "
             >
               <option value="linux">Linux</option>

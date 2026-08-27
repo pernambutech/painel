@@ -20,7 +20,7 @@ export function Card({ children, className = '', padding = 'medio' }: CardProps)
   return (
     <div
       className={`
-        rounded-xl border border-zinc-800 bg-zinc-900/50
+        rounded-xl border border-[#2a2a32] bg-[#16161a]
         ${estilosPadding[padding]}
         ${className}
       `}

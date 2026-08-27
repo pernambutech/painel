@@ -20,9 +20,9 @@ interface BadgeProps {
 // ===========================================
 
 const estilosVariante: Record<VarianteBadge, string> = {
-  online: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  online: 'bg-emerald-500/10 text-emerald-300 border-emerald-400/20',
   offline: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
-  erro: 'bg-red-500/10 text-red-400 border-red-500/20',
+  erro: 'bg-red-500/10 text-red-300 border-red-400/20',
   aviso: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   info: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   neutro: 'bg-zinc-500/10 text-zinc-300 border-zinc-500/20',

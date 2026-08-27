@@ -16,14 +16,14 @@ function MainLayoutInterno({ children }: MainLayoutProps) {
   const { aberta } = useSidebar();
 
   return (
-    <div className="h-screen bg-zinc-950 flex overflow-hidden">
+    <div className="h-dvh bg-[#0d0d0f] flex overflow-hidden">
       {/* Sidebar com transição */}
       <Sidebar />
 
       {/* Conteúdo principal */}
       <div
         className={`
-          flex-1 flex flex-col h-screen overflow-hidden
+          flex-1 flex flex-col h-dvh overflow-hidden
           transition-all duration-300 ease-in-out
           ${aberta ? 'ml-64' : 'ml-0'}
         `}
@@ -32,7 +32,7 @@ function MainLayoutInterno({ children }: MainLayoutProps) {
         <Topbar />
 
         {/* Área de conteúdo com scroll */}
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto px-5 py-6 sm:px-8 sm:py-7">{children}</main>
       </div>
     </div>
   );
