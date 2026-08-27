@@ -24,7 +24,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 const itensNavegacao = [
   {
     nome: 'Visão Geral',
-    href: '/ambientes',
+    href: '/dashboard',
     icone: LayoutDashboard,
   },
   {
@@ -89,11 +89,11 @@ export function Sidebar() {
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {itensNavegacao.map((item) => {
           const Icone = item.icone;
-          const ativo = pathname === item.href;
+          const ativo = pathname === item.href || (item.href === '/dashboard' && pathname === '/');
 
           return (
             <Link
-              key={item.href}
+              key={item.nome}
               href={item.href}
               className={`
                 flex items-center gap-3 px-3 py-2 rounded-lg
@@ -120,7 +120,7 @@ export function Sidebar() {
 
           return (
             <Link
-              key={item.href}
+              key={item.nome}
               href={item.href}
               className={`
                 flex items-center gap-3 px-3 py-2 rounded-lg
