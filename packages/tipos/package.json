@@ -1,0 +1,17 @@
+{
+  "name": "@painel/tipos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tipos TypeScript compartilhados",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src/",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
