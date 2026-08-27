@@ -4,7 +4,6 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
@@ -12,36 +11,14 @@ interface MainLayoutProps {
   children: ReactNode;
 }
 
-function MainLayoutInterno({ children }: MainLayoutProps) {
-  const { aberta } = useSidebar();
-
-  return (
-    <div className="h-dvh bg-[#0d0d0f] flex overflow-hidden">
-      {/* Sidebar com transição */}
-      <Sidebar />
-
-      {/* Conteúdo principal */}
-      <div
-        className={`
-          flex-1 flex flex-col h-dvh overflow-hidden
-          transition-all duration-300 ease-in-out
-          ${aberta ? 'ml-64' : 'ml-0'}
-        `}
-      >
-        {/* Topbar fixa no topo */}
-        <Topbar />
-
-        {/* Área de conteúdo com scroll */}
-        <main className="flex-1 overflow-y-auto px-5 py-6 sm:px-8 sm:py-7">{children}</main>
-      </div>
-    </div>
-  );
-}
-
 export function MainLayout({ children }: MainLayoutProps) {
   return (
-    <SidebarProvider>
-      <MainLayoutInterno>{children}</MainLayoutInterno>
-    </SidebarProvider>
+    <div className="flex h-dvh overflow-hidden bg-[#0d0d0f]">
+      <Sidebar />
+      <div className="main-layout-content flex h-dvh min-w-0 flex-1 flex-col overflow-hidden">
+        <Topbar />
+        <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-8 sm:py-7">{children}</main>
+      </div>
+    </div>
   );
 }
