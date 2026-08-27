@@ -91,6 +91,30 @@ export interface TokenAgente {
 }
 
 // ===========================================
+// PROJETO
+// ===========================================
+
+export interface Projeto {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  organizacaoId: string;
+  ativo: boolean;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export interface CriarProjetoDto {
+  nome: string;
+  descricao?: string;
+}
+
+export interface AtualizarProjetoDto {
+  nome?: string;
+  descricao?: string;
+}
+
+// ===========================================
 // RESPOSTA DA API
 // ===========================================
 

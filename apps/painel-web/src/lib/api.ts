@@ -191,6 +191,57 @@ export const agentesApi = {
 };
 
 // ===========================================
+// SERVIÇOS DE PROJETOS
+// ===========================================
+
+export const projetosApi = {
+  // Listar projetos da organização
+  listar: async (organizacaoId: string, incluirArquivados = false) => {
+    const resposta = await api.get(`/organizacoes/${organizacaoId}/projetos`, {
+      params: incluirArquivados ? { incluirArquivados: 'true' } : {},
+    });
+    return resposta.data;
+  },
+
+  // Obter projeto por ID
+  obterPorId: async (organizacaoId: string, id: string) => {
+    const resposta = await api.get(`/organizacoes/${organizacaoId}/projetos/${id}`);
+    return resposta.data;
+  },
+
+  // Criar projeto
+  criar: async (
+    organizacaoId: string,
+    dados: { nome: string; descricao?: string },
+  ) => {
+    const resposta = await api.post(`/organizacoes/${organizacaoId}/projetos`, dados);
+    return resposta.data;
+  },
+
+  // Atualizar projeto
+  atualizar: async (
+    organizacaoId: string,
+    id: string,
+    dados: { nome?: string; descricao?: string },
+  ) => {
+    const resposta = await api.put(`/organizacoes/${organizacaoId}/projetos/${id}`, dados);
+    return resposta.data;
+  },
+
+  // Arquivar projeto
+  arquivar: async (organizacaoId: string, id: string) => {
+    const resposta = await api.patch(`/organizacoes/${organizacaoId}/projetos/${id}/arquivar`);
+    return resposta.data;
+  },
+
+  // Reativar projeto
+  reativar: async (organizacaoId: string, id: string) => {
+    const resposta = await api.patch(`/organizacoes/${organizacaoId}/projetos/${id}/reativar`);
+    return resposta.data;
+  },
+};
+
+// ===========================================
 // EXPORTAÇÃO PADRÃO
 // ===========================================
 
