@@ -242,6 +242,83 @@ export const projetosApi = {
 };
 
 // ===========================================
+// SERVIÇOS DE SERVIÇOS
+// ===========================================
+
+export const servicosApi = {
+  // Listar todos os serviços da organização
+  listarTodos: async (organizacaoId: string) => {
+    const resposta = await api.get(`/organizacoes/${organizacaoId}/servicos`);
+    return resposta.data;
+  },
+
+  // Listar serviços de um projeto
+  listarPorProjeto: async (organizacaoId: string, projetoId: string) => {
+    const resposta = await api.get(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos`,
+    );
+    return resposta.data;
+  },
+
+  // Obter serviço por ID
+  obterPorId: async (organizacaoId: string, projetoId: string, id: string) => {
+    const resposta = await api.get(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}`,
+    );
+    return resposta.data;
+  },
+
+  // Criar serviço
+  criar: async (
+    organizacaoId: string,
+    projetoId: string,
+    dados: {
+      nome: string;
+      tipo?: string;
+      diretorio?: string;
+      comando?: string;
+      porta?: number;
+      ambienteId?: string;
+    },
+  ) => {
+    const resposta = await api.post(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos`,
+      dados,
+    );
+    return resposta.data;
+  },
+
+  // Atualizar serviço
+  atualizar: async (
+    organizacaoId: string,
+    projetoId: string,
+    id: string,
+    dados: {
+      nome?: string;
+      tipo?: string;
+      diretorio?: string;
+      comando?: string;
+      porta?: number | null;
+      ambienteId?: string | null;
+    },
+  ) => {
+    const resposta = await api.put(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}`,
+      dados,
+    );
+    return resposta.data;
+  },
+
+  // Remover serviço
+  remover: async (organizacaoId: string, projetoId: string, id: string) => {
+    const resposta = await api.delete(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}`,
+    );
+    return resposta.data;
+  },
+};
+
+// ===========================================
 // EXPORTAÇÃO PADRÃO
 // ===========================================
 

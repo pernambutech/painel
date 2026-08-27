@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { projetosApi } from '@/lib/api';
+import { projetosApi, servicosApi } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { BadgeSimples } from '@/components/ui/Badge';
@@ -20,11 +20,16 @@ import {
   CalendarDays,
   Check,
   Edit3,
-  FileText,
   FolderKanban,
+  HardDrive,
+  Network,
+  Plus,
+  Server,
+  Terminal,
+  Trash2,
   X,
 } from 'lucide-react';
-import type { Projeto } from '@/types';
+import type { Projeto, Servico } from '@/types';
 
 export default function ProjetoDetalhePage() {
   const params = useParams();
@@ -40,12 +45,29 @@ export default function ProjetoDetalhePage() {
   const [descricaoEditada, setDescricaoEditada] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [confirmandoArquivamento, setConfirmandoArquivamento] = useState(false);
+  const [servicos, setServicos] = useState<Servico[]>([]);
+  const [carregandoServicos, setCarregandoServicos] = useState(true);
+  const [servicoParaRemover, setServicoParaRemover] = useState<Servico | null>(null);
 
   useEffect(() => {
     if (organizacao && projetoId) {
       carregarProjeto();
+      carregarServicos();
     }
   }, [organizacao, projetoId]);
+
+  const carregarServicos = async () => {
+    if (!organizacao) return;
+    try {
+      setCarregandoServicos(true);
+      const dados = await servicosApi.listarPorProjeto(organizacao.id, projetoId);
+      setServicos(dados || []);
+    } catch {
+      // Silencioso — lista vazia
+    } finally {
+      setCarregandoServicos(false);
+    }
+  };
 
   const carregarProjeto = async () => {
     if (!organizacao) return;
@@ -112,6 +134,29 @@ export default function ProjetoDetalhePage() {
     } finally {
       setSalvando(false);
     }
+  };
+
+  const removerServico = async () => {
+    if (!organizacao || !servicoParaRemover) return;
+    try {
+      setSalvando(true);
+      await servicosApi.remover(organizacao.id, projetoId, servicoParaRemover.id);
+      setServicos((prev) => prev.filter((s) => s.id !== servicoParaRemover.id));
+      setServicoParaRemover(null);
+    } catch {
+      setErro('Erro ao remover serviço.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const tipoLabels: Record<string, string> = {
+    frontend: 'Frontend',
+    backend: 'Backend',
+    api: 'API',
+    worker: 'Worker',
+    bot: 'Bot',
+    custom: 'Personalizado',
   };
 
   if (carregando) {
@@ -285,26 +330,90 @@ export default function ProjetoDetalhePage() {
         <Card>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-zinc-800">
-              <FileText className="w-4 h-4 text-zinc-400" />
+              <Server className="w-4 h-4 text-zinc-400" />
             </div>
             <div>
               <p className="text-xs text-zinc-500">Serviços</p>
-              <p className="text-sm font-medium text-zinc-200">Nenhum serviço configurado</p>
+              <p className="text-sm font-medium text-zinc-200">
+                {carregandoServicos ? 'Carregando...' : `${servicos.length} serviço(s)`}
+              </p>
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Seção de serviços (placeholder) */}
+      {/* Seção de serviços */}
       <Card>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-4">Serviços do projeto</h2>
-        <div className="text-center py-8">
-          <FileText className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-          <p className="text-sm text-zinc-500">Nenhum serviço configurado neste projeto.</p>
-          <p className="text-xs text-zinc-600 mt-1">
-            Os serviços serão adicionados na próxima etapa do produto.
-          </p>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-zinc-100">Serviços do projeto</h2>
+          <Link href={`/projetos/${projetoId}/servicos/novo`}>
+            <Button tamanho="pequeno">
+              <Plus className="w-4 h-4" />
+              Adicionar serviço
+            </Button>
+          </Link>
         </div>
+
+        {carregandoServicos ? (
+          <div className="flex items-center justify-center py-8">
+            <Spinner />
+          </div>
+        ) : servicos.length === 0 ? (
+          <div className="text-center py-8">
+            <Server className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+            <p className="text-sm text-zinc-500">Nenhum serviço configurado neste projeto.</p>
+            <p className="text-xs text-zinc-600 mt-1">
+              Adicione frontend, backend, workers e outros serviços.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {servicos.map((servico) => (
+              <div
+                key={servico.id}
+                className="flex flex-col gap-3 rounded-lg border border-[#2a2a32] bg-[#17171c] p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium text-zinc-100">{servico.nome}</h3>
+                    <BadgeSimples variante="neutro">
+                      {tipoLabels[servico.tipo] || servico.tipo}
+                    </BadgeSimples>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-zinc-500">
+                    {servico.diretorio && (
+                      <span className="flex items-center gap-1">
+                        <HardDrive className="w-3 h-3" /> {servico.diretorio}
+                      </span>
+                    )}
+                    {servico.comando && (
+                      <span className="flex items-center gap-1">
+                        <Terminal className="w-3 h-3" /> {servico.comando}
+                      </span>
+                    )}
+                    {servico.porta && (
+                      <span className="flex items-center gap-1">
+                        <Network className="w-3 h-3" /> :{servico.porta}
+                      </span>
+                    )}
+                    {servico.ambiente && (
+                      <span>Ambiente: {servico.ambiente.nome}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variante="fantasma"
+                    tamanho="pequeno"
+                    onClick={() => setServicoParaRemover(servico)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       {/* Modal de confirmação de arquivamento */}
@@ -331,6 +440,36 @@ export default function ProjetoDetalhePage() {
                 carregando={salvando}
               >
                 Arquivar
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de confirmação de remoção de serviço */}
+      {servicoParaRemover && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md">
+            <h3 className="text-lg font-semibold text-zinc-100 mb-2">Remover serviço?</h3>
+            <p className="text-sm text-zinc-500 mb-6">
+              O serviço <strong className="text-zinc-300">{servicoParaRemover.nome}</strong> será
+              removido. Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variante="secundario"
+                larguraTotal
+                onClick={() => setServicoParaRemover(null)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variante="perigo"
+                larguraTotal
+                onClick={removerServico}
+                carregando={salvando}
+              >
+                Remover
               </Button>
             </div>
           </Card>

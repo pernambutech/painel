@@ -115,6 +115,48 @@ export interface AtualizarProjetoDto {
 }
 
 // ===========================================
+// SERVIÇO
+// ===========================================
+
+export interface Servico {
+  id: string;
+  nome: string;
+  tipo: string;
+  diretorio: string | null;
+  comando: string | null;
+  porta: number | null;
+  projetoId: string;
+  ambienteId: string | null;
+  organizacaoId: string;
+  ativo: boolean;
+  criadoEm: string;
+  atualizadoEm: string;
+  ambiente?: {
+    id: string;
+    nome: string;
+    tipo: string;
+  } | null;
+}
+
+export interface CriarServicoDto {
+  nome: string;
+  tipo?: string;
+  diretorio?: string;
+  comando?: string;
+  porta?: number;
+  ambienteId?: string;
+}
+
+export interface AtualizarServicoDto {
+  nome?: string;
+  tipo?: string;
+  diretorio?: string;
+  comando?: string;
+  porta?: number | null;
+  ambienteId?: string | null;
+}
+
+// ===========================================
 // RESPOSTA DA API
 // ===========================================
 
