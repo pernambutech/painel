@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
-import { Monitor, Plus, Server } from 'lucide-react';
+import { Monitor, Plus, Server, Wifi, WifiOff } from 'lucide-react';
 import type { Ambiente } from '@/types';
 
 export default function AmbientesPage() {
@@ -47,6 +47,49 @@ export default function AmbientesPage() {
         return '🍎';
       default:
         return '💻';
+    }
+  };
+
+  const obterVarianteAgente = (agente: Ambiente['agente']) => {
+    if (!agente) return 'neutro';
+    switch (agente.status) {
+      case 'online':
+        return 'online';
+      case 'offline':
+        return 'offline';
+      case 'manutencao':
+        return 'aviso';
+      default:
+        return 'neutro';
+    }
+  };
+
+  const obterTextoAgente = (agente: Ambiente['agente']) => {
+    if (!agente) return 'Agente não instalado';
+    switch (agente.status) {
+      case 'online':
+        return 'Conectado';
+      case 'offline':
+        return 'Desconectado';
+      case 'manutencao':
+        return 'Manutenção';
+      default:
+        return 'Desconhecido';
+    }
+  };
+
+  const obterTempoHeartbeat = (agente: Ambiente['agente']) => {
+    if (!agente?.ultimoHeartbeat) return null;
+    const agora = new Date();
+    const heartbeat = new Date(agente.ultimoHeartbeat);
+    const diferencaSegundos = Math.floor((agora.getTime() - heartbeat.getTime()) / 1000);
+
+    if (diferencaSegundos < 60) {
+      return `Há ${diferencaSegundos}s`;
+    } else if (diferencaSegundos < 3600) {
+      return `Há ${Math.floor(diferencaSegundos / 60)}min`;
+    } else {
+      return `Há ${Math.floor(diferencaSegundos / 3600)}h`;
     }
   };
 
@@ -122,7 +165,27 @@ export default function AmbientesPage() {
                         <p className="text-xs text-zinc-500">{ambiente.sistemaOperacional}</p>
                       </div>
                     </div>
-                    <Badge variante="offline">Offline</Badge>
+                    <Badge variante={obterVarianteAgente(ambiente.agente)}>
+                      {obterTextoAgente(ambiente.agente)}
+                    </Badge>
+                  </div>
+
+                  {/* Informações do agente */}
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 text-xs">
+                      {ambiente.agente?.status === 'online' ? (
+                        <Wifi className="w-3 h-3 text-emerald-500" />
+                      ) : (
+                        <WifiOff className="w-3 h-3 text-zinc-500" />
+                      )}
+                      <span className="text-zinc-400">{obterTextoAgente(ambiente.agente)}</span>
+                      {ambiente.agente?.status === 'online' &&
+                        obterTempoHeartbeat(ambiente.agente) && (
+                          <span className="text-zinc-600">
+                            • {obterTempoHeartbeat(ambiente.agente)}
+                          </span>
+                        )}
+                    </div>
                   </div>
 
                   {/* Informações */}
@@ -132,6 +195,7 @@ export default function AmbientesPage() {
                         <Server className="w-3 h-3" />
                         <span>{ambiente.tipo}</span>
                       </div>
+                      {ambiente.agente?.versao && <span>v{ambiente.agente.versao}</span>}
                     </div>
                   </div>
                 </div>

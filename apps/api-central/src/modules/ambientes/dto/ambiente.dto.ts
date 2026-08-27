@@ -24,6 +24,24 @@ export interface AtualizarAmbienteDto {
 }
 
 // ===========================================
+// DADOS DO AGENTE NO AMBIENTE
+// ===========================================
+
+// Informações do agente associado ao ambiente
+export interface AgenteNoAmbiente {
+  id: string;
+  nome: string;
+  status: string;
+  ultimoHeartbeat: Date | null;
+  versao: string | null;
+  sistemaOperacional: string | null;
+  cpuUso: number | null;
+  memoriaUso: number | null;
+  memoriaTotal: number | null;
+  uptime: number | null;
+}
+
+// ===========================================
 // RESPOSTA DE AMBIENTE
 // ===========================================
 
@@ -36,4 +54,5 @@ export interface RespostaAmbiente {
   organizacaoId: string;
   ativo: boolean;
   criadoEm: Date;
+  agente?: AgenteNoAmbiente | null;
 }

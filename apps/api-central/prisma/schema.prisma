@@ -1,5 +1,5 @@
 // Schema Prisma - Primeira versão do banco de dados
-// Entidades: Usuários, Organizações, Associação usuário-organização, Ambientes
+// Entidades: Usuários, Organizações, Associação usuário-organização, Ambientes, Agentes
 
 generator client {
   provider = "prisma-client-js"
@@ -42,15 +42,12 @@ model Organizacao {
   atualizadoEm DateTime @updatedAt @map("atualizado_em")
 
   // Relacionamentos
-  membros    MembroOrganizacao[]
-  ambientes  Ambiente[]
+  membros   MembroOrganizacao[]
+  ambientes Ambiente[]
+  agentes   Agente[]
 
   @@map("organizacoes")
 }
-
-// ===========================================
-// ASSOCIAÇÃO USUÁRIO ↔ ORGANIZAÇÃO
-// ===========================================
 
 model MembroOrganizacao {
   id            String   @id @default(uuid()) @db.Uuid
@@ -73,17 +70,49 @@ model MembroOrganizacao {
 // ===========================================
 
 model Ambiente {
-  id               String   @id @default(uuid()) @db.Uuid
-  nome             String
-  tipo             String   @default("local") // local, desenvolvimento, homologacao, producao
-  sistemaOperacional String @default("linux") // windows, linux, macos
-  organizacaoId    String   @map("organizacao_id") @db.Uuid
-  ativo            Boolean  @default(true)
-  criadoEm         DateTime @default(now()) @map("criado_em")
-  atualizadoEm     DateTime @updatedAt @map("atualizado_em")
+  id                 String   @id @default(uuid()) @db.Uuid
+  nome               String
+  tipo               String   @default("local") // local, desenvolvimento, homologacao, producao
+  sistemaOperacional String   @default("linux") // windows, linux, macos
+  organizacaoId      String   @map("organizacao_id") @db.Uuid
+  ativo              Boolean  @default(true)
+  criadoEm           DateTime @default(now()) @map("criado_em")
+  atualizadoEm       DateTime @updatedAt @map("atualizado_em")
 
   // Relacionamento
   organizacao Organizacao @relation(fields: [organizacaoId], references: [id], onDelete: Cascade)
 
+  // Relacionamento com agentes
+  agentes Agente[]
+
   @@map("ambientes")
+}
+
+// ===========================================
+// AGENTE
+// ===========================================
+
+model Agente {
+  id                 String    @id @default(uuid()) @db.Uuid
+  nome               String
+  token              String    @unique
+  status             String    @default("offline") // online, offline, manutencao
+  ultimoHeartbeat    DateTime? @map("ultimo_heartbeat")
+  versao             String?
+  sistemaOperacional String?   @default("linux") @map("sistema_operacional")
+  cpuUso             Float?    @map("cpu_uso")
+  memoriaUso         Float?    @map("memoria_uso")
+  memoriaTotal       Float?    @map("memoria_total")
+  uptime             Int?
+  ambienteId         String    @map("ambiente_id") @db.Uuid
+  organizacaoId      String    @map("organizacao_id") @db.Uuid
+  ativo              Boolean   @default(true)
+  criadoEm           DateTime  @default(now()) @map("criado_em")
+  atualizadoEm       DateTime  @updatedAt @map("atualizado_em")
+
+  // Relacionamentos
+  ambiente    Ambiente    @relation(fields: [ambienteId], references: [id], onDelete: Cascade)
+  organizacao Organizacao @relation(fields: [organizacaoId], references: [id], onDelete: Cascade)
+
+  @@map("agentes")
 }

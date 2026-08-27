@@ -153,6 +153,44 @@ export const ambientesApi = {
 };
 
 // ===========================================
+// SERVIÇOS DE AGENTES
+// ===========================================
+
+export const agentesApi = {
+  // Gerar token para ambiente
+  gerarToken: async (organizacaoId: string, ambienteId: string) => {
+    const resposta = await api.post(
+      `/organizacoes/${organizacaoId}/agentes/ambiente/${ambienteId}/token`,
+    );
+    return resposta.data;
+  },
+
+  // Listar agentes da organização
+  listar: async (organizacaoId: string) => {
+    const resposta = await api.get(`/organizacoes/${organizacaoId}/agentes`);
+    return resposta.data;
+  },
+
+  // Obter agente por ID
+  obterPorId: async (organizacaoId: string, id: string) => {
+    const resposta = await api.get(`/organizacoes/${organizacaoId}/agentes/${id}`);
+    return resposta.data;
+  },
+
+  // Obter agente por ambiente
+  obterPorAmbiente: async (organizacaoId: string, ambienteId: string) => {
+    const resposta = await api.get(`/organizacoes/${organizacaoId}/agentes/ambiente/${ambienteId}`);
+    return resposta.data;
+  },
+
+  // Desativar agente
+  desativar: async (organizacaoId: string, id: string) => {
+    const resposta = await api.delete(`/organizacoes/${organizacaoId}/agentes/${id}`);
+    return resposta.data;
+  },
+};
+
+// ===========================================
 // EXPORTAÇÃO PADRÃO
 // ===========================================
 

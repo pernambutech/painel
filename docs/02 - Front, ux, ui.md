@@ -37,8 +37,9 @@ Evitar aparência genérica de painel administrativo.
 A interface deve ter identidade própria.
 
 ==================================================
+
 1. CONTEXTO DO PRODUTO
-==================================================
+   \==================================================
 
 A plataforma permite centralizar o gerenciamento de múltiplos projetos e serviços.
 
@@ -90,8 +91,7 @@ Ações principais:
 - Visualizar ambientes.
 - Monitorar agentes.
 
-==================================================
-2. PERFIL DO USUÁRIO
+================================================== 2. PERFIL DO USUÁRIO
 ==================================================
 
 Usuários principais:
@@ -123,8 +123,7 @@ O usuário deve conseguir responder rapidamente:
 - Qual projeto precisa de atenção?
 - Qual foi a última ação realizada?
 
-==================================================
-3. PERSONALIDADE VISUAL
+================================================== 3. PERSONALIDADE VISUAL
 ==================================================
 
 A interface deve ser:
@@ -177,8 +176,7 @@ Priorizar:
 - Ações rápidas.
 - Feedback imediato.
 
-==================================================
-4. ESTRUTURA PRINCIPAL DA APLICAÇÃO
+================================================== 4. ESTRUTURA PRINCIPAL DA APLICAÇÃO
 ==================================================
 
 Criar uma aplicação com:
@@ -214,8 +212,7 @@ O usuário deve entender onde está.
 
 Utilizar breadcrumbs quando necessário.
 
-==================================================
-5. DASHBOARD PRINCIPAL
+================================================== 5. DASHBOARD PRINCIPAL
 ==================================================
 
 Criar uma dashboard operacional.
@@ -302,8 +299,7 @@ Não transformar o dashboard em uma página cheia de gráficos.
 
 Priorizar status operacional.
 
-==================================================
-6. TELA DE PROJETOS
+================================================== 6. TELA DE PROJETOS
 ==================================================
 
 Criar tela de listagem de projetos.
@@ -338,8 +334,7 @@ Estados:
 - Erro.
 - Resultado vazio após filtro.
 
-==================================================
-7. DETALHE DO PROJETO
+================================================== 7. DETALHE DO PROJETO
 ==================================================
 
 Criar uma das telas mais importantes do sistema.
@@ -396,8 +391,7 @@ Criar abas:
 
 A tela deve permitir compreender rapidamente a situação completa do projeto.
 
-==================================================
-8. DETALHE DO SERVIÇO
+================================================== 8. DETALHE DO SERVIÇO
 ==================================================
 
 Criar tela detalhada de um serviço.
@@ -441,75 +435,166 @@ Criar abas:
 - Execuções
 - Configurações
 
-==================================================
-9. TELA DE AMBIENTES
+================================================== 9. TELA DE AMBIENTES
 ==================================================
 
 Criar gerenciamento de ambientes.
 
-Exemplo:
+Cada ambiente deve exibir:
+
+CARD:
+
+- Ícone do sistema operacional (🐧 Linux, 🪟 Windows, 🍎 macOS).
+- Nome do ambiente.
+- Tipo (Local, Desenvolvimento, Homologação, Produção).
+- Badge de status do agente (Online/Offline).
+- Ícone de agente conectado/desconectado.
+
+STATUS DO AGENTE:
+
+O status do agente é visualmente importante.
+
+Indicadores:
+
+- Agente Online → bolinha verde + "Conectado"
+- Agente Offline → bolinha cinza + "Desconectado"
+- Agente em manutenção → bolinha amarela + "Manutenção"
+
+Sem agente registrado:
+
+- Ícone de alerta + "Agente não instalado"
+- Botão: [ Instalar agente ]
+
+EXEMPLO:
 
 Notebook Desenvolvimento
-
-Status:
-
-ONLINE
-
-Informações:
-
-- Nome.
-- Sistema operacional.
-- Último contato.
-- Versão do agente.
-- Projetos associados.
-- Serviços executando.
+Badge: ONLINE
+Ícone agente: 🟢 Conectado
 
 VPS Produção
-
-Status:
-
-ONLINE
+Badge: ONLINE
+Ícone agente: 🟢 Conectado
 
 Servidor Homologação
-
-Status:
-
-OFFLINE
+Badge: OFFLINE
+Ícone agente: ⚫ Desconectado
 
 Utilizar indicadores claros.
 
 O status dos ambientes deve ser visualmente importante.
 
-==================================================
-10. TELA DE DETALHE DO AMBIENTE
+O agente é o elo entre a plataforma e a máquina.
+
+Quando o agente está offline, a plataforma não controla a máquina.
+
+FLUXO DE CONEXÃO DO AGENTE:
+
+1. Usuário cria ambiente no painel
+2. Painel exibe token de registro do agente
+3. Usuário instala agente na máquina com o token
+4. Agente conecta via WebSocket à API
+5. Agente envia heartbeat com dados do sistema
+6. Ambiente fica ONLINE no painel
+7. Heartbeat continua sendo enviado a cada 30 segundos
+8. Se heartbeat parar por mais de 90 segundos → agente OFFLINE
+
+================================================== 10. TELA DE DETALHE DO AMBIENTE
 ==================================================
 
-Criar tela com:
+Criar tela detalhada do ambiente com:
 
-- Status do ambiente.
-- Status do agente.
-- Último heartbeat.
+CABEÇALHO:
+
+- Ícone do SO + Nome do ambiente.
+- Badge de status (Online/Offline/Manutenção).
+- Botões de ação: [ Editar ] [ Excluir ]
+
+SEÇÃO 1 — INFORMAÇÕES DO AMBIENTE:
+
+Cards com:
+
+- Status do agente (Online/Offline).
+- Último heartbeat (ex: "Há 5 segundos" ou "Há 2 minutos").
 - Sistema operacional.
+- Tipo do ambiente.
+- Versão do agente (quando conectado).
+
+SEÇÃO 2 — AGENTE:
+
+Se o agente estiver conectado:
+
+- ID do agente.
 - Versão do agente.
-- Serviços executando.
-- Projetos associados.
+- Último heartbeat com timestamp.
+- Botão: [ Desconectar agente ]
 
-Criar uma seção:
+Se o agente NÃO estiver conectado:
 
-"Serviços neste ambiente"
+- Mensagem: "Agente não instalado" ou "Agente desconectado".
+- Instruções para instalação.
+- Token de registro copiável (botão "Copiar token").
+- Comando de instalação: npm install -g @painel/agente
 
-Cada serviço deve permitir acesso rápido.
+SEÇÃO 3 — SERVIÇOS NESTE AMBIENTE:
 
-Preparar área futura para:
+Lista de serviços executando neste ambiente.
+
+Cada serviço deve mostrar:
+
+- Nome.
+- Status (Online/Offline/Erro).
+- Porta.
+- PID.
+- Tempo de execução.
+
+Botões de ação rápida:
+
+- [ Iniciar ]
+- [ Parar ]
+- [ Reiniciar ]
+- [ Ver Logs ]
+
+Se não houver serviços:
+
+Estado vazio:
+
+"Nenhum serviço configurado neste ambiente."
+
+Botão: [ Adicionar serviço ]
+
+SEÇÃO 4 — PROJETOS ASSOCIADOS:
+
+Lista de projetos que possuem serviços neste ambiente.
+
+Cada projeto deve permitir acesso rápido ao detalhe.
+
+SEÇÃO 5 — MÉTRICAS (PLACEHOLDER):
+
+Preparar área para métricas futuras:
 
 - CPU.
 - Memória.
 - Disco.
 
+Exibir mensagem:
+
+"Métricas disponíveis em breve."
+
 Não destacar métricas complexas inicialmente.
 
-==================================================
-11. TELA DE EXECUÇÕES
+SEÇÃO 6 — HISTÓRICO DO AMBIENTE:
+
+Timeline com eventos:
+
+- Agente conectado.
+- Agente desconectado.
+- Serviço iniciado.
+- Serviço parado.
+- Serviço com erro.
+
+Utilizar linha do tempo.
+
+================================================== 11. TELA DE EXECUÇÕES
 ==================================================
 
 Criar uma tela para acompanhar ações executadas.
@@ -560,8 +645,7 @@ Mostrar:
 - Data.
 - Usuário responsável.
 
-==================================================
-12. TELA DE LOGS
+================================================== 12. TELA DE LOGS
 ==================================================
 
 Criar uma experiência inspirada em terminal, mas moderna.
@@ -591,8 +675,7 @@ Criar estados:
 - Serviço offline.
 - Erro ao carregar.
 
-==================================================
-13. TELA DE HISTÓRICO
+================================================== 13. TELA DE HISTÓRICO
 ==================================================
 
 Mostrar eventos relevantes.
@@ -615,8 +698,7 @@ Utilizar linha do tempo.
 
 Permitir filtros.
 
-==================================================
-14. TELA DE CRIAÇÃO DE PROJETO
+================================================== 14. TELA DE CRIAÇÃO DE PROJETO
 ==================================================
 
 Criar fluxo simples.
@@ -646,8 +728,7 @@ PASSO 4
 
 Revisar.
 
-==================================================
-15. CRIAÇÃO DE SERVIÇO
+================================================== 15. CRIAÇÃO DE SERVIÇO
 ==================================================
 
 Campos:
@@ -673,8 +754,7 @@ Comando:
 
 Evitar linguagem excessivamente técnica.
 
-==================================================
-16. GIT
+================================================== 16. GIT
 ==================================================
 
 Criar interface simples.
@@ -696,8 +776,7 @@ A ação Git Pull deve possuir confirmação.
 
 Mostrar progresso da execução.
 
-==================================================
-17. CONFIGURAÇÕES
+================================================== 17. CONFIGURAÇÕES
 ==================================================
 
 Criar áreas:
@@ -709,13 +788,12 @@ Criar áreas:
 
 Manter simples na primeira versão.
 
-==================================================
-18. ESTADOS DO SISTEMA
+================================================== 18. ESTADOS DO SISTEMA
 ==================================================
 
 Criar componentes visuais para:
 
-STATUS:
+STATUS GERAL:
 
 - Online.
 - Offline.
@@ -724,6 +802,21 @@ STATUS:
 - Erro.
 - Atenção.
 - Desconhecido.
+- Manutenção.
+
+STATUS DO AGENTE:
+
+- Online → agente conectado, enviando heartbeat.
+- Offline → agente desconectado ou sem heartbeat.
+- Manutenção → agente em atualização ou manutenção.
+- Não instalado → ambiente sem agente registrado.
+
+Visual:
+
+- Online → bolinha verde (#10B981) + texto "Conectado".
+- Offline → bolinha cinza (#6B7280) + texto "Desconectado".
+- Manutenção → bolinha amarela (#F59E0B) + texto "Manutenção".
+- Não instalado → ícone de alerta + texto "Agente não instalado".
 
 STATUS DE EXECUÇÃO:
 
@@ -743,8 +836,7 @@ Utilizar:
 - Ícones.
 - Indicadores visuais.
 
-==================================================
-19. COMPONENTES DO DESIGN SYSTEM
+================================================== 19. COMPONENTES DO DESIGN SYSTEM
 ==================================================
 
 Criar componentes reutilizáveis:
@@ -776,8 +868,7 @@ Criar componentes reutilizáveis:
 
 Criar variantes.
 
-==================================================
-20. AÇÕES CRÍTICAS
+================================================== 20. AÇÕES CRÍTICAS
 ==================================================
 
 Criar UX especial para:
@@ -806,8 +897,7 @@ Evitar confirmações desnecessárias para todas as ações.
 
 Criar confirmação principalmente para ações potencialmente impactantes.
 
-==================================================
-21. ESTADOS VAZIOS
+================================================== 21. ESTADOS VAZIOS
 ==================================================
 
 Criar telas vazias úteis.
@@ -832,8 +922,7 @@ Botão:
 
 Os estados vazios devem orientar o usuário.
 
-==================================================
-22. ESTADOS DE ERRO
+================================================== 22. ESTADOS DE ERRO
 ==================================================
 
 Criar componentes claros para erros.
@@ -852,8 +941,7 @@ Evitar mensagens técnicas para usuários.
 
 Detalhes técnicos podem existir em uma área secundária.
 
-==================================================
-23. RESPONSIVIDADE
+================================================== 23. RESPONSIVIDADE
 ==================================================
 
 Prioridade:
@@ -877,8 +965,7 @@ Não tentar simplesmente diminuir a interface desktop.
 
 Redesenhar a hierarquia quando necessário.
 
-==================================================
-24. ACESSIBILIDADE
+================================================== 24. ACESSIBILIDADE
 ==================================================
 
 Garantir:
@@ -890,8 +977,7 @@ Garantir:
 - Texto legível.
 - Áreas clicáveis adequadas.
 
-==================================================
-25. DESIGN SYSTEM VISUAL
+================================================== 25. DESIGN SYSTEM VISUAL
 ==================================================
 
 Criar uma base visual consistente.
@@ -912,8 +998,7 @@ Utilizar espaçamento consistente.
 
 A interface deve possuir sensação de produto profissional.
 
-==================================================
-26. MODO VISUAL
+================================================== 26. MODO VISUAL
 ==================================================
 
 Criar:
@@ -930,8 +1015,7 @@ O tema escuro deve:
 - Manter logs legíveis.
 - Manter status claros.
 
-==================================================
-27. FLUXOS PRINCIPAIS
+================================================== 27. FLUXOS PRINCIPAIS
 ==================================================
 
 Desenhar visualmente os seguintes fluxos:
@@ -944,15 +1028,70 @@ Criar organização
 ↓
 Acessar dashboard
 
-FLUXO 2
+FLUXO 2 — CONEXÃO DO AGENTE (DETALHADO)
 
-Adicionar ambiente
-↓
-Instalar agente
-↓
-Agente conecta
-↓
-Ambiente fica online
+PASSO 1:
+
+Usuário acessa "Ambientes" → clica em "Novo Ambiente".
+
+PASSO 2:
+
+Preenche:
+
+- Nome: "Notebook Desenvolvimento"
+- Tipo: "Local"
+- Sistema Operacional: "Linux"
+
+PASSO 3:
+
+Ambiente é criado.
+
+Painel exibe:
+
+- Status: "Agente não instalado"
+- Token de registro: "abc123..."
+- Botão: [ Copiar token ]
+- Comando: npm install -g @painel/agente
+
+PASSO 4:
+
+Usuário instala agente na máquina:
+
+Terminal:
+
+npm install -g @painel/agente
+AGENT_TOKEN=abc123... AGENT_API_URL=http://localhost:3001 painel-agente
+
+PASSO 5:
+
+Agente inicia:
+
+1. Lê token de autenticação.
+2. Conecta via WebSocket à API.
+3. Envia evento: REGISTRAR_AGENTE.
+4. API valida token.
+5. API registra agente no banco.
+6. Agente envia heartbeat com dados do sistema.
+
+PASSO 6:
+
+Painel atualiza:
+
+- Status do agente: ONLINE
+- Badge: 🟢 Conectado
+- Último heartbeat: "Agora"
+- Versão do agente: "0.1.0"
+
+PASSO 7:
+
+Heartbeat continua sendo enviado a cada 30 segundos.
+
+PASSO 8:
+
+Se heartbeat parar por mais de 90 segundos:
+
+- API marca agente como OFFLINE.
+- Painel atualiza badge: ⚫ Desconectado.
 
 FLUXO 3
 
@@ -992,8 +1131,7 @@ Visualiza logs
 ↓
 Reinicia serviço
 
-==================================================
-28. PRIORIDADE DE TELAS
+================================================== 28. PRIORIDADE DE TELAS
 ==================================================
 
 Criar primeiro:
@@ -1011,8 +1149,7 @@ Criar primeiro:
 11. Git.
 12. Configurações.
 
-==================================================
-29. RESULTADO ESPERADO
+================================================== 29. RESULTADO ESPERADO
 ==================================================
 
 Criar um design completo que permita posteriormente implementar o frontend utilizando:
@@ -1032,15 +1169,15 @@ O design deve ser:
 
 Criar uma estrutura visual organizada no Figma com:
 
-01. Design System
-02. Componentes
-03. Dashboard
-04. Projetos
-05. Serviços
-06. Ambientes
-07. Execuções
-08. Logs
-09. Histórico
+1.  Design System
+2.  Componentes
+3.  Dashboard
+4.  Projetos
+5.  Serviços
+6.  Ambientes
+7.  Execuções
+8.  Logs
+9.  Histórico
 10. Configurações
 11. Fluxos
 12. Responsividade

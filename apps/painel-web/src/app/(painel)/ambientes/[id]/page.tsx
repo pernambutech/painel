@@ -6,13 +6,26 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { ambientesApi } from '@/lib/api';
+import { ambientesApi, agentesApi } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Input } from '@/components/ui/Input';
-import { ArrowLeft, Monitor, Server, Clock, Cpu, Edit3, Trash2, X, Check } from 'lucide-react';
+import {
+  ArrowLeft,
+  Monitor,
+  Clock,
+  Cpu,
+  Edit3,
+  Trash2,
+  X,
+  Check,
+  Wifi,
+  WifiOff,
+  Copy,
+  Terminal,
+} from 'lucide-react';
 import type { Ambiente } from '@/types';
 
 export default function AmbienteDetalhePage() {
@@ -30,6 +43,9 @@ export default function AmbienteDetalhePage() {
   const [tipoEditado, setTipoEditado] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  const [tokenAgente, setTokenAgente] = useState('');
+  const [carregandoToken, setCarregandoToken] = useState(false);
+  const [tokenCopiado, setTokenCopiado] = useState(false);
 
   useEffect(() => {
     if (organizacao && ambienteId) {
@@ -85,6 +101,38 @@ export default function AmbienteDetalhePage() {
     }
   };
 
+  const gerarTokenAgente = async () => {
+    if (!organizacao || !ambiente) return;
+
+    try {
+      setCarregandoToken(true);
+      const dados = await agentesApi.gerarToken(organizacao.id, ambiente.id);
+      setTokenAgente(dados.token);
+    } catch (err) {
+      setErro('Erro ao gerar token do agente.');
+    } finally {
+      setCarregandoToken(false);
+    }
+  };
+
+  const copiarToken = async () => {
+    try {
+      await navigator.clipboard.writeText(tokenAgente);
+      setTokenCopiado(true);
+      setTimeout(() => setTokenCopiado(false), 2000);
+    } catch (err) {
+      // Fallback para navegadores mais antigos
+      const textArea = document.createElement('textarea');
+      textArea.value = tokenAgente;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setTokenCopiado(true);
+      setTimeout(() => setTokenCopiado(false), 2000);
+    }
+  };
+
   const obterIconeSO = (so: string) => {
     switch (so.toLowerCase()) {
       case 'windows':
@@ -95,6 +143,47 @@ export default function AmbienteDetalhePage() {
         return '🍎';
       default:
         return '💻';
+    }
+  };
+
+  const obterVarianteAgente = (status: string | undefined) => {
+    switch (status) {
+      case 'online':
+        return 'online';
+      case 'offline':
+        return 'offline';
+      case 'manutencao':
+        return 'aviso';
+      default:
+        return 'neutro';
+    }
+  };
+
+  const obterTextoAgente = (status: string | undefined) => {
+    switch (status) {
+      case 'online':
+        return 'Conectado';
+      case 'offline':
+        return 'Desconectado';
+      case 'manutencao':
+        return 'Manutenção';
+      default:
+        return 'Desconhecido';
+    }
+  };
+
+  const obterTempoHeartbeat = (agente: Ambiente['agente']) => {
+    if (!agente?.ultimoHeartbeat) return null;
+    const agora = new Date();
+    const heartbeat = new Date(agente.ultimoHeartbeat);
+    const diferencaSegundos = Math.floor((agora.getTime() - heartbeat.getTime()) / 1000);
+
+    if (diferencaSegundos < 60) {
+      return `Há ${diferencaSegundos}s`;
+    } else if (diferencaSegundos < 3600) {
+      return `Há ${Math.floor(diferencaSegundos / 60)}min`;
+    } else {
+      return `Há ${Math.floor(diferencaSegundos / 3600)}h`;
     }
   };
 
@@ -122,6 +211,9 @@ export default function AmbienteDetalhePage() {
       </div>
     );
   }
+
+  const agente = ambiente.agente;
+  const agenteOnline = agente?.status === 'online';
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -180,7 +272,9 @@ export default function AmbienteDetalhePage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Badge variante="offline">Offline</Badge>
+            <Badge variante={obterVarianteAgente(agente?.status)}>
+              {obterTextoAgente(agente?.status)}
+            </Badge>
             <Button
               variante="perigo"
               tamanho="pequeno"
@@ -199,28 +293,22 @@ export default function AmbienteDetalhePage() {
         </div>
       )}
 
-      {/* Informações do ambiente */}
+      {/* Seção 1 - Informações do Ambiente */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-zinc-800">
-              <Server className="w-4 h-4 text-zinc-400" />
+              {agenteOnline ? (
+                <Wifi className="w-4 h-4 text-emerald-500" />
+              ) : (
+                <WifiOff className="w-4 h-4 text-zinc-400" />
+              )}
             </div>
             <div>
-              <p className="text-xs text-zinc-500">Status</p>
-              <p className="text-sm font-medium text-zinc-200">Offline</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-zinc-800">
-              <Cpu className="w-4 h-4 text-zinc-400" />
-            </div>
-            <div>
-              <p className="text-xs text-zinc-500">Agente</p>
-              <p className="text-sm font-medium text-zinc-200">Não conectado</p>
+              <p className="text-xs text-zinc-500">Status do Agente</p>
+              <p className="text-sm font-medium text-zinc-200">
+                {obterTextoAgente(agente?.status)}
+              </p>
             </div>
           </div>
         </Card>
@@ -229,6 +317,20 @@ export default function AmbienteDetalhePage() {
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-zinc-800">
               <Clock className="w-4 h-4 text-zinc-400" />
+            </div>
+            <div>
+              <p className="text-xs text-zinc-500">Último Heartbeat</p>
+              <p className="text-sm font-medium text-zinc-200">
+                {agente?.ultimoHeartbeat ? obterTempoHeartbeat(agente) : 'Nenhum'}
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-zinc-800">
+              <Cpu className="w-4 h-4 text-zinc-400" />
             </div>
             <div>
               <p className="text-xs text-zinc-500">Criado em</p>
@@ -240,15 +342,100 @@ export default function AmbienteDetalhePage() {
         </Card>
       </div>
 
-      {/* Serviços */}
+      {/* Seção 2 - Agente */}
+      {agente ? (
+        <Card>
+          <h2 className="text-lg font-semibold text-zinc-100 mb-4">Agente</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-zinc-500 mb-1">ID do Agente</p>
+              <p className="text-sm font-mono text-zinc-300">{agente.id}</p>
+            </div>
+            <div>
+              <p className="text-xs text-zinc-500 mb-1">Versão</p>
+              <p className="text-sm text-zinc-300">{agente.versao || 'Desconhecida'}</p>
+            </div>
+            {agenteOnline && (
+              <>
+                <div>
+                  <p className="text-xs text-zinc-500 mb-1">CPU</p>
+                  <p className="text-sm text-zinc-300">{agente.cpuUso?.toFixed(1) || '0'}%</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500 mb-1">Memória</p>
+                  <p className="text-sm text-zinc-300">
+                    {agente.memoriaUso && agente.memoriaTotal
+                      ? `${((agente.memoriaUso / agente.memoriaTotal) * 100).toFixed(1)}%`
+                      : 'N/A'}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </Card>
+      ) : (
+        <Card>
+          <h2 className="text-lg font-semibold text-zinc-100 mb-4">Agente</h2>
+          <div className="text-center py-6">
+            <Terminal className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+            <p className="text-sm text-zinc-500 mb-4">Agente não instalado neste ambiente.</p>
+
+            {!tokenAgente ? (
+              <Button onClick={gerarTokenAgente} carregando={carregandoToken}>
+                Gerar Token de Instalação
+              </Button>
+            ) : (
+              <div className="max-w-lg mx-auto space-y-4">
+                <div className="p-4 rounded-lg bg-zinc-800 border border-zinc-700">
+                  <p className="text-xs text-zinc-500 mb-2">1. Instale o agente:</p>
+                  <code className="block text-sm text-emerald-400 font-mono mb-3">
+                    npm install -g @painel/agente
+                  </code>
+
+                  <p className="text-xs text-zinc-500 mb-2">2. Execute com o token:</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-sm text-zinc-300 font-mono bg-zinc-900 p-2 rounded overflow-x-auto">
+                      AGENT_TOKEN={tokenAgente.slice(0, 20)}... AGENT_API_URL=http://localhost:3001
+                      painel-agente
+                    </code>
+                    <Button variante="fantasma" tamanho="pequeno" onClick={copiarToken}>
+                      {tokenCopiado ? (
+                        <Check className="w-4 h-4 text-emerald-500" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <Button variante="fantasma" tamanho="pequeno" onClick={() => setTokenAgente('')}>
+                  Gerar novo token
+                </Button>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* Seção 3 - Serviços */}
       <Card>
         <h2 className="text-lg font-semibold text-zinc-100 mb-4">Serviços</h2>
         <div className="text-center py-8">
           <Monitor className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
           <p className="text-sm text-zinc-500">Nenhum serviço configurado neste ambiente.</p>
           <p className="text-xs text-zinc-600 mt-1">
-            Conecte o agente para começar a gerenciar serviços.
+            {agenteOnline
+              ? 'Adicione um projeto para começar.'
+              : 'Conecte o agente para gerenciar serviços.'}
           </p>
+        </div>
+      </Card>
+
+      {/* Seção 4 - Métricas (Placeholder) */}
+      <Card>
+        <h2 className="text-lg font-semibold text-zinc-100 mb-4">Métricas do Sistema</h2>
+        <div className="text-center py-6">
+          <p className="text-sm text-zinc-500">Métricas detalhadas disponíveis em breve.</p>
         </div>
       </Card>
 

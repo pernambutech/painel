@@ -46,6 +46,18 @@ export class AmbientesServico {
 
     const ambientes = await this.prisma.ambiente.findMany({
       where: { organizacaoId },
+      include: {
+        agentes: {
+          where: { ativo: true },
+          select: {
+            id: true,
+            status: true,
+            ultimoHeartbeat: true,
+            versao: true,
+          },
+          take: 1,
+        },
+      },
       orderBy: { criadoEm: 'asc' },
     });
 
@@ -68,6 +80,24 @@ export class AmbientesServico {
       where: {
         id,
         organizacaoId,
+      },
+      include: {
+        agentes: {
+          where: { ativo: true },
+          select: {
+            id: true,
+            nome: true,
+            status: true,
+            ultimoHeartbeat: true,
+            versao: true,
+            sistemaOperacional: true,
+            cpuUso: true,
+            memoriaUso: true,
+            memoriaTotal: true,
+            uptime: true,
+          },
+          take: 1,
+        },
       },
     });
 
@@ -166,6 +196,9 @@ export class AmbientesServico {
   // ===========================================
 
   private mapearResposta(ambiente: any): RespostaAmbiente {
+    // Extrair dados do agente se existir
+    const agente = ambiente.agentes?.[0];
+
     return {
       id: ambiente.id,
       nome: ambiente.nome,
@@ -174,6 +207,20 @@ export class AmbientesServico {
       organizacaoId: ambiente.organizacaoId,
       ativo: ambiente.ativo,
       criadoEm: ambiente.criadoEm,
+      agente: agente
+        ? {
+            id: agente.id,
+            nome: agente.nome,
+            status: agente.status,
+            ultimoHeartbeat: agente.ultimoHeartbeat,
+            versao: agente.versao,
+            sistemaOperacional: agente.sistemaOperacional,
+            cpuUso: agente.cpuUso,
+            memoriaUso: agente.memoriaUso,
+            memoriaTotal: agente.memoriaTotal,
+            uptime: agente.uptime,
+          }
+        : null,
     };
   }
 }

@@ -54,12 +54,40 @@ export interface Ambiente {
   organizacaoId: string;
   ativo: boolean;
   criadoEm: string;
+  agente?: Agente | null;
 }
 
 export interface CriarAmbienteDto {
   nome: string;
   tipo?: string;
   sistemaOperacional?: string;
+}
+
+// ===========================================
+// AGENTE
+// ===========================================
+
+export interface Agente {
+  id: string;
+  nome: string;
+  status: string; // online, offline, manutencao
+  ultimoHeartbeat: string | null;
+  versao: string | null;
+  sistemaOperacional: string | null;
+  cpuUso: number | null;
+  memoriaUso: number | null;
+  memoriaTotal: number | null;
+  uptime: number | null;
+  ambienteId: string;
+  organizacaoId: string;
+  ativo: boolean;
+  criadoEm: string;
+}
+
+export interface TokenAgente {
+  token: string;
+  agenteId: string;
+  ambienteId: string;
 }
 
 // ===========================================
