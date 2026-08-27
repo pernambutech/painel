@@ -34,23 +34,27 @@ painel/
 ## Instalação
 
 1. Clone o repositório:
+
 ```bash
 git clone <url-do-repositorio>
 cd painel
 ```
 
 2. Instale as dependências:
+
 ```bash
 npm install
 ```
 
 3. Configure as variáveis de ambiente:
+
 ```bash
 cp .env.example .env
 # Edite o arquivo .env com suas configurações
 ```
 
 4. Execute o setup inicial:
+
 ```bash
 npm run setup
 ```
@@ -58,11 +62,13 @@ npm run setup
 ## Desenvolvimento
 
 ### Iniciar todos os serviços
+
 ```bash
 npm run dev
 ```
 
 ### Iniciar apenas um serviço
+
 ```bash
 # Painel Web
 npm run dev -w apps/painel-web
@@ -75,16 +81,19 @@ npm run dev -w apps/agente
 ```
 
 ### Build
+
 ```bash
 npm run build
 ```
 
 ### Lint
+
 ```bash
 npm run lint
 ```
 
 ### Formatação
+
 ```bash
 npm run format
 ```
