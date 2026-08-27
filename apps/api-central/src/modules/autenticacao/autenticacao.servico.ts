@@ -32,17 +32,40 @@ export class AutenticacaoServico {
     const salt = await bcrypt.genSalt(10);
     const senhaHash = await bcrypt.hash(dados.senha, salt);
 
-    // Criar usuário
-    const usuario = await this.prisma.usuario.create({
-      data: {
-        nome: dados.nome,
-        email: dados.email,
-        senha: senhaHash,
-      },
+    // Criar usuário e organização padrão em uma transação
+    const resultado = await this.prisma.$transaction(async (tx) => {
+      // Criar usuário
+      const usuario = await tx.usuario.create({
+        data: {
+          nome: dados.nome,
+          email: dados.email,
+          senha: senhaHash,
+        },
+      });
+
+      // Criar organização padrão com o nome do usuário
+      const slug = this.gerarSlug(dados.nome);
+      const organizacao = await tx.organizacao.create({
+        data: {
+          nome: `${dados.nome}'s Workspace`,
+          slug,
+        },
+      });
+
+      // Adicionar usuário como proprietário
+      await tx.membroOrganizacao.create({
+        data: {
+          usuarioId: usuario.id,
+          organizacaoId: organizacao.id,
+          papel: 'proprietario',
+        },
+      });
+
+      return { usuario, organizacao };
     });
 
     // Gerar token
-    return this.gerarToken(usuario.id, usuario.nome, usuario.email);
+    return this.gerarToken(resultado.usuario.id, resultado.usuario.nome, resultado.usuario.email);
   }
 
   // ===========================================
@@ -90,6 +113,21 @@ export class AutenticacaoServico {
     }
 
     return usuario;
+  }
+
+  // ===========================================
+  // GERAR SLUG
+  // ===========================================
+
+  private gerarSlug(nome: string): string {
+    return nome
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
   }
 
   // ===========================================
