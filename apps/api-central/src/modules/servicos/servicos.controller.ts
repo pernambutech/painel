@@ -104,4 +104,48 @@ export class ServicosController {
 
     return { mensagem: 'Serviço removido com sucesso' };
   }
+
+  // ===========================================
+  // CONTROLE DE SERVIÇOS (via PM2 no agente)
+  // ===========================================
+
+  @Post('projetos/:projetoId/servicos/:id/iniciar')
+  async iniciar(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Request() req,
+  ) {
+    return this.servicosServico.iniciar(id, projetoId, organizacaoId, req.user.id);
+  }
+
+  @Post('projetos/:projetoId/servicos/:id/parar')
+  async parar(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Request() req,
+  ) {
+    return this.servicosServico.parar(id, projetoId, organizacaoId, req.user.id);
+  }
+
+  @Post('projetos/:projetoId/servicos/:id/reiniciar')
+  async reiniciar(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Request() req,
+  ) {
+    return this.servicosServico.reiniciar(id, projetoId, organizacaoId, req.user.id);
+  }
+
+  @Get('projetos/:projetoId/servicos/:id/status')
+  async obterStatus(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Request() req,
+  ) {
+    return this.servicosServico.obterStatusServico(id, projetoId, organizacaoId, req.user.id);
+  }
 }

@@ -14,7 +14,12 @@ export type TipoComando =
   | 'OBTER_STATUS'
   | 'LISTAR_SERVICOS'
   | 'LISTAR_PORTAS'
-  | 'EXECUTAR_COMANDO';
+  | 'EXECUTAR_COMANDO'
+  | 'INICIAR_SERVICO'
+  | 'PARAR_SERVICO'
+  | 'REINICIAR_SERVICO'
+  | 'OBTER_STATUS_SERVICO'
+  | 'OBTER_LOGS_SERVICO';
 
 // ===========================================
 // STATUS DO COMANDO

@@ -6,6 +6,8 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaServico } from '../database/prisma.servico';
 import {
@@ -13,10 +15,15 @@ import {
   AtualizarServicoDto,
   RespostaServico,
 } from './dto/servico.dto';
+import { ComandosServico } from '../comunicacao/comandos.servico';
 
 @Injectable()
 export class ServicosServico {
-  constructor(private prisma: PrismaServico) {}
+  constructor(
+    private prisma: PrismaServico,
+    @Inject(forwardRef(() => ComandosServico))
+    private comandosServico: ComandosServico,
+  ) {}
 
   // ===========================================
   // CRIAR SERVIÇO
@@ -224,6 +231,148 @@ export class ServicosServico {
     await this.prisma.servico.delete({
       where: { id },
     });
+  }
+
+  // ===========================================
+  // CONTROLE DE SERVIÇOS (via agente + PM2)
+  // ===========================================
+
+  async iniciar(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente } = await this.obterServicoEAgente(
+      id,
+      projetoId,
+      organizacaoId,
+      usuarioId,
+    );
+
+    if (!servico.diretorio || !servico.comando) {
+      throw new BadRequestException('Serviço sem diretório ou comando configurado');
+    }
+
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'INICIAR_SERVICO',
+      dados: {
+        servicoId: servico.id,
+        configuracao: {
+          id: servico.id,
+          nome: servico.nome,
+          diretorio: servico.diretorio,
+          comando: servico.comando,
+          porta: servico.porta ?? undefined,
+          nomePm2: servico.id,
+        },
+      },
+    });
+
+    return (comando.resultado as Record<string, unknown>) || { mensagem: 'Serviço iniciado' };
+  }
+
+  async parar(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente } = await this.obterServicoEAgente(
+      id,
+      projetoId,
+      organizacaoId,
+      usuarioId,
+    );
+
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'PARAR_SERVICO',
+      dados: { servicoId: servico.id },
+    });
+
+    return (comando.resultado as Record<string, unknown>) || { mensagem: 'Serviço parado' };
+  }
+
+  async reiniciar(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente } = await this.obterServicoEAgente(
+      id,
+      projetoId,
+      organizacaoId,
+      usuarioId,
+    );
+
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'REINICIAR_SERVICO',
+      dados: { servicoId: servico.id },
+    });
+
+    return (comando.resultado as Record<string, unknown>) || { mensagem: 'Serviço reiniciado' };
+  }
+
+  async obterStatusServico(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente } = await this.obterServicoEAgente(
+      id,
+      projetoId,
+      organizacaoId,
+      usuarioId,
+    );
+
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'OBTER_STATUS_SERVICO',
+      dados: { servicoId: servico.id },
+    });
+
+    return (comando.resultado as Record<string, unknown>) || { status: 'desconhecido' };
+  }
+
+  private async obterServicoEAgente(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+  ): Promise<{ servico: RespostaServico & { diretorio: string | null; comando: string | null }; agente: { id: string } }> {
+    await this.verificarMembro(organizacaoId, usuarioId);
+    await this.verificarProjeto(projetoId, organizacaoId);
+
+    const servico = await this.prisma.servico.findFirst({
+      where: { id, projetoId, organizacaoId },
+    });
+
+    if (!servico) {
+      throw new NotFoundException('Serviço não encontrado');
+    }
+
+    if (!servico.ambienteId) {
+      throw new BadRequestException('Serviço sem ambiente associado');
+    }
+
+    const agente = await this.prisma.agente.findFirst({
+      where: {
+        ambienteId: servico.ambienteId,
+        organizacaoId,
+        ativo: true,
+      },
+    });
+
+    if (!agente) {
+      throw new NotFoundException('Nenhum agente encontrado para o ambiente do serviço');
+    }
+
+    return { servico: servico as any, agente };
   }
 
   // ===========================================

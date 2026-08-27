@@ -4,6 +4,7 @@
 import { io, Socket } from 'socket.io-client';
 import * as os from 'os';
 import { execSync } from 'child_process';
+import { AdaptadorPm2 } from './processos';
 
 // ===========================================
 // CONFIGURAÇÃO
@@ -28,6 +29,7 @@ let socket: Socket | null = null;
 let errosConsecutivos = 0;
 let intervaloHeartbeat: NodeJS.Timeout | null = null;
 let inicioAgent: Date = new Date();
+const adaptadorPm2 = new AdaptadorPm2();
 
 // ===========================================
 // IDENTIFICAÇÃO DA MÁQUINA
@@ -285,6 +287,58 @@ async function processarComando(comando: any): Promise<void> {
       case 'LISTAR_PORTAS':
         resultado = { portas: listarPortasEmUso() };
         break;
+
+      case 'INICIAR_SERVICO': {
+        const configuracao = (comando.dados as any)?.configuracao;
+        if (!configuracao) throw new Error('Configuração do serviço não informada');
+        // Garantir que o adaptador está pronto
+        const resultadoPm2 = await adaptadorPm2.iniciar({
+          id: configuracao.id,
+          nome: configuracao.nome,
+          diretorio: configuracao.diretorio,
+          comando: configuracao.comando,
+          porta: configuracao.porta,
+          nomePm2: configuracao.nomePm2 || configuracao.id,
+        });
+        if (!resultadoPm2.sucesso) throw new Error(resultadoPm2.erro || 'Falha ao iniciar serviço');
+        resultado = { mensagem: 'Serviço iniciado', ...resultadoPm2 } as any;
+        break;
+      }
+
+      case 'PARAR_SERVICO': {
+        const servicoId = (comando.dados as any)?.servicoId;
+        if (!servicoId) throw new Error('ID do serviço não informado');
+        const resultadoPm2 = await adaptadorPm2.parar(servicoId);
+        if (!resultadoPm2.sucesso) throw new Error(resultadoPm2.erro || 'Falha ao parar serviço');
+        resultado = { mensagem: 'Serviço parado', ...resultadoPm2 } as any;
+        break;
+      }
+
+      case 'REINICIAR_SERVICO': {
+        const servicoId = (comando.dados as any)?.servicoId;
+        if (!servicoId) throw new Error('ID do serviço não informado');
+        const resultadoPm2 = await adaptadorPm2.reiniciar(servicoId);
+        if (!resultadoPm2.sucesso) throw new Error(resultadoPm2.erro || 'Falha ao reiniciar serviço');
+        resultado = { mensagem: 'Serviço reiniciado', ...resultadoPm2 } as any;
+        break;
+      }
+
+      case 'OBTER_STATUS_SERVICO': {
+        const servicoId = (comando.dados as any)?.servicoId;
+        if (!servicoId) throw new Error('ID do serviço não informado');
+        const status = await adaptadorPm2.obterStatus(servicoId);
+        resultado = status as unknown as Record<string, unknown>;
+        break;
+      }
+
+      case 'OBTER_LOGS_SERVICO': {
+        const servicoId = (comando.dados as any)?.servicoId;
+        if (!servicoId) throw new Error('ID do serviço não informado');
+        const opcoes = (comando.dados as any)?.opcoes || {};
+        const logs = await adaptadorPm2.obterLogs(servicoId, opcoes);
+        resultado = { logs } as unknown as Record<string, unknown>;
+        break;
+      }
 
       default:
         throw new Error(`Comando não suportado: ${comando.tipo}`);

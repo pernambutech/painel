@@ -14,6 +14,7 @@ import { BadgeSimples } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Input } from '@/components/ui/Input';
 import {
+  Activity,
   ArrowLeft,
   Archive,
   ArchiveRestore,
@@ -23,8 +24,11 @@ import {
   FolderKanban,
   HardDrive,
   Network,
+  Play,
   Plus,
+  RotateCw,
   Server,
+  Square,
   Terminal,
   Trash2,
   X,
@@ -48,6 +52,8 @@ export default function ProjetoDetalhePage() {
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [carregandoServicos, setCarregandoServicos] = useState(true);
   const [servicoParaRemover, setServicoParaRemover] = useState<Servico | null>(null);
+  const [statusPorServico, setStatusPorServico] = useState<Record<string, any>>({});
+  const [controleCarregando, setControleCarregando] = useState<string | null>(null);
 
   useEffect(() => {
     if (organizacao && projetoId) {
@@ -62,10 +68,45 @@ export default function ProjetoDetalhePage() {
       setCarregandoServicos(true);
       const dados = await servicosApi.listarPorProjeto(organizacao.id, projetoId);
       setServicos(dados || []);
+      // Buscar status de cada serviço em paralelo (não bloqueante)
+      dados?.forEach((s: Servico) => {
+        servicosApi
+          .obterStatus(organizacao.id, projetoId, s.id)
+          .then((status) => {
+            setStatusPorServico((prev) => ({ ...prev, [s.id]: status }));
+          })
+          .catch(() => {
+            setStatusPorServico((prev) => ({ ...prev, [s.id]: { status: 'desconhecido' } }));
+          });
+      });
     } catch {
       // Silencioso — lista vazia
     } finally {
       setCarregandoServicos(false);
+    }
+  };
+
+  const controlarServico = async (
+    servicoId: string,
+    acao: 'iniciar' | 'parar' | 'reiniciar',
+  ) => {
+    if (!organizacao) return;
+    const acaoApi =
+      acao === 'iniciar'
+        ? servicosApi.iniciar
+        : acao === 'parar'
+          ? servicosApi.parar
+          : servicosApi.reiniciar;
+    try {
+      setControleCarregando(`${acao}-${servicoId}`);
+      await acaoApi(organizacao.id, projetoId, servicoId);
+      // Atualizar status após ação
+      const status = await servicosApi.obterStatus(organizacao.id, projetoId, servicoId);
+      setStatusPorServico((prev) => ({ ...prev, [servicoId]: status }));
+    } catch (err: any) {
+      setErro(err.response?.data?.message || `Erro ao ${acao} serviço.`);
+    } finally {
+      setControleCarregando(null);
     }
   };
 
@@ -368,50 +409,108 @@ export default function ProjetoDetalhePage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {servicos.map((servico) => (
-              <div
-                key={servico.id}
-                className="flex flex-col gap-3 rounded-lg border border-[#2a2a32] bg-[#17171c] p-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium text-zinc-100">{servico.nome}</h3>
-                    <BadgeSimples variante="neutro">
-                      {tipoLabels[servico.tipo] || servico.tipo}
-                    </BadgeSimples>
+            {servicos.map((servico) => {
+              const status = statusPorServico[servico.id];
+              const estado = status?.status || 'desconhecido';
+              const varianteStatus =
+                estado === 'online'
+                  ? 'online'
+                  : estado === 'offline'
+                    ? 'offline'
+                    : estado === 'erro'
+                      ? 'erro'
+                      : 'neutro';
+              const carregandoAcao = controleCarregando?.endsWith(servico.id);
+              return (
+                <div
+                  key={servico.id}
+                  className="flex flex-col gap-3 rounded-lg border border-[#2a2a32] bg-[#17171c] p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-zinc-100">{servico.nome}</h3>
+                      <BadgeSimples variante="neutro">
+                        {tipoLabels[servico.tipo] || servico.tipo}
+                      </BadgeSimples>
+                      <BadgeSimples variante={varianteStatus as any}>
+                        {estado}
+                      </BadgeSimples>
+                      {status?.pid && (
+                        <span className="text-xs text-zinc-500">PID {status.pid}</span>
+                      )}
+                      {status?.reinicios !== undefined && status.reinicios > 0 && (
+                        <span className="text-xs text-amber-400">{status.reinicios} reinícios</span>
+                      )}
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-zinc-500">
+                      {servico.diretorio && (
+                        <span className="flex items-center gap-1">
+                          <HardDrive className="w-3 h-3" /> {servico.diretorio}
+                        </span>
+                      )}
+                      {servico.comando && (
+                        <span className="flex items-center gap-1">
+                          <Terminal className="w-3 h-3" /> {servico.comando}
+                        </span>
+                      )}
+                      {servico.porta && (
+                        <span className="flex items-center gap-1">
+                          <Network className="w-3 h-3" /> :{servico.porta}
+                        </span>
+                      )}
+                      {servico.ambiente && (
+                        <span>Ambiente: {servico.ambiente.nome}</span>
+                      )}
+                      {status?.uptimeMs !== undefined && (
+                        <span className="flex items-center gap-1">
+                          <Activity className="w-3 h-3" /> {Math.floor(status.uptimeMs / 1000)}s ativo
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-zinc-500">
-                    {servico.diretorio && (
-                      <span className="flex items-center gap-1">
-                        <HardDrive className="w-3 h-3" /> {servico.diretorio}
-                      </span>
-                    )}
-                    {servico.comando && (
-                      <span className="flex items-center gap-1">
-                        <Terminal className="w-3 h-3" /> {servico.comando}
-                      </span>
-                    )}
-                    {servico.porta && (
-                      <span className="flex items-center gap-1">
-                        <Network className="w-3 h-3" /> :{servico.porta}
-                      </span>
-                    )}
-                    {servico.ambiente && (
-                      <span>Ambiente: {servico.ambiente.nome}</span>
-                    )}
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variante="fantasma"
+                      tamanho="pequeno"
+                      title="Iniciar"
+                      onClick={() => controlarServico(servico.id, 'iniciar')}
+                      carregando={controleCarregando === `iniciar-${servico.id}`}
+                      disabled={!!carregandoAcao}
+                    >
+                      <Play className="w-4 h-4 text-emerald-400" />
+                    </Button>
+                    <Button
+                      variante="fantasma"
+                      tamanho="pequeno"
+                      title="Parar"
+                      onClick={() => controlarServico(servico.id, 'parar')}
+                      carregando={controleCarregando === `parar-${servico.id}`}
+                      disabled={!!carregandoAcao}
+                    >
+                      <Square className="w-4 h-4 text-amber-400" />
+                    </Button>
+                    <Button
+                      variante="fantasma"
+                      tamanho="pequeno"
+                      title="Reiniciar"
+                      onClick={() => controlarServico(servico.id, 'reiniciar')}
+                      carregando={controleCarregando === `reiniciar-${servico.id}`}
+                      disabled={!!carregandoAcao}
+                    >
+                      <RotateCw className="w-4 h-4 text-blue-400" />
+                    </Button>
+                    <div className="ml-1 h-6 w-px bg-[#2a2a32]" />
+                    <Button
+                      variante="fantasma"
+                      tamanho="pequeno"
+                      onClick={() => setServicoParaRemover(servico)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variante="fantasma"
-                    tamanho="pequeno"
-                    onClick={() => setServicoParaRemover(servico)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>

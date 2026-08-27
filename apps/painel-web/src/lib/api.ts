@@ -316,6 +316,38 @@ export const servicosApi = {
     );
     return resposta.data;
   },
+
+  // Iniciar serviço (via PM2 no agente)
+  iniciar: async (organizacaoId: string, projetoId: string, id: string) => {
+    const resposta = await api.post(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/iniciar`,
+    );
+    return resposta.data;
+  },
+
+  // Parar serviço
+  parar: async (organizacaoId: string, projetoId: string, id: string) => {
+    const resposta = await api.post(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/parar`,
+    );
+    return resposta.data;
+  },
+
+  // Reiniciar serviço
+  reiniciar: async (organizacaoId: string, projetoId: string, id: string) => {
+    const resposta = await api.post(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/reiniciar`,
+    );
+    return resposta.data;
+  },
+
+  // Obter status do serviço no PM2
+  obterStatus: async (organizacaoId: string, projetoId: string, id: string) => {
+    const resposta = await api.get(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/status`,
+    );
+    return resposta.data;
+  },
 };
 
 // ===========================================
