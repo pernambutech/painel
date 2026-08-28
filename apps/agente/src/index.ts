@@ -28,7 +28,7 @@ const CONFIGURACAO = {
 let socket: Socket | null = null;
 let errosConsecutivos = 0;
 let intervaloHeartbeat: NodeJS.Timeout | null = null;
-let inicioAgent: Date = new Date();
+const inicioAgent: Date = new Date();
 const adaptadorPm2 = new AdaptadorPm2();
 
 // ===========================================
@@ -80,7 +80,10 @@ function listarPortasEmUso(): { porta: number; processo: string; pid: number }[]
     if (plataforma === 'win32') {
       saida = execSync('netstat -ano | findstr LISTENING', { encoding: 'utf-8', timeout: 10000 });
     } else {
-      saida = execSync('ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null', { encoding: 'utf-8', timeout: 10000 });
+      saida = execSync('ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null', {
+        encoding: 'utf-8',
+        timeout: 10000,
+      });
     }
 
     const portas: { porta: number; processo: string; pid: number }[] = [];
@@ -320,7 +323,8 @@ async function processarComando(comando: any): Promise<void> {
         const pm2Nome = (comando.dados as any)?.pm2Nome || servicoId;
         if (!servicoId) throw new Error('ID do serviço não informado');
         const resultadoPm2 = await adaptadorPm2.reiniciar(pm2Nome);
-        if (!resultadoPm2.sucesso) throw new Error(resultadoPm2.erro || 'Falha ao reiniciar serviço');
+        if (!resultadoPm2.sucesso)
+          throw new Error(resultadoPm2.erro || 'Falha ao reiniciar serviço');
         resultado = { mensagem: 'Serviço reiniciado', ...resultadoPm2 } as any;
         break;
       }

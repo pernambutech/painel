@@ -156,6 +156,13 @@ export interface AtualizarServicoDto {
   ambienteId?: string | null;
 }
 
+export interface LogServico {
+  timestamp: string;
+  nivel: 'info' | 'warn' | 'error' | 'debug';
+  mensagem: string;
+  fonte?: 'stdout' | 'stderr';
+}
+
 // ===========================================
 // EXECUÇÃO / HISTÓRICO
 // ===========================================

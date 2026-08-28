@@ -3,7 +3,7 @@
 
 import { Controller, Get, Post, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { AgentesServico } from './agentes.servico';
-import { ComandosServico, EnviarComandoDto, TipoComando } from '../comunicacao/comandos.servico';
+import { ComandosServico, TipoComando } from '../comunicacao/comandos.servico';
 import { JwtAuthGuard } from '../autenticacao/jwt-auth.guard';
 
 @Controller('organizacoes/:organizacaoId/agentes')

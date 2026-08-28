@@ -53,26 +53,37 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
       await this.inicializar();
       const nome = configuracao.nomePm2 || configuracao.id;
       const shell = os.platform() === 'win32' ? 'cmd.exe' : 'sh';
-      const argumentosShell = os.platform() === 'win32'
-        ? ['/d', '/s', '/c', configuracao.comando, ...(configuracao.argumentos || [])]
-        : ['-lc', [configuracao.comando, ...(configuracao.argumentos || [])].join(' ')];
-      // Injetar a porta indicada no painel como variável de ambiente PORT
-      // A maioria dos frameworks (Next.js, NestJS, Vite, Express) respeita process.env.PORT
+      const argumentosShell =
+        os.platform() === 'win32'
+          ? ['/d', '/s', '/c', configuracao.comando, ...(configuracao.argumentos || [])]
+          : ['-lc', [configuracao.comando, ...(configuracao.argumentos || [])].join(' ')];
+      // Injetar a porta indicada no painel como variável de ambiente
+      // Cobre tanto convenção em inglês (PORT) quanto em português (PORTA)
+      // ex: Pernambutech usa process.env.PORTA, Next.js/Nest padrão usa PORT
       const env = {
         ...(configuracao.variaveisAmbiente || {}),
-        ...(configuracao.porta ? { PORT: String(configuracao.porta) } : {}),
+        ...(configuracao.porta
+          ? {
+              PORT: String(configuracao.porta),
+              PORTA: String(configuracao.porta),
+              APP_PORT: String(configuracao.porta),
+            }
+          : {}),
       };
       const processo = await this.executar<ProcessoPm2>((concluir) => {
-        pm2.start({
-          name: nome,
-          script: shell,
-          args: argumentosShell,
-          cwd: configuracao.diretorio,
-          env,
-          autorestart: true,
-          max_restarts: configuracao.maxReinicios,
-          restart_delay: configuracao.restartDelay,
-        }, concluir);
+        pm2.start(
+          {
+            name: nome,
+            script: shell,
+            args: argumentosShell,
+            cwd: configuracao.diretorio,
+            env,
+            autorestart: true,
+            max_restarts: configuracao.maxReinicios,
+            restart_delay: configuracao.restartDelay,
+          },
+          concluir,
+        );
       });
 
       return {
@@ -107,7 +118,9 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
   async obterTodosStatus(): Promise<StatusProcesso[]> {
     await this.inicializar();
     const processos = await this.executar<ProcessoPm2[]>((concluir) => pm2.list(concluir));
-    return (processos || []).map((processo) => this.mapearStatus(processo.name || String(processo.pm_id), processo));
+    return (processos || []).map((processo) =>
+      this.mapearStatus(processo.name || String(processo.pm_id), processo),
+    );
   }
 
   async obterLogs(id: string, opcoes: OpcoesLogs = {}): Promise<LogProcesso[]> {
@@ -117,18 +130,27 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
 
     const linhas = opcoes.linhas || 100;
     const entradas: LogProcesso[] = [];
-    const arquivos = opcoes.tipo === 'stderr'
-      ? [['stderr', processo.pm2_env.pm_err_log_path]]
-      : opcoes.tipo === 'stdout'
-        ? [['stdout', processo.pm2_env.pm_out_log_path]]
-        : [['stdout', processo.pm2_env.pm_out_log_path], ['stderr', processo.pm2_env.pm_err_log_path]];
+    const arquivos =
+      opcoes.tipo === 'stderr'
+        ? [['stderr', processo.pm2_env.pm_err_log_path]]
+        : opcoes.tipo === 'stdout'
+          ? [['stdout', processo.pm2_env.pm_out_log_path]]
+          : [
+              ['stdout', processo.pm2_env.pm_out_log_path],
+              ['stderr', processo.pm2_env.pm_err_log_path],
+            ];
 
     for (const [fonte, caminho] of arquivos) {
       if (!caminho) continue;
       try {
         const conteudo = await fs.readFile(caminho, 'utf8');
         for (const mensagem of conteudo.split(/\r?\n/).filter(Boolean).slice(-linhas)) {
-          entradas.push({ timestamp: new Date().toISOString(), nivel: fonte === 'stderr' ? 'error' : 'info', mensagem, fonte: fonte as 'stdout' | 'stderr' });
+          entradas.push({
+            timestamp: new Date().toISOString(),
+            nivel: fonte === 'stderr' ? 'error' : 'info',
+            mensagem,
+            fonte: fonte as 'stdout' | 'stderr',
+          });
         }
       } catch {
         // O arquivo pode ainda não existir para um processo recém-iniciado.
@@ -138,7 +160,10 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
     return entradas.slice(-linhas);
   }
 
-  private async operar(id: string, acao: (nome: string, concluir: (erro: Error | null, processo?: ProcessoPm2) => void) => void): Promise<ResultadoProcesso> {
+  private async operar(
+    id: string,
+    acao: (nome: string, concluir: (erro: Error | null, processo?: ProcessoPm2) => void) => void,
+  ): Promise<ResultadoProcesso> {
     try {
       await this.inicializar();
       await this.executar<ProcessoPm2>((concluir) => acao(id, concluir));
@@ -152,7 +177,9 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
     return (await this.executar<ProcessoPm2[]>((concluir) => pm2.describe(id, concluir))) || [];
   }
 
-  private executar<T>(acao: (concluir: (erro: Error | null, resultado?: T) => void) => void): Promise<T> {
+  private executar<T>(
+    acao: (concluir: (erro: Error | null, resultado?: T) => void) => void,
+  ): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       acao((erro, resultado) => {
         if (erro) reject(erro);
@@ -163,7 +190,14 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
 
   private mapearStatus(id: string, processo: ProcessoPm2): StatusProcesso {
     const ambiente = processo.pm2_env;
-    const status = ambiente?.status === 'online' ? 'online' : ambiente?.status === 'stopped' ? 'offline' : ambiente?.status === 'errored' ? 'erro' : 'desconhecido';
+    const status =
+      ambiente?.status === 'online'
+        ? 'online'
+        : ambiente?.status === 'stopped'
+          ? 'offline'
+          : ambiente?.status === 'errored'
+            ? 'erro'
+            : 'desconhecido';
     const inicio = ambiente?.pm_uptime ? new Date(ambiente.pm_uptime).toISOString() : undefined;
     return {
       processoId: id,
@@ -174,7 +208,9 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
       uptimeMs: ambiente?.pm_uptime ? Date.now() - ambiente.pm_uptime : undefined,
       reinicios: ambiente?.restart_time || 0,
       usoCpu: processo.monit?.cpu,
-      memoriaMb: processo.monit?.memory ? Math.round(processo.monit.memory / 1024 / 1024) : undefined,
+      memoriaMb: processo.monit?.memory
+        ? Math.round(processo.monit.memory / 1024 / 1024)
+        : undefined,
     };
   }
 

@@ -210,10 +210,7 @@ export const projetosApi = {
   },
 
   // Criar projeto
-  criar: async (
-    organizacaoId: string,
-    dados: { nome: string; descricao?: string },
-  ) => {
+  criar: async (organizacaoId: string, dados: { nome: string; descricao?: string }) => {
     const resposta = await api.post(`/organizacoes/${organizacaoId}/projetos`, dados);
     return resposta.data;
   },
@@ -254,9 +251,7 @@ export const servicosApi = {
 
   // Listar serviços de um projeto
   listarPorProjeto: async (organizacaoId: string, projetoId: string) => {
-    const resposta = await api.get(
-      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos`,
-    );
+    const resposta = await api.get(`/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos`);
     return resposta.data;
   },
 
@@ -345,6 +340,20 @@ export const servicosApi = {
   obterStatus: async (organizacaoId: string, projetoId: string, id: string) => {
     const resposta = await api.get(
       `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/status`,
+    );
+    return resposta.data;
+  },
+
+  // Obter logs do serviço (via PM2 no agente)
+  obterLogs: async (
+    organizacaoId: string,
+    projetoId: string,
+    id: string,
+    opcoes?: { linhas?: number; tipo?: string },
+  ) => {
+    const resposta = await api.get(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/logs`,
+      { params: opcoes },
     );
     return resposta.data;
   },

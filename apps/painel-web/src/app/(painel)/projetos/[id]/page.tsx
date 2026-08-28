@@ -21,6 +21,7 @@ import {
   CalendarDays,
   Check,
   Edit3,
+  FileText,
   FolderKanban,
   HardDrive,
   Network,
@@ -54,6 +55,10 @@ export default function ProjetoDetalhePage() {
   const [servicoParaRemover, setServicoParaRemover] = useState<Servico | null>(null);
   const [statusPorServico, setStatusPorServico] = useState<Record<string, any>>({});
   const [controleCarregando, setControleCarregando] = useState<string | null>(null);
+  const [logsModalServico, setLogsModalServico] = useState<Servico | null>(null);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [carregandoLogs, setCarregandoLogs] = useState(false);
+  const [tipoLog, setTipoLog] = useState<'todos' | 'stdout' | 'stderr'>('todos');
 
   useEffect(() => {
     if (organizacao && projetoId) {
@@ -86,10 +91,7 @@ export default function ProjetoDetalhePage() {
     }
   };
 
-  const controlarServico = async (
-    servicoId: string,
-    acao: 'iniciar' | 'parar' | 'reiniciar',
-  ) => {
+  const controlarServico = async (servicoId: string, acao: 'iniciar' | 'parar' | 'reiniciar') => {
     if (!organizacao) return;
     const acaoApi =
       acao === 'iniciar'
@@ -107,6 +109,29 @@ export default function ProjetoDetalhePage() {
       setErro(err.response?.data?.message || `Erro ao ${acao} serviço.`);
     } finally {
       setControleCarregando(null);
+    }
+  };
+
+  const abrirLogs = async (servico: Servico) => {
+    setLogsModalServico(servico);
+    setLogs([]);
+    setTipoLog('todos');
+    await carregarLogs(servico, 'todos');
+  };
+
+  const carregarLogs = async (servico: Servico, tipo: string) => {
+    if (!organizacao) return;
+    try {
+      setCarregandoLogs(true);
+      const dados = await servicosApi.obterLogs(organizacao.id, projetoId, servico.id, {
+        linhas: 100,
+        tipo,
+      });
+      setLogs(dados.logs || []);
+    } catch {
+      setLogs([]);
+    } finally {
+      setCarregandoLogs(false);
     }
   };
 
@@ -298,7 +323,12 @@ export default function ProjetoDetalhePage() {
                 Arquivar
               </Button>
             ) : (
-              <Button variante="secundario" tamanho="pequeno" onClick={reativarProjeto} carregando={salvando}>
+              <Button
+                variante="secundario"
+                tamanho="pequeno"
+                onClick={reativarProjeto}
+                carregando={salvando}
+              >
                 <ArchiveRestore className="w-4 h-4" />
                 Reativar
               </Button>
@@ -329,11 +359,7 @@ export default function ProjetoDetalhePage() {
               className="w-full rounded-lg border border-[#2a2a32] bg-[#17171c] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none transition-colors focus:border-[#5b7cfa]"
             />
             <div className="flex justify-end gap-3">
-              <Button
-                variante="fantasma"
-                tamanho="pequeno"
-                onClick={() => setEditando(false)}
-              >
+              <Button variante="fantasma" tamanho="pequeno" onClick={() => setEditando(false)}>
                 Cancelar
               </Button>
               <Button tamanho="pequeno" onClick={salvarEdicao} carregando={salvando}>
@@ -432,9 +458,7 @@ export default function ProjetoDetalhePage() {
                       <BadgeSimples variante="neutro">
                         {tipoLabels[servico.tipo] || servico.tipo}
                       </BadgeSimples>
-                      <BadgeSimples variante={varianteStatus as any}>
-                        {estado}
-                      </BadgeSimples>
+                      <BadgeSimples variante={varianteStatus as any}>{estado}</BadgeSimples>
                       {status?.pid && (
                         <span className="text-xs text-zinc-500">PID {status.pid}</span>
                       )}
@@ -458,12 +482,11 @@ export default function ProjetoDetalhePage() {
                           <Network className="w-3 h-3" /> :{servico.porta}
                         </span>
                       )}
-                      {servico.ambiente && (
-                        <span>Ambiente: {servico.ambiente.nome}</span>
-                      )}
+                      {servico.ambiente && <span>Ambiente: {servico.ambiente.nome}</span>}
                       {status?.uptimeMs !== undefined && (
                         <span className="flex items-center gap-1">
-                          <Activity className="w-3 h-3" /> {Math.floor(status.uptimeMs / 1000)}s ativo
+                          <Activity className="w-3 h-3" /> {Math.floor(status.uptimeMs / 1000)}s
+                          ativo
                         </span>
                       )}
                     </div>
@@ -498,6 +521,14 @@ export default function ProjetoDetalhePage() {
                       disabled={!!carregandoAcao}
                     >
                       <RotateCw className="w-4 h-4 text-blue-400" />
+                    </Button>
+                    <Button
+                      variante="fantasma"
+                      tamanho="pequeno"
+                      title="Ver logs"
+                      onClick={() => abrirLogs(servico)}
+                    >
+                      <FileText className="w-4 h-4 text-zinc-400" />
                     </Button>
                     <div className="ml-1 h-6 w-px bg-[#2a2a32]" />
                     <Button
@@ -562,14 +593,73 @@ export default function ProjetoDetalhePage() {
               >
                 Cancelar
               </Button>
-              <Button
-                variante="perigo"
-                larguraTotal
-                onClick={removerServico}
-                carregando={salvando}
-              >
+              <Button variante="perigo" larguraTotal onClick={removerServico} carregando={salvando}>
                 Remover
               </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de logs */}
+      {logsModalServico && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="flex max-h-[80vh] w-full max-w-3xl flex-col">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-zinc-100">
+                Logs — {logsModalServico.nome}
+              </h3>
+              <Button
+                variante="fantasma"
+                tamanho="pequeno"
+                onClick={() => setLogsModalServico(null)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="mb-3 flex items-center gap-2">
+              {(['todos', 'stdout', 'stderr'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => {
+                    setTipoLog(t);
+                    carregarLogs(logsModalServico, t);
+                  }}
+                  className={`rounded-lg px-3 py-1 text-xs font-medium ${tipoLog === t ? 'bg-[#5b7cfa] text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+                >
+                  {t}
+                </button>
+              ))}
+              <Button
+                variante="fantasma"
+                tamanho="pequeno"
+                onClick={() => carregarLogs(logsModalServico, tipoLog)}
+                carregando={carregandoLogs}
+              >
+                Atualizar
+              </Button>
+            </div>
+            <div className="flex-1 overflow-auto rounded-lg border border-[#2a2a32] bg-[#0d0d0f] p-4">
+              {carregandoLogs ? (
+                <div className="flex items-center justify-center py-8">
+                  <Spinner />
+                </div>
+              ) : logs.length === 0 ? (
+                <p className="text-sm text-zinc-500">Nenhum log encontrado.</p>
+              ) : (
+                <div className="space-y-1 text-xs font-mono">
+                  {logs.map((l: any, i: number) => (
+                    <div key={i} className={l.nivel === 'error' ? 'text-red-300' : 'text-zinc-300'}>
+                      <span className="text-zinc-500">
+                        {new Date(l.timestamp).toLocaleTimeString('pt-BR')}{' '}
+                      </span>
+                      <span className={l.fonte === 'stderr' ? 'text-red-400' : ''}>
+                        {l.mensagem}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </Card>
         </div>
