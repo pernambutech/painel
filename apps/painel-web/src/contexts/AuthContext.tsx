@@ -23,6 +23,7 @@ export interface AuthContextType {
   cadastro: (nome: string, email: string, senha: string) => Promise<void>;
   logout: () => void;
   recarregarOrganizacao: () => Promise<void>;
+  alterarOrganizacao: (organizacao: Organizacao) => void;
 }
 
 // ===========================================
@@ -151,6 +152,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const alterarOrganizacao = (organizacaoSelecionada: Organizacao) => {
+    setOrganizacao(organizacaoSelecionada);
+  };
+
   // ===========================================
   // VALOR DO CONTEXTO
   // ===========================================
@@ -164,6 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     cadastro,
     logout,
     recarregarOrganizacao,
+    alterarOrganizacao,
   };
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;
