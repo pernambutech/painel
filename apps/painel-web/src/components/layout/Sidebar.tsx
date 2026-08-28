@@ -10,7 +10,6 @@ import {
   FolderOpen,
   Server,
   Monitor,
-  History,
   FileText,
   Settings,
   LogOut,
@@ -44,11 +43,6 @@ const itensNavegacao = [
     icone: Monitor,
   },
   {
-    nome: 'Execuções',
-    href: '/execucoes',
-    icone: History,
-  },
-  {
     nome: 'Logs',
     href: '/logs',
     icone: FileText,
@@ -56,7 +50,7 @@ const itensNavegacao = [
   {
     nome: 'Histórico',
     href: '/historico',
-    icone: History,
+    icone: FileText,
   },
 ];
 
