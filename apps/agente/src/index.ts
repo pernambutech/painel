@@ -307,8 +307,9 @@ async function processarComando(comando: any): Promise<void> {
 
       case 'PARAR_SERVICO': {
         const servicoId = (comando.dados as any)?.servicoId;
+        const pm2Nome = (comando.dados as any)?.pm2Nome || servicoId;
         if (!servicoId) throw new Error('ID do serviço não informado');
-        const resultadoPm2 = await adaptadorPm2.parar(servicoId);
+        const resultadoPm2 = await adaptadorPm2.parar(pm2Nome);
         if (!resultadoPm2.sucesso) throw new Error(resultadoPm2.erro || 'Falha ao parar serviço');
         resultado = { mensagem: 'Serviço parado', ...resultadoPm2 } as any;
         break;
@@ -316,8 +317,9 @@ async function processarComando(comando: any): Promise<void> {
 
       case 'REINICIAR_SERVICO': {
         const servicoId = (comando.dados as any)?.servicoId;
+        const pm2Nome = (comando.dados as any)?.pm2Nome || servicoId;
         if (!servicoId) throw new Error('ID do serviço não informado');
-        const resultadoPm2 = await adaptadorPm2.reiniciar(servicoId);
+        const resultadoPm2 = await adaptadorPm2.reiniciar(pm2Nome);
         if (!resultadoPm2.sucesso) throw new Error(resultadoPm2.erro || 'Falha ao reiniciar serviço');
         resultado = { mensagem: 'Serviço reiniciado', ...resultadoPm2 } as any;
         break;
@@ -325,17 +327,30 @@ async function processarComando(comando: any): Promise<void> {
 
       case 'OBTER_STATUS_SERVICO': {
         const servicoId = (comando.dados as any)?.servicoId;
+        const pm2Nome = (comando.dados as any)?.pm2Nome || servicoId;
         if (!servicoId) throw new Error('ID do serviço não informado');
-        const status = await adaptadorPm2.obterStatus(servicoId);
+        const status = await adaptadorPm2.obterStatus(pm2Nome);
+        // Tentar fallback para ID antigo (compatibilidade com processos iniciados com UUID)
+        if (status.status === 'desconhecido' && pm2Nome !== servicoId) {
+          const fallback = await adaptadorPm2.obterStatus(servicoId);
+          if (fallback.status !== 'desconhecido') {
+            resultado = fallback as unknown as Record<string, unknown>;
+            break;
+          }
+        }
         resultado = status as unknown as Record<string, unknown>;
         break;
       }
 
       case 'OBTER_LOGS_SERVICO': {
         const servicoId = (comando.dados as any)?.servicoId;
+        const pm2Nome = (comando.dados as any)?.pm2Nome || servicoId;
         if (!servicoId) throw new Error('ID do serviço não informado');
         const opcoes = (comando.dados as any)?.opcoes || {};
-        const logs = await adaptadorPm2.obterLogs(servicoId, opcoes);
+        let logs = await adaptadorPm2.obterLogs(pm2Nome, opcoes);
+        if (logs.length === 0 && pm2Nome !== servicoId) {
+          logs = await adaptadorPm2.obterLogs(servicoId, opcoes);
+        }
         resultado = { logs } as unknown as Record<string, unknown>;
         break;
       }

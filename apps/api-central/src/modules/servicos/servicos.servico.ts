@@ -245,7 +245,7 @@ export class ServicosServico {
     organizacaoId: string,
     usuarioId: string,
   ): Promise<Record<string, unknown>> {
-    const { servico, agente } = await this.obterServicoEAgente(
+    const { servico, agente, projeto } = await this.obterServicoEAgente(
       id,
       projetoId,
       organizacaoId,
@@ -255,6 +255,8 @@ export class ServicosServico {
     if (!servico.diretorio || !servico.comando) {
       throw new BadRequestException('Serviço sem diretório ou comando configurado');
     }
+
+    const nomePm2 = this.gerarNomePm2(projeto.nome, servico.nome, servico.porta, servico.id);
 
     // Criar registro de execução (histórico)
     const execucao = await this.execucoesServico.criar({
@@ -272,13 +274,14 @@ export class ServicosServico {
         tipo: 'INICIAR_SERVICO',
         dados: {
           servicoId: servico.id,
+          pm2Nome: nomePm2,
           configuracao: {
             id: servico.id,
             nome: servico.nome,
             diretorio: servico.diretorio,
             comando: servico.comando,
             porta: servico.porta ?? undefined,
-            nomePm2: servico.id,
+            nomePm2: nomePm2,
           },
         },
       });
@@ -304,12 +307,14 @@ export class ServicosServico {
     organizacaoId: string,
     usuarioId: string,
   ): Promise<Record<string, unknown>> {
-    const { servico, agente } = await this.obterServicoEAgente(
+    const { servico, agente, projeto } = await this.obterServicoEAgente(
       id,
       projetoId,
       organizacaoId,
       usuarioId,
     );
+
+    const nomePm2 = this.gerarNomePm2(projeto.nome, servico.nome, servico.porta, servico.id);
 
     const execucao = await this.execucoesServico.criar({
       organizacaoId,
@@ -324,7 +329,7 @@ export class ServicosServico {
       const comando = await this.comandosServico.enviarEAguardar({
         agenteId: agente.id,
         tipo: 'PARAR_SERVICO',
-        dados: { servicoId: servico.id },
+        dados: { servicoId: servico.id, pm2Nome: nomePm2 },
       });
 
       await this.execucoesServico.atualizar(execucao.id, {
@@ -348,12 +353,14 @@ export class ServicosServico {
     organizacaoId: string,
     usuarioId: string,
   ): Promise<Record<string, unknown>> {
-    const { servico, agente } = await this.obterServicoEAgente(
+    const { servico, agente, projeto } = await this.obterServicoEAgente(
       id,
       projetoId,
       organizacaoId,
       usuarioId,
     );
+
+    const nomePm2 = this.gerarNomePm2(projeto.nome, servico.nome, servico.porta, servico.id);
 
     const execucao = await this.execucoesServico.criar({
       organizacaoId,
@@ -368,7 +375,7 @@ export class ServicosServico {
       const comando = await this.comandosServico.enviarEAguardar({
         agenteId: agente.id,
         tipo: 'REINICIAR_SERVICO',
-        dados: { servicoId: servico.id },
+        dados: { servicoId: servico.id, pm2Nome: nomePm2 },
       });
 
       await this.execucoesServico.atualizar(execucao.id, {
@@ -392,20 +399,49 @@ export class ServicosServico {
     organizacaoId: string,
     usuarioId: string,
   ): Promise<Record<string, unknown>> {
-    const { servico, agente } = await this.obterServicoEAgente(
+    const { servico, agente, projeto } = await this.obterServicoEAgente(
       id,
       projetoId,
       organizacaoId,
       usuarioId,
     );
 
+    const nomePm2 = this.gerarNomePm2(projeto.nome, servico.nome, servico.porta, servico.id);
+
     const comando = await this.comandosServico.enviarEAguardar({
       agenteId: agente.id,
       tipo: 'OBTER_STATUS_SERVICO',
-      dados: { servicoId: servico.id },
+      dados: { servicoId: servico.id, pm2Nome: nomePm2 },
     });
 
     return (comando.resultado as Record<string, unknown>) || { status: 'desconhecido' };
+  }
+
+  async obterLogs(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+    opcoes?: { linhas?: number; tipo?: string },
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente, projeto } = await this.obterServicoEAgente(
+      id,
+      projetoId,
+      organizacaoId,
+      usuarioId,
+    );
+
+    const nomePm2 = this.gerarNomePm2(projeto.nome, servico.nome, servico.porta, servico.id);
+    const linhas = opcoes?.linhas ? Math.min(Math.max(opcoes.linhas, 1), 500) : 100;
+    const tipo = ['stdout', 'stderr', 'todos'].includes(opcoes?.tipo || '') ? opcoes?.tipo : 'todos';
+
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'OBTER_LOGS_SERVICO',
+      dados: { servicoId: servico.id, pm2Nome: nomePm2, opcoes: { linhas, tipo } },
+    });
+
+    return (comando.resultado as Record<string, unknown>) || { logs: [] };
   }
 
   private async obterServicoEAgente(
@@ -413,9 +449,21 @@ export class ServicosServico {
     projetoId: string,
     organizacaoId: string,
     usuarioId: string,
-  ): Promise<{ servico: RespostaServico & { diretorio: string | null; comando: string | null }; agente: { id: string } }> {
+  ): Promise<{
+    servico: RespostaServico & { diretorio: string | null; comando: string | null };
+    agente: { id: string };
+    projeto: { id: string; nome: string };
+  }> {
     await this.verificarMembro(organizacaoId, usuarioId);
-    await this.verificarProjeto(projetoId, organizacaoId);
+
+    const projeto = await this.prisma.projeto.findFirst({
+      where: { id: projetoId, organizacaoId },
+      select: { id: true, nome: true },
+    });
+
+    if (!projeto) {
+      throw new NotFoundException('Projeto não encontrado');
+    }
 
     const servico = await this.prisma.servico.findFirst({
       where: { id, projetoId, organizacaoId },
@@ -441,7 +489,24 @@ export class ServicosServico {
       throw new NotFoundException('Nenhum agente encontrado para o ambiente do serviço');
     }
 
-    return { servico: servico as any, agente };
+    return { servico: servico as any, agente, projeto };
+  }
+
+  private gerarNomePm2(projetoNome: string, servicoNome: string, porta: number | null, id: string): string {
+    const sanitizar = (s: string) =>
+      s
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 18);
+    const p = sanitizar(projetoNome || 'projeto');
+    const svc = sanitizar(servicoNome);
+    const portaPart = porta ? `-${porta}` : '';
+    const curto = id.slice(0, 4);
+    // Ex: painel-sistema-de-chamados-frontend-4000-a1b2
+    return `painel-${p}-${svc}${portaPart}-${curto}`;
   }
 
   // ===========================================

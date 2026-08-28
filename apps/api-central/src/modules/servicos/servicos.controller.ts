@@ -148,4 +148,19 @@ export class ServicosController {
   ) {
     return this.servicosServico.obterStatusServico(id, projetoId, organizacaoId, req.user.id);
   }
+
+  @Get('projetos/:projetoId/servicos/:id/logs')
+  async obterLogs(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Request() req,
+  ) {
+    const linhas = req.query.linhas ? parseInt(req.query.linhas as string, 10) : 100;
+    const tipo = (req.query.tipo as string) || 'todos';
+    return this.servicosServico.obterLogs(id, projetoId, organizacaoId, req.user.id, {
+      linhas,
+      tipo,
+    });
+  }
 }
