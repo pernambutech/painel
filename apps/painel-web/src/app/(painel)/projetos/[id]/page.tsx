@@ -59,6 +59,7 @@ export default function ProjetoDetalhePage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [carregandoLogs, setCarregandoLogs] = useState(false);
   const [tipoLog, setTipoLog] = useState<'todos' | 'stdout' | 'stderr'>('todos');
+  const [erroLogs, setErroLogs] = useState('');
 
   useEffect(() => {
     if (organizacao && projetoId) {
@@ -123,13 +124,16 @@ export default function ProjetoDetalhePage() {
     if (!organizacao) return;
     try {
       setCarregandoLogs(true);
+      setErroLogs('');
       const dados = await servicosApi.obterLogs(organizacao.id, projetoId, servico.id, {
         linhas: 100,
         tipo,
       });
       setLogs(dados.logs || []);
-    } catch {
+    } catch (err: any) {
+      console.error('[LOGS] Erro ao carregar logs:', err);
       setLogs([]);
+      setErroLogs(err?.response?.data?.message || err?.message || 'Erro ao carregar logs.');
     } finally {
       setCarregandoLogs(false);
     }
@@ -639,6 +643,11 @@ export default function ProjetoDetalhePage() {
                 Atualizar
               </Button>
             </div>
+            {erroLogs && (
+              <div className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                {erroLogs}
+              </div>
+            )}
             <div className="flex-1 overflow-auto rounded-lg border border-[#2a2a32] bg-[#0d0d0f] p-4">
               {carregandoLogs ? (
                 <div className="flex items-center justify-center py-8">
