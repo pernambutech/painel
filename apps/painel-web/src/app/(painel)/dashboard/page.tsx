@@ -131,13 +131,13 @@ export default function DashboardPage() {
   const statusBadge = (status: string) => {
     switch (status) {
       case 'sucesso':
-        return <Badge variante="online" />;
+        return <Badge variante="online">Sucesso</Badge>;
       case 'falhou':
-        return <Badge variante="erro" />;
+        return <Badge variante="erro">Falhou</Badge>;
       case 'executando':
-        return <Badge variante="aviso" />;
+        return <Badge variante="aviso">Executando</Badge>;
       default:
-        return <Badge variante="neutro" />;
+        return <Badge variante="neutro">Pendente</Badge>;
     }
   };
 
