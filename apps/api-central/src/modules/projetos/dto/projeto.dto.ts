@@ -1,13 +1,21 @@
 // DTOs para projetos
 // Data Transfer Objects para criação, atualização e consulta
 
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+
 // ===========================================
 // DTO DE CRIAÇÃO
 // ===========================================
 
-// Dados necessários para criar um projeto
-export interface CriarProjetoDto {
+export class CriarProjetoDto {
+  @IsString({ message: 'Nome deve ser uma string' })
+  @IsNotEmpty({ message: 'Nome é obrigatório' })
+  @MaxLength(100, { message: 'Nome deve ter no máximo 100 caracteres' })
   nome: string;
+
+  @IsOptional()
+  @IsString({ message: 'Descrição deve ser uma string' })
+  @MaxLength(500, { message: 'Descrição deve ter no máximo 500 caracteres' })
   descricao?: string;
 }
 
@@ -15,9 +23,16 @@ export interface CriarProjetoDto {
 // DTO DE ATUALIZAÇÃO
 // ===========================================
 
-// Dados para atualizar um projeto
-export interface AtualizarProjetoDto {
+export class AtualizarProjetoDto {
+  @IsOptional()
+  @IsString({ message: 'Nome deve ser uma string' })
+  @IsNotEmpty({ message: 'Nome não pode ser vazio' })
+  @MaxLength(100, { message: 'Nome deve ter no máximo 100 caracteres' })
   nome?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Descrição deve ser uma string' })
+  @MaxLength(500, { message: 'Descrição deve ter no máximo 500 caracteres' })
   descricao?: string;
 }
 
@@ -25,7 +40,6 @@ export interface AtualizarProjetoDto {
 // RESPOSTA DE PROJETO
 // ===========================================
 
-// Resposta retornada ao criar ou consultar projeto
 export interface RespostaProjeto {
   id: string;
   nome: string;

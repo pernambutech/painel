@@ -1,7 +1,7 @@
 // Controller de agentes
 // Endpoints para gestão de agentes, comandos e operações
 
-import { Controller, Get, Post, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { AgentesServico } from './agentes.servico';
 import { ComandosServico, TipoComando } from '../comunicacao/comandos.servico';
 import { JwtAuthGuard } from '../autenticacao/jwt-auth.guard';
@@ -57,8 +57,9 @@ export class AgentesController {
   async obterPorAmbiente(
     @Param('organizacaoId') organizacaoId: string,
     @Param('ambienteId') ambienteId: string,
+    @Request() req,
   ) {
-    return this.agentesServico.obterPorAmbiente(ambienteId, organizacaoId);
+    return this.agentesServico.obterPorAmbiente(ambienteId, organizacaoId, req.user.id);
   }
 
   // ===========================================
@@ -79,6 +80,26 @@ export class AgentesController {
   // ENVIAR COMANDO AO AGENTE
   // ===========================================
 
+  // Tipos de comando permitidos via API (somente operações seguras)
+  private static readonly COMANDOS_PERMITIDOS: TipoComando[] = [
+    'OBTER_INFORMACOES_SISTEMA',
+    'OBTER_STATUS',
+    'LISTAR_SERVICOS',
+    'LISTAR_PORTAS',
+    'INICIAR_SERVICO',
+    'PARAR_SERVICO',
+    'REINICIAR_SERVICO',
+    'OBTER_STATUS_SERVICO',
+    'OBTER_LOGS_SERVICO',
+    'OBTER_TODOS_PROCESSOS',
+    'GIT_STATUS',
+    'GIT_BRANCH',
+    'GIT_PULL',
+  ];
+
+  // Limite máximo de timeout em milissegundos (30 segundos)
+  private static readonly TIMEOUT_MAXIMO_MS = 30_000;
+
   @Post(':id/comandos')
   async enviarComando(
     @Param('organizacaoId') organizacaoId: string,
@@ -89,11 +110,19 @@ export class AgentesController {
     // Verificar se o agente pertence à organização
     await this.agentesServico.obterPorId(agenteId, organizacaoId, req.user.id);
 
+    // Validar tipo de comando — apenas allowlist
+    if (!AgentesController.COMANDOS_PERMITIDOS.includes(dados.tipo)) {
+      throw new BadRequestException(`Tipo de comando não permitido: ${dados.tipo}`);
+    }
+
+    // Limitar timeout para evitar abuso de memória
+    const timeoutMs = Math.min(dados.timeoutMs || 10_000, AgentesController.TIMEOUT_MAXIMO_MS);
+
     return this.comandosServico.enviarEAguardar({
       agenteId,
       tipo: dados.tipo,
       dados: dados.dados,
-      timeoutMs: dados.timeoutMs,
+      timeoutMs,
     });
   }
 

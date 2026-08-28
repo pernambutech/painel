@@ -25,8 +25,10 @@ export class EstrategiaJwt extends PassportStrategy(Strategy, 'jwt') {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       // Não ignorar expiração
       ignoreExpiration: false,
-      // Chave secreta (deve ser a mesma do JwtModule)
-      secretOrKey: process.env.JWT_SECRET || 'segredo_padrao',
+      // Chave secreta OBRIGATÓRIA (deve ser a mesma do JwtModule)
+      secretOrKey: process.env.JWT_SECRET || (() => {
+        throw new Error('JWT_SECRET não configurado. Defina a variável de ambiente JWT_SECRET.');
+      })(),
     });
   }
 

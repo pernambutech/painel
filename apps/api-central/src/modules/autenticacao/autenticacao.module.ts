@@ -14,9 +14,11 @@ import { DatabaseModule } from '../database';
     DatabaseModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      // Chave secreta para assinatura do token
-      // Em produção, deve vir de variável de ambiente
-      secret: process.env.JWT_SECRET || 'segredo_padrao',
+      // Chave secreta OBRIGATÓRIA via variável de ambiente
+      // Se não configurada, a aplicação deve falhar explicitamente
+      secret: process.env.JWT_SECRET || (() => {
+        throw new Error('JWT_SECRET não configurado. Defina a variável de ambiente JWT_SECRET.');
+      })(),
       // Configurações do token
       signOptions: {
         // Expiração: 24 horas

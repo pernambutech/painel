@@ -3,7 +3,7 @@
 
 import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { OrganizacoesServico } from './organizacoes.servico';
-import type { CriarOrganizacaoDto } from './dto/organizacao.dto';
+import { CriarOrganizacaoDto } from './dto/organizacao.dto';
 import { JwtAuthGuard } from '../autenticacao/jwt-auth.guard';
 
 @Controller('organizacoes')

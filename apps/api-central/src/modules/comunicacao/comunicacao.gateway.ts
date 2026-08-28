@@ -33,7 +33,8 @@ interface ClienteAgente {
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    // Mesmas origens permitidas na API HTTP
+    origin: ['http://localhost:3000', 'http://localhost:3001'],
     methods: ['GET', 'POST'],
   },
   namespace: '/agentes',

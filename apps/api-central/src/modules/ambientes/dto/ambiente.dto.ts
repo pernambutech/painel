@@ -1,25 +1,56 @@
 // DTOs para ambientes
 // Data Transfer Objects para criação e consulta
 
+import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+
 // ===========================================
 // DTO DE CRIAÇÃO
 // ===========================================
 
-// Dados necessários para criar um ambiente
-export interface CriarAmbienteDto {
+export class CriarAmbienteDto {
+  @IsString({ message: 'Nome deve ser uma string' })
+  @IsNotEmpty({ message: 'Nome é obrigatório' })
+  @MaxLength(100, { message: 'Nome deve ter no máximo 100 caracteres' })
   nome: string;
-  tipo?: string; // local, desenvolvimento, homologacao, producao
-  sistemaOperacional?: string; // windows, linux, macos
+
+  @IsOptional()
+  @IsString({ message: 'Tipo deve ser uma string' })
+  @IsIn(['local', 'desenvolvimento', 'homologacao', 'producao'], {
+    message: 'Tipo deve ser: local, desenvolvimento, homologacao ou producao',
+  })
+  tipo?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Sistema operacional deve ser uma string' })
+  @IsIn(['windows', 'linux', 'macos'], {
+    message: 'Sistema operacional deve ser: windows, linux ou macos',
+  })
+  sistemaOperacional?: string;
 }
 
 // ===========================================
 // DTO DE ATUALIZAÇÃO
 // ===========================================
 
-// Dados para atualizar um ambiente
-export interface AtualizarAmbienteDto {
+export class AtualizarAmbienteDto {
+  @IsOptional()
+  @IsString({ message: 'Nome deve ser uma string' })
+  @IsNotEmpty({ message: 'Nome não pode ser vazio' })
+  @MaxLength(100, { message: 'Nome deve ter no máximo 100 caracteres' })
   nome?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Tipo deve ser uma string' })
+  @IsIn(['local', 'desenvolvimento', 'homologacao', 'producao'], {
+    message: 'Tipo deve ser: local, desenvolvimento, homologacao ou producao',
+  })
   tipo?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Sistema operacional deve ser uma string' })
+  @IsIn(['windows', 'linux', 'macos'], {
+    message: 'Sistema operacional deve ser: windows, linux ou macos',
+  })
   sistemaOperacional?: string;
 }
 
@@ -27,7 +58,6 @@ export interface AtualizarAmbienteDto {
 // DADOS DO AGENTE NO AMBIENTE
 // ===========================================
 
-// Informações do agente associado ao ambiente
 export interface AgenteNoAmbiente {
   id: string;
   nome: string;
@@ -45,7 +75,6 @@ export interface AgenteNoAmbiente {
 // RESPOSTA DE AMBIENTE
 // ===========================================
 
-// Resposta retornada ao criar ou consultar ambiente
 export interface RespostaAmbiente {
   id: string;
   nome: string;

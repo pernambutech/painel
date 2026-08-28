@@ -205,7 +205,10 @@ export class AgentesServico {
   async obterPorAmbiente(
     ambienteId: string,
     organizacaoId: string,
+    usuarioId: string,
   ): Promise<RespostaAgente | null> {
+    await this.verificarMembro(organizacaoId, usuarioId);
+
     const agente = await this.prisma.agente.findFirst({
       where: { ambienteId, organizacaoId, ativo: true },
     });

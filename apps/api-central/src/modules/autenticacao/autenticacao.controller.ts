@@ -3,7 +3,7 @@
 
 import { Controller, Post, Body, UseGuards, Get, Request } from '@nestjs/common';
 import { AutenticacaoServico } from './autenticacao.servico';
-import type { CadastroDto, LoginDto } from './dto/autenticacao.dto';
+import { CadastroDto, LoginDto } from './dto/autenticacao.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')

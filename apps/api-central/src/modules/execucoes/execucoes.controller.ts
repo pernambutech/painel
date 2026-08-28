@@ -19,7 +19,7 @@ export class ExecucoesController {
     @Query('limite') limite: string,
     @Request() req,
   ) {
-    const lim = limite ? parseInt(limite, 10) : 50;
+    const lim = Math.min(Math.max(parseInt(limite, 10) || 50, 1), 100);
     return this.execucoesServico.listarPorOrganizacao(organizacaoId, req.user.id, lim);
   }
 
@@ -34,7 +34,7 @@ export class ExecucoesController {
     @Query('limite') limite: string,
     @Request() req,
   ) {
-    const lim = limite ? parseInt(limite, 10) : 20;
+    const lim = Math.min(Math.max(parseInt(limite, 10) || 20, 1), 100);
     return this.execucoesServico.listarPorServico(servicoId, organizacaoId, req.user.id, lim);
   }
 

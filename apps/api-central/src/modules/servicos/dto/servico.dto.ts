@@ -1,17 +1,43 @@
 // DTOs para serviços
 // Data Transfer Objects para criação, atualização e consulta
 
+import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+
 // ===========================================
 // DTO DE CRIAÇÃO
 // ===========================================
 
-// Dados necessários para criar um serviço
-export interface CriarServicoDto {
+export class CriarServicoDto {
+  @IsString({ message: 'Nome deve ser uma string' })
+  @IsNotEmpty({ message: 'Nome é obrigatório' })
+  @MaxLength(100, { message: 'Nome deve ter no máximo 100 caracteres' })
   nome: string;
-  tipo?: string; // frontend, backend, api, worker, bot, custom
+
+  @IsOptional()
+  @IsString({ message: 'Tipo deve ser uma string' })
+  @IsIn(['frontend', 'backend', 'api', 'worker', 'bot', 'custom'], {
+    message: 'Tipo deve ser: frontend, backend, api, worker, bot ou custom',
+  })
+  tipo?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Diretório deve ser uma string' })
+  @MaxLength(500, { message: 'Diretório deve ter no máximo 500 caracteres' })
   diretorio?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Comando deve ser uma string' })
+  @MaxLength(500, { message: 'Comando deve ter no máximo 500 caracteres' })
   comando?: string;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'Porta deve ser um número' })
+  @Min(1, { message: 'Porta deve estar entre 1 e 65535' })
+  @Max(65535, { message: 'Porta deve estar entre 1 e 65535' })
   porta?: number;
+
+  @IsOptional()
+  @IsString({ message: 'AmbienteId deve ser um UUID válido' })
   ambienteId?: string;
 }
 
@@ -19,13 +45,38 @@ export interface CriarServicoDto {
 // DTO DE ATUALIZAÇÃO
 // ===========================================
 
-// Dados para atualizar um serviço
-export interface AtualizarServicoDto {
+export class AtualizarServicoDto {
+  @IsOptional()
+  @IsString({ message: 'Nome deve ser uma string' })
+  @IsNotEmpty({ message: 'Nome não pode ser vazio' })
+  @MaxLength(100, { message: 'Nome deve ter no máximo 100 caracteres' })
   nome?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Tipo deve ser uma string' })
+  @IsIn(['frontend', 'backend', 'api', 'worker', 'bot', 'custom'], {
+    message: 'Tipo deve ser: frontend, backend, api, worker, bot ou custom',
+  })
   tipo?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Diretório deve ser uma string' })
+  @MaxLength(500, { message: 'Diretório deve ter no máximo 500 caracteres' })
   diretorio?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Comando deve ser uma string' })
+  @MaxLength(500, { message: 'Comando deve ter no máximo 500 caracteres' })
   comando?: string;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'Porta deve ser um número' })
+  @Min(1, { message: 'Porta deve estar entre 1 e 65535' })
+  @Max(65535, { message: 'Porta deve estar entre 1 e 65535' })
   porta?: number | null;
+
+  @IsOptional()
+  @IsString({ message: 'AmbienteId deve ser um UUID válido' })
   ambienteId?: string | null;
 }
 
@@ -33,7 +84,6 @@ export interface AtualizarServicoDto {
 // RESPOSTA DE SERVIÇO
 // ===========================================
 
-// Resposta retornada ao criar ou consultar serviço
 export interface RespostaServico {
   id: string;
   nome: string;
@@ -47,7 +97,6 @@ export interface RespostaServico {
   ativo: boolean;
   criadoEm: Date;
   atualizadoEm: Date;
-  // Dados do ambiente associado (quando incluído)
   ambiente?: {
     id: string;
     nome: string;

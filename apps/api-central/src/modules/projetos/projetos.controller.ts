@@ -14,7 +14,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { ProjetosServico } from './projetos.servico';
-import type { CriarProjetoDto, AtualizarProjetoDto } from './dto/projeto.dto';
+import { CriarProjetoDto, AtualizarProjetoDto } from './dto/projeto.dto';
 import { JwtAuthGuard } from '../autenticacao/jwt-auth.guard';
 
 @Controller('organizacoes/:organizacaoId/projetos')

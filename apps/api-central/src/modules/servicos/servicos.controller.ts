@@ -13,7 +13,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { ServicosServico } from './servicos.servico';
-import type { CriarServicoDto, AtualizarServicoDto } from './dto/servico.dto';
+import { CriarServicoDto, AtualizarServicoDto } from './dto/servico.dto';
 import { JwtAuthGuard } from '../autenticacao/jwt-auth.guard';
 
 @Controller('organizacoes/:organizacaoId')
@@ -204,7 +204,10 @@ export class ServicosController {
   // ===========================================
 
   @Get('dashboard')
-  async obterDashboard(@Param('organizacaoId') organizacaoId: string) {
-    return this.servicosServico.obterDadosDashboard(organizacaoId);
+  async obterDashboard(
+    @Param('organizacaoId') organizacaoId: string,
+    @Request() req,
+  ) {
+    return this.servicosServico.obterDadosDashboard(organizacaoId, req.user.id);
   }
 }

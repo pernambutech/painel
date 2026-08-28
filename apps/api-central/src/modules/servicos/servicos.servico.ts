@@ -495,14 +495,27 @@ export class ServicosServico {
     if (!servico.diretorio) {
       throw new BadRequestException('Serviço sem diretório configurado');
     }
+
+    // Sanitizar branch e remoto para evitar injeção de comandos
+    const regexNomeGit = /^[a-zA-Z0-9._\-\/]+$/;
+    const remoto = dados.remoto || 'origin';
+    const branch = dados.branch || '';
+
+    if (remoto && !regexNomeGit.test(remoto)) {
+      throw new BadRequestException('Nome do remoto contém caracteres inválidos');
+    }
+    if (branch && !regexNomeGit.test(branch)) {
+      throw new BadRequestException('Nome da branch contém caracteres inválidos');
+    }
+
     const comando = await this.comandosServico.enviarEAguardar({
       agenteId: agente.id,
       tipo: 'GIT_PULL',
       dados: {
         servicoId: servico.id,
         diretorio: servico.diretorio,
-        remoto: dados.remoto || 'origin',
-        branch: dados.branch || '',
+        remoto,
+        branch,
       },
     });
     return (comando.resultado as Record<string, unknown>) || {};
@@ -644,7 +657,9 @@ export class ServicosServico {
    * Retorna dados consolidados para o dashboard:
    * contagem de projetos, serviços e status PM2 de cada serviço.
    */
-  async obterDadosDashboard(organizacaoId: string) {
+  async obterDadosDashboard(organizacaoId: string, usuarioId: string) {
+    // Verificar se o usuário é membro da organização (previne IDOR)
+    await this.verificarMembro(organizacaoId, usuarioId);
     // Buscar projetos ativos
     const projetos = await this.prisma.projeto.findMany({
       where: { organizacaoId, ativo: true },

@@ -13,7 +13,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { AmbientesServico } from './ambientes.servico';
-import type { CriarAmbienteDto, AtualizarAmbienteDto } from './dto/ambiente.dto';
+import { CriarAmbienteDto, AtualizarAmbienteDto } from './dto/ambiente.dto';
 import { JwtAuthGuard } from '../autenticacao/jwt-auth.guard';
 
 @Controller('organizacoes/:organizacaoId/ambientes')

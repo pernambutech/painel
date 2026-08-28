@@ -1,12 +1,16 @@
 // DTOs para organizações
 // Data Transfer Objects para criação e consulta
 
+import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+
 // ===========================================
 // DTO DE CRIAÇÃO
 // ===========================================
 
-// Dados necessários para criar uma organização
-export interface CriarOrganizacaoDto {
+export class CriarOrganizacaoDto {
+  @IsString({ message: 'Nome deve ser uma string' })
+  @IsNotEmpty({ message: 'Nome é obrigatório' })
+  @MaxLength(100, { message: 'Nome deve ter no máximo 100 caracteres' })
   nome: string;
 }
 
@@ -14,12 +18,11 @@ export interface CriarOrganizacaoDto {
 // RESPOSTA DE ORGANIZAÇÃO
 // ===========================================
 
-// Resposta retornada ao criar ou consultar organização
 export interface RespostaOrganizacao {
   id: string;
   nome: string;
   slug: string;
-  papel: string; // proprietario, admin, membro
+  papel: string;
   criadoEm: Date;
 }
 
@@ -27,7 +30,6 @@ export interface RespostaOrganizacao {
 // CONTEXTO DA ORGANIZAÇÃO
 // ===========================================
 
-// Contexto da organização atual do usuário
 export interface ContextoOrganizacao {
   organizacaoId: string;
   nome: string;
