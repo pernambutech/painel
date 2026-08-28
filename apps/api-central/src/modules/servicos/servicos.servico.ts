@@ -329,7 +329,7 @@ export class ServicosServico {
       const comando = await this.comandosServico.enviarEAguardar({
         agenteId: agente.id,
         tipo: 'PARAR_SERVICO',
-        dados: { servicoId: servico.id, pm2Nome: nomePm2 },
+        dados: { servicoId: servico.id, pm2Nome: nomePm2, diretorio: servico.diretorio, porta: servico.porta },
       });
 
       await this.execucoesServico.atualizar(execucao.id, {
@@ -375,7 +375,7 @@ export class ServicosServico {
       const comando = await this.comandosServico.enviarEAguardar({
         agenteId: agente.id,
         tipo: 'REINICIAR_SERVICO',
-        dados: { servicoId: servico.id, pm2Nome: nomePm2 },
+        dados: { servicoId: servico.id, pm2Nome: nomePm2, diretorio: servico.diretorio, porta: servico.porta },
       });
 
       await this.execucoesServico.atualizar(execucao.id, {
@@ -411,7 +411,7 @@ export class ServicosServico {
     const comando = await this.comandosServico.enviarEAguardar({
       agenteId: agente.id,
       tipo: 'OBTER_STATUS_SERVICO',
-      dados: { servicoId: servico.id, pm2Nome: nomePm2 },
+      dados: { servicoId: servico.id, pm2Nome: nomePm2, diretorio: servico.diretorio, porta: servico.porta },
     });
 
     return (comando.resultado as Record<string, unknown>) || { status: 'desconhecido' };
@@ -438,7 +438,7 @@ export class ServicosServico {
     const comando = await this.comandosServico.enviarEAguardar({
       agenteId: agente.id,
       tipo: 'OBTER_LOGS_SERVICO',
-      dados: { servicoId: servico.id, pm2Nome: nomePm2, opcoes: { linhas, tipo } },
+      dados: { servicoId: servico.id, pm2Nome: nomePm2, diretorio: servico.diretorio, porta: servico.porta, opcoes: { linhas, tipo } },
     });
 
     return (comando.resultado as Record<string, unknown>) || { logs: [] };
@@ -570,6 +570,10 @@ export class ServicosServico {
   }
 
   private gerarNomePm2(projetoNome: string, servicoNome: string, porta: number | null, id: string): string {
+    if (projetoNome === 'Painel Central' && ['painel-web', 'painel-api', 'painel-agente'].includes(servicoNome)) {
+      return servicoNome;
+    }
+
     const sanitizar = (s: string) =>
       s
         .toLowerCase()

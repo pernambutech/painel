@@ -17,6 +17,8 @@ interface ProcessoPm2 {
   monit?: { cpu?: number; memory?: number };
   pm2_env?: {
     status?: string;
+    pm_cwd?: string;
+    env?: Record<string, string | undefined>;
     pm_uptime?: number;
     restart_time?: number;
     pm_out_log_path?: string;
@@ -52,6 +54,19 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
     try {
       await this.inicializar();
       const nome = configuracao.nomePm2 || configuracao.id;
+      const nomeExistente = await this.encontrarNome(configuracao);
+      if (nomeExistente) {
+        const existente = (await this.descrever(nomeExistente))[0];
+        if (existente?.pm2_env?.status === 'stopped') {
+          await this.executar<ProcessoPm2>((concluir) => pm2.start(nomeExistente, concluir));
+        }
+        return {
+          sucesso: true,
+          processoId: configuracao.id,
+          pid: existente?.pid,
+          dados: { nomePm2: nomeExistente, reutilizado: true },
+        };
+      }
       const shell = os.platform() === 'win32' ? 'cmd.exe' : 'sh';
       const argumentosShell =
         os.platform() === 'win32'
@@ -113,12 +128,20 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
 
   async obterStatus(id: string): Promise<StatusProcesso> {
     await this.inicializar();
-    const processos = await this.descrever(id);
+    const processos = (await this.listarProcessos()).filter((processo) => processo.name === id);
     const processo = processos[0];
     if (!processo) {
       return { processoId: id, nome: id, status: 'desconhecido', reinicios: 0 };
     }
     return this.mapearStatus(id, processo);
+  }
+
+  async resolverNome(configuracao: {
+    nomePm2?: string;
+    diretorio?: string;
+    porta?: number;
+  }): Promise<string> {
+    return (await this.encontrarNome(configuracao)) || configuracao.nomePm2 || '';
   }
 
   async obterTodosStatus(): Promise<StatusProcesso[]> {
@@ -137,7 +160,7 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
 
   async obterLogs(id: string, opcoes: OpcoesLogs = {}): Promise<LogProcesso[]> {
     await this.inicializar();
-    const processo = (await this.descrever(id))[0];
+    const processo = (await this.listarProcessos()).find((item) => item.name === id);
     if (!processo?.pm2_env) return [];
 
     const linhas = opcoes.linhas || 100;
@@ -200,6 +223,38 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
 
   private async descrever(id: string): Promise<ProcessoPm2[]> {
     return (await this.executar<ProcessoPm2[]>((concluir) => pm2.describe(id, concluir))) || [];
+  }
+
+  private async encontrarNome(configuracao: {
+    nomePm2?: string;
+    diretorio?: string;
+    porta?: number;
+  }): Promise<string | null> {
+    const processos = await this.executar<ProcessoPm2[]>((concluir) => pm2.list(concluir));
+    const normalizar = (valor: string) => valor.replace(/[\\/]+/g, '/').toLowerCase().replace(/\/$/, '');
+    const diretorio = configuracao.diretorio ? normalizar(configuracao.diretorio) : '';
+    const correspondente = processos.find((processo) => {
+      if (!processo.name || !diretorio || normalizar(processo.pm2_env?.pm_cwd || '') !== diretorio) {
+        return false;
+      }
+      if (processo.pm2_env?.status !== 'online') return false;
+      if (!configuracao.porta) return true;
+      const ambiente = processo.pm2_env?.env || {};
+      return [ambiente.PORT, ambiente.PORTA, ambiente.APP_PORT].includes(String(configuracao.porta));
+    });
+    if (correspondente?.name) return correspondente.name;
+
+    if (configuracao.porta) {
+      const processoPorPorta = processos.find((processo) => {
+        if (!processo.name || processo.pm2_env?.status !== 'online') return false;
+        const ambiente = processo.pm2_env?.env || {};
+        return [ambiente.PORT, ambiente.PORTA, ambiente.APP_PORT].includes(String(configuracao.porta));
+      });
+      if (processoPorPorta?.name) return processoPorPorta.name;
+    }
+
+    const nome = processos.find((processo) => processo.name === configuracao.nomePm2);
+    return nome?.name || null;
   }
 
   private executar<T>(

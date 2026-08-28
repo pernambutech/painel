@@ -310,7 +310,12 @@ async function processarComando(comando: any): Promise<void> {
 
       case 'PARAR_SERVICO': {
         const servicoId = (comando.dados as any)?.servicoId;
-        const pm2Nome = (comando.dados as any)?.pm2Nome || servicoId;
+        const dados = (comando.dados as any) || {};
+        const pm2Nome = await adaptadorPm2.resolverNome({
+          nomePm2: dados.pm2Nome || servicoId,
+          diretorio: dados.diretorio,
+          porta: dados.porta,
+        });
         if (!servicoId) throw new Error('ID do serviço não informado');
         const resultadoPm2 = await adaptadorPm2.parar(pm2Nome);
         if (!resultadoPm2.sucesso) throw new Error(resultadoPm2.erro || 'Falha ao parar serviço');
@@ -320,7 +325,12 @@ async function processarComando(comando: any): Promise<void> {
 
       case 'REINICIAR_SERVICO': {
         const servicoId = (comando.dados as any)?.servicoId;
-        const pm2Nome = (comando.dados as any)?.pm2Nome || servicoId;
+        const dados = (comando.dados as any) || {};
+        const pm2Nome = await adaptadorPm2.resolverNome({
+          nomePm2: dados.pm2Nome || servicoId,
+          diretorio: dados.diretorio,
+          porta: dados.porta,
+        });
         if (!servicoId) throw new Error('ID do serviço não informado');
         const resultadoPm2 = await adaptadorPm2.reiniciar(pm2Nome);
         if (!resultadoPm2.sucesso)
@@ -331,9 +341,22 @@ async function processarComando(comando: any): Promise<void> {
 
       case 'OBTER_STATUS_SERVICO': {
         const servicoId = (comando.dados as any)?.servicoId;
-        const pm2Nome = (comando.dados as any)?.pm2Nome || servicoId;
+        const dados = (comando.dados as any) || {};
+        const pm2Nome = await adaptadorPm2.resolverNome({
+          nomePm2: dados.pm2Nome || servicoId,
+          diretorio: dados.diretorio,
+          porta: dados.porta,
+        });
         if (!servicoId) throw new Error('ID do serviço não informado');
-        const status = await adaptadorPm2.obterStatus(pm2Nome);
+        let nomeResolvido = pm2Nome;
+        if (dados.diretorio || dados.porta) {
+          nomeResolvido = await adaptadorPm2.resolverNome({
+            diretorio: dados.diretorio,
+            porta: dados.porta,
+            nomePm2: pm2Nome,
+          });
+        }
+        const status = await adaptadorPm2.obterStatus(nomeResolvido);
         // Tentar fallback para ID antigo (compatibilidade com processos iniciados com UUID)
         if (status.status === 'desconhecido' && pm2Nome !== servicoId) {
           const fallback = await adaptadorPm2.obterStatus(servicoId);
@@ -348,10 +371,23 @@ async function processarComando(comando: any): Promise<void> {
 
       case 'OBTER_LOGS_SERVICO': {
         const servicoId = (comando.dados as any)?.servicoId;
-        const pm2Nome = (comando.dados as any)?.pm2Nome || servicoId;
+        const dados = (comando.dados as any) || {};
+        const pm2Nome = await adaptadorPm2.resolverNome({
+          nomePm2: dados.pm2Nome || servicoId,
+          diretorio: dados.diretorio,
+          porta: dados.porta,
+        });
         if (!servicoId) throw new Error('ID do serviço não informado');
         const opcoes = (comando.dados as any)?.opcoes || {};
-        let logs = await adaptadorPm2.obterLogs(pm2Nome, opcoes);
+        let nomeResolvido = pm2Nome;
+        if (dados.diretorio || dados.porta) {
+          nomeResolvido = await adaptadorPm2.resolverNome({
+            diretorio: dados.diretorio,
+            porta: dados.porta,
+            nomePm2: pm2Nome,
+          });
+        }
+        let logs = await adaptadorPm2.obterLogs(nomeResolvido, opcoes);
         if (logs.length === 0 && pm2Nome !== servicoId) {
           logs = await adaptadorPm2.obterLogs(servicoId, opcoes);
         }
