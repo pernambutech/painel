@@ -11,7 +11,7 @@ import { AdaptadorPm2 } from './processos';
 // ===========================================
 
 const CONFIGURACAO = {
-  URL_API: process.env.AGENT_API_URL || 'http://localhost:3001',
+  URL_API: process.env.AGENT_API_URL || 'http://localhost:4001',
   TOKEN_AGENTE: process.env.AGENT_TOKEN || '',
   // Intervalo entre tentativas de reconexão (ms)
   INTERVALO_TENTATIVA: 5000,

@@ -51,8 +51,8 @@ async function executar() {
   });
 
   const servicos = [
-    { nome: 'painel-web', tipo: 'frontend', porta: 3000, diretorio: path.join(raiz, 'apps', 'painel-web'), comando: 'npm run start -- -p 3000' },
-    { nome: 'painel-api', tipo: 'api', porta: 3001, diretorio: path.join(raiz, 'apps', 'api-central'), comando: 'npm run start' },
+    { nome: 'painel-web', tipo: 'frontend', porta: 4000, diretorio: path.join(raiz, 'apps', 'painel-web'), comando: 'npm run start -- -p 4000' },
+    { nome: 'painel-api', tipo: 'api', porta: 4001, diretorio: path.join(raiz, 'apps', 'api-central'), comando: 'npm run start' },
     { nome: 'painel-agente', tipo: 'worker', porta: null, diretorio: path.join(raiz, 'apps', 'agente'), comando: 'npm run start' },
   ];
 

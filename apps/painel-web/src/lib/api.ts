@@ -8,7 +8,7 @@ import axios from 'axios';
 
 const api = axios.create({
   // URL base da API Central
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001',
   // Timeout de 10 segundos
   timeout: 10000,
   // Headers padrão
