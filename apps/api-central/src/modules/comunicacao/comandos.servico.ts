@@ -20,6 +20,7 @@ export type TipoComando =
   | 'REINICIAR_SERVICO'
   | 'OBTER_STATUS_SERVICO'
   | 'OBTER_LOGS_SERVICO'
+  | 'OBTER_TODOS_PROCESSOS'
   | 'GIT_STATUS'
   | 'GIT_BRANCH'
   | 'GIT_PULL';

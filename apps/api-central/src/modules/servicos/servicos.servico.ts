@@ -639,4 +639,89 @@ export class ServicosServico {
       ambiente: servico.ambiente || null,
     };
   }
+
+  /**
+   * Retorna dados consolidados para o dashboard:
+   * contagem de projetos, serviços e status PM2 de cada serviço.
+   */
+  async obterDadosDashboard(organizacaoId: string) {
+    // Buscar projetos ativos
+    const projetos = await this.prisma.projeto.findMany({
+      where: { organizacaoId, ativo: true },
+      select: { id: true, nome: true, criadoEm: true },
+      orderBy: { criadoEm: 'desc' },
+    });
+
+    // Buscar todos os serviços ativos com projeto
+    const servicos = await this.prisma.servico.findMany({
+      where: { organizacaoId, ativo: true },
+      select: {
+        id: true,
+        nome: true,
+        tipo: true,
+        porta: true,
+        projetoId: true,
+        ambienteId: true,
+        projeto: { select: { nome: true } },
+      },
+    });
+
+    // Gerar nomes PM2 usando a mesma lógica do adaptador
+    const servicosComNome = servicos.map((s) => ({
+      ...s,
+      nomePm2: this.gerarNomePm2(s.projeto.nome, s.nome, s.porta, s.id),
+    }));
+
+    // Buscar agente conectado para esta organização
+    const agente = await this.prisma.agente.findFirst({
+      where: { organizacaoId, ativo: true },
+      select: { id: true },
+    });
+
+    // Buscar processos PM2 via agente
+    let processosPm2: Record<string, unknown>[] = [];
+    if (agente) {
+      try {
+        const comando = await this.comandosServico.enviarEAguardar({
+          agenteId: agente.id,
+          tipo: 'OBTER_TODOS_PROCESSOS',
+          dados: {},
+        });
+        processosPm2 = (comando.resultado as any)?.processos || [];
+      } catch {
+        // Agente pode estar offline
+      }
+    }
+
+    // Mapear status dos processos por nome PM2
+    const mapaStatus: Record<string, string> = {};
+    for (const proc of processosPm2) {
+      const pm2Env = (proc as any)?.pm2_env;
+      const nome = pm2Env?.name || (proc as any)?.name;
+      const status = pm2Env?.status || 'desconhecido';
+      if (nome) mapaStatus[nome] = status;
+    }
+
+    // Contar por status
+    let online = 0;
+    let parado = 0;
+    let erro = 0;
+    const servicosComStatus = servicosComNome.map((s) => {
+      const status = mapaStatus[s.nomePm2] || 'desconhecido';
+      if (status === 'online') online++;
+      else if (status === 'stopped') parado++;
+      else if (status === 'errored') erro++;
+      return { ...s, statusPm2: status };
+    });
+
+    return {
+      totalProjetos: projetos.length,
+      projetos,
+      totalServicos: servicos.length,
+      servicosOnline: online,
+      servicosParados: parado,
+      servicosComErro: erro,
+      servicos: servicosComStatus,
+    };
+  }
 }

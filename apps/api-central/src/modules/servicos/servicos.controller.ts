@@ -198,4 +198,13 @@ export class ServicosController {
   ) {
     return this.servicosServico.gitPull(id, projetoId, organizacaoId, req.user.id, dados);
   }
+
+  // ===========================================
+  // DASHBOARD — DADOS CONSOLIDADOS
+  // ===========================================
+
+  @Get('dashboard')
+  async obterDashboard(@Param('organizacaoId') organizacaoId: string) {
+    return this.servicosServico.obterDadosDashboard(organizacaoId);
+  }
 }

@@ -419,6 +419,18 @@ export const execucoesApi = {
 };
 
 // ===========================================
+// DASHBOARD
+// ===========================================
+
+export const dashboardApi = {
+  // Dados consolidados do dashboard (projetos, serviços, status PM2)
+  obterDados: async (organizacaoId: string) => {
+    const resposta = await api.get(`/organizacoes/${organizacaoId}/dashboard`);
+    return resposta.data;
+  },
+};
+
+// ===========================================
 // EXPORTAÇÃO PADRÃO
 // ===========================================
 

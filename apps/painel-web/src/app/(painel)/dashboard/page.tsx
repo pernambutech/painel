@@ -2,76 +2,390 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Activity, AlertTriangle, CircleCheck, CirclePause, CircleX, Cloud, FolderOpen, Monitor, Plus, Server, WifiOff } from 'lucide-react';
+import {
+  Activity,
+  AlertTriangle,
+  CircleCheck,
+  CirclePause,
+  CircleX,
+  Cloud,
+  FolderOpen,
+  Monitor,
+  Plus,
+  Server,
+  WifiOff,
+} from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Spinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { ambientesApi } from '@/lib/api';
-import type { Ambiente } from '@/types';
+import { ambientesApi, dashboardApi, execucoesApi } from '@/lib/api';
+import type { Ambiente, Execucao } from '@/types';
+
+interface DadosDashboard {
+  totalProjetos: number;
+  projetos: { id: string; nome: string; criadoEm: string }[];
+  totalServicos: number;
+  servicosOnline: number;
+  servicosParados: number;
+  servicosComErro: number;
+  servicos: {
+    id: string;
+    nome: string;
+    tipo: string;
+    porta: number | null;
+    projetoId: string;
+    statusPm2: string;
+  }[];
+}
 
 export default function DashboardPage() {
   const { usuario, organizacao } = useAuth();
   const [ambientes, setAmbientes] = useState<Ambiente[]>([]);
+  const [dashboard, setDashboard] = useState<DadosDashboard | null>(null);
+  const [execucoes, setExecucoes] = useState<Execucao[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [carregandoExecucoes, setCarregandoExecucoes] = useState(true);
 
   useEffect(() => {
     if (!organizacao) return;
-    ambientesApi.listar(organizacao.id).then((dados) => setAmbientes(dados || [])).catch(() => setAmbientes([])).finally(() => setCarregando(false));
+
+    Promise.all([
+      ambientesApi.listar(organizacao.id).catch(() => []),
+      dashboardApi.obterDados(organizacao.id).catch(() => null),
+    ])
+      .then(([ambientesDados, dashboardDados]) => {
+        setAmbientes(ambientesDados || []);
+        setDashboard(dashboardDados);
+      })
+      .finally(() => setCarregando(false));
+
+    // Carregar execuções recentes separadamente
+    execucoesApi
+      .listarPorOrganizacao(organizacao.id, 10)
+      .then((dados) => setExecucoes(dados || []))
+      .catch(() => setExecucoes([]))
+      .finally(() => setCarregandoExecucoes(false));
   }, [organizacao]);
 
-  const resumo = useMemo(() => ({
-    conectados: ambientes.filter((ambiente) => ambiente.agente?.status === 'online').length,
-    offline: ambientes.filter((ambiente) => ambiente.agente && ambiente.agente.status !== 'online').length,
-  }), [ambientes]);
+  const resumoAmbientes = useMemo(
+    () => ({
+      conectados: ambientes.filter((a) => a.agente?.status === 'online').length,
+      offline: ambientes.filter((a) => a.agente && a.agente.status !== 'online').length,
+    }),
+    [ambientes],
+  );
 
   const estatisticas = [
-    { rotulo: 'Projetos ativos', valor: '—', icone: FolderOpen, cor: 'text-[#8ca2ff]', detalhe: 'Módulo em preparação' },
-    { rotulo: 'Serviços online', valor: '—', icone: CircleCheck, cor: 'text-emerald-300', detalhe: 'Módulo em preparação' },
-    { rotulo: 'Serviços parados', valor: '—', icone: CirclePause, cor: 'text-amber-300', detalhe: 'Módulo em preparação' },
-    { rotulo: 'Com erro', valor: '—', icone: CircleX, cor: 'text-red-300', detalhe: 'Sem dados de execução' },
-    { rotulo: 'Ambientes online', valor: carregando ? '—' : resumo.conectados, icone: Cloud, cor: 'text-emerald-300', detalhe: carregando ? 'Carregando' : `de ${ambientes.length} cadastrados` },
+    {
+      rotulo: 'Projetos ativos',
+      valor: carregando ? '—' : (dashboard?.totalProjetos ?? 0),
+      icone: FolderOpen,
+      cor: 'text-[#8ca2ff]',
+      detalhe: 'Projetos cadastrados',
+    },
+    {
+      rotulo: 'Serviços online',
+      valor: carregando ? '—' : (dashboard?.servicosOnline ?? 0),
+      icone: CircleCheck,
+      cor: 'text-emerald-300',
+      detalhe: 'Processos ativos no PM2',
+    },
+    {
+      rotulo: 'Serviços parados',
+      valor: carregando ? '—' : (dashboard?.servicosParados ?? 0),
+      icone: CirclePause,
+      cor: 'text-amber-300',
+      detalhe: 'Processos parados',
+    },
+    {
+      rotulo: 'Com erro',
+      valor: carregando ? '—' : (dashboard?.servicosComErro ?? 0),
+      icone: CircleX,
+      cor: 'text-red-300',
+      detalhe: 'Processos com erro',
+    },
+    {
+      rotulo: 'Ambientes online',
+      valor: carregando ? '—' : resumoAmbientes.conectados,
+      icone: Cloud,
+      cor: 'text-emerald-300',
+      detalhe: carregando ? 'Carregando' : `de ${ambientes.length} cadastrados`,
+    },
   ];
 
-  const ambientesAtencao = ambientes.filter((ambiente) => ambiente.agente && ambiente.agente.status !== 'online');
+  const ambientesAtencao = ambientes.filter((a) => a.agente && a.agente.status !== 'online');
+
+  const nomeAcao = (acao: string) => {
+    const mapa: Record<string, string> = {
+      INICIAR: 'Iniciou',
+      PARAR: 'Parou',
+      REINICIAR: 'Reiniciou',
+      ATUALIZAR: 'Atualizou',
+      GIT_PULL: 'Git pull',
+      CRIAR: 'Criou',
+    };
+    return mapa[acao] || acao;
+  };
+
+  const statusBadge = (status: string) => {
+    switch (status) {
+      case 'sucesso':
+        return <Badge variante="online" />;
+      case 'falhou':
+        return <Badge variante="erro" />;
+      case 'executando':
+        return <Badge variante="aviso" />;
+      default:
+        return <Badge variante="neutro" />;
+    }
+  };
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-8">
+      {/* Cabeçalho */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-zinc-100">Visão geral</h1>
-          <p className="mt-1 text-sm text-zinc-400">Olá, {usuario?.nome?.split(' ')[0] || 'usuário'}. Todos os seus projetos e serviços em um só lugar.</p>
+          <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-zinc-100">
+            Visão geral
+          </h1>
+          <p className="mt-1 text-sm text-zinc-400">
+            Olá, {usuario?.nome?.split(' ')[0] || 'usuário'}. Todos os seus projetos e serviços
+            em um só lugar.
+          </p>
         </div>
-        <Link href="/ambientes/novo" className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#5b7cfa] bg-[#5b7cfa] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#6f8cff]">
+        <Link
+          href="/ambientes/novo"
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#5b7cfa] bg-[#5b7cfa] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#6f8cff]"
+        >
           <Plus className="h-4 w-4" /> Novo ambiente
         </Link>
       </header>
 
+      {/* Cards de estatísticas */}
       <section aria-label="Resumo operacional" className="grid grid-cols-2 gap-4 xl:grid-cols-5">
         {estatisticas.map(({ rotulo, valor, icone: Icone, cor, detalhe }) => (
           <Card key={rotulo} padding="nenhum" className="p-4 sm:p-[18px]">
-            <div className="flex items-start justify-between gap-3"><p className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">{rotulo}</p><Icone className={`h-4 w-4 ${cor}`} /></div>
-            <p className="mt-2 text-[28px] font-semibold tracking-[-0.04em] text-zinc-100">{valor}</p>
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+                {rotulo}
+              </p>
+              <Icone className={`h-4 w-4 ${cor}`} />
+            </div>
+            <p className="mt-2 text-[28px] font-semibold tracking-[-0.04em] text-zinc-100">
+              {valor}
+            </p>
             <p className="mt-1 text-xs text-zinc-500">{detalhe}</p>
           </Card>
         ))}
       </section>
 
+      {/* Ambientes que precisam de atenção */}
       <section>
-        <div className="mb-3 flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-amber-300" /><h2 className="text-base font-semibold text-zinc-100">Serviços que precisam de atenção</h2><span className="text-sm text-zinc-500">({ambientesAtencao.length})</span></div>
+        <div className="mb-3 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-amber-300" />
+          <h2 className="text-base font-semibold text-zinc-100">
+            Serviços que precisam de atenção
+          </h2>
+          <span className="text-sm text-zinc-500">({ambientesAtencao.length})</span>
+        </div>
         <Card padding="nenhum" className="overflow-hidden">
-          {ambientesAtencao.length > 0 ? ambientesAtencao.map((ambiente) => (
-            <Link key={ambiente.id} href={`/ambientes/${ambiente.id}`} className="flex flex-wrap items-center gap-3 border-b border-[#2a2a32] px-5 py-3.5 last:border-0 hover:bg-[#28282f] sm:gap-5"><WifiOff className="h-4 w-4 shrink-0 text-red-300" /><div className="min-w-0 flex-1"><span className="font-medium text-zinc-100">{ambiente.nome}</span><span className="ml-2 text-sm text-zinc-500">Agente desconectado</span></div><span className="rounded-full border border-[#2a2a32] bg-[#1e1e24] px-3 py-1 text-xs text-zinc-300">Ver detalhes</span></Link>
-          )) : <div className="flex items-center gap-3 px-5 py-4 text-sm text-zinc-500"><CircleCheck className="h-4 w-4 text-emerald-300" /> Nenhum ambiente precisa de atenção.</div>}
+          {ambientesAtencao.length > 0 ? (
+            ambientesAtencao.map((ambiente) => (
+              <Link
+                key={ambiente.id}
+                href={`/ambientes/${ambiente.id}`}
+                className="flex flex-wrap items-center gap-3 border-b border-[#2a2a32] px-5 py-3.5 last:border-0 hover:bg-[#28282f] sm:gap-5"
+              >
+                <WifiOff className="h-4 w-4 shrink-0 text-red-300" />
+                <div className="min-w-0 flex-1">
+                  <span className="font-medium text-zinc-100">{ambiente.nome}</span>
+                  <span className="ml-2 text-sm text-zinc-500">Agente desconectado</span>
+                </div>
+                <span className="rounded-full border border-[#2a2a32] bg-[#1e1e24] px-3 py-1 text-xs text-zinc-300">
+                  Ver detalhes
+                </span>
+              </Link>
+            ))
+          ) : (
+            <div className="flex items-center gap-3 px-5 py-4 text-sm text-zinc-500">
+              <CircleCheck className="h-4 w-4 text-emerald-300" /> Nenhum ambiente precisa de
+              atenção.
+            </div>
+          )}
         </Card>
       </section>
 
+      {/* Atividade recente + Resumo dos ambientes */}
       <section className="grid gap-5 lg:grid-cols-2">
-        <Card padding="nenhum" className="overflow-hidden"><div className="border-b border-[#2a2a32] px-5 py-4"><div className="flex items-center gap-2"><Activity className="h-4 w-4 text-[#8ca2ff]" /><h2 className="text-base font-semibold text-zinc-100">Atividade recente</h2></div><p className="mt-1 text-xs text-zinc-500">Ações da operação aparecerão aqui.</p></div><div className="flex min-h-52 flex-col items-center justify-center px-5 text-center"><Activity className="mb-3 h-8 w-8 text-zinc-700" /><p className="text-sm text-zinc-400">Ainda não há atividades registradas.</p><p className="mt-1 text-xs text-zinc-600">O histórico será alimentado pelas execuções dos serviços.</p></div></Card>
-        <Card padding="nenhum" className="overflow-hidden"><div className="flex items-center justify-between border-b border-[#2a2a32] px-5 py-4"><div><h2 className="text-base font-semibold text-zinc-100">Resumo dos ambientes</h2><p className="mt-1 text-xs text-zinc-500">Máquinas e servidores conectados</p></div><Link href="/ambientes" className="text-xs font-medium text-[#8ca2ff] hover:text-white">Ver todos</Link></div>{ambientes.length > 0 ? ambientes.slice(0, 4).map((ambiente) => { const conectado = ambiente.agente?.status === 'online'; return <Link key={ambiente.id} href={`/ambientes/${ambiente.id}`} className="flex items-center gap-3 border-b border-[#2a2a32] px-5 py-3.5 last:border-0 hover:bg-[#28282f]"><span className={`h-2 w-2 rounded-full ${conectado ? 'bg-emerald-300' : 'bg-red-300'}`} /><span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-200">{ambiente.nome}</span><span className={`text-xs font-medium ${conectado ? 'text-emerald-300' : 'text-red-300'}`}>{conectado ? 'ONLINE' : 'OFFLINE'}</span></Link>; }) : <div className="flex min-h-52 flex-col items-center justify-center px-5 text-center"><Monitor className="mb-3 h-8 w-8 text-zinc-700" /><p className="text-sm text-zinc-400">Nenhum ambiente cadastrado.</p><Link href="/ambientes/novo" className="mt-2 text-xs font-medium text-[#8ca2ff]">Adicionar ambiente</Link></div>}</Card>
+        {/* Atividade recente */}
+        <Card padding="nenhum" className="overflow-hidden">
+          <div className="border-b border-[#2a2a32] px-5 py-4">
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-[#8ca2ff]" />
+              <h2 className="text-base font-semibold text-zinc-100">Atividade recente</h2>
+            </div>
+            <p className="mt-1 text-xs text-zinc-500">Últimas ações executadas na plataforma.</p>
+          </div>
+          {carregandoExecucoes ? (
+            <div className="flex min-h-52 items-center justify-center">
+              <Spinner tamanho="medio" />
+            </div>
+          ) : execucoes.length > 0 ? (
+            <div className="max-h-[400px] overflow-y-auto">
+              {execucoes.map((exec) => (
+                <div
+                  key={exec.id}
+                  className="flex items-center gap-3 border-b border-[#2a2a32] px-5 py-3 last:border-0"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-zinc-200">
+                      <span className="font-medium">{nomeAcao(exec.acao)}</span>
+                      {exec.servico?.nome && (
+                        <span className="text-zinc-400"> {exec.servico.nome}</span>
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-xs text-zinc-500">
+                      {exec.usuario?.nome || 'Sistema'} •{' '}
+                      {new Date(exec.criadoEm).toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                  {statusBadge(exec.status)}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex min-h-52 flex-col items-center justify-center px-5 text-center">
+              <Activity className="mb-3 h-8 w-8 text-zinc-700" />
+              <p className="text-sm text-zinc-400">Nenhuma atividade registrada.</p>
+              <p className="mt-1 text-xs text-zinc-600">
+                O histórico será alimentado pelas execuções dos serviços.
+              </p>
+            </div>
+          )}
+        </Card>
+
+        {/* Resumo dos ambientes */}
+        <Card padding="nenhum" className="overflow-hidden">
+          <div className="flex items-center justify-between border-b border-[#2a2a32] px-5 py-4">
+            <div>
+              <h2 className="text-base font-semibold text-zinc-100">Resumo dos ambientes</h2>
+              <p className="mt-1 text-xs text-zinc-500">Máquinas e servidores conectados</p>
+            </div>
+            <Link href="/ambientes" className="text-xs font-medium text-[#8ca2ff] hover:text-white">
+              Ver todos
+            </Link>
+          </div>
+          {ambientes.length > 0 ? (
+            ambientes.slice(0, 5).map((ambiente) => {
+              const conectado = ambiente.agente?.status === 'online';
+              return (
+                <Link
+                  key={ambiente.id}
+                  href={`/ambientes/${ambiente.id}`}
+                  className="flex items-center gap-3 border-b border-[#2a2a32] px-5 py-3.5 last:border-0 hover:bg-[#28282f]"
+                >
+                  <span
+                    className={`h-2 w-2 rounded-full ${conectado ? 'bg-emerald-300' : 'bg-red-300'}`}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-200">
+                    {ambiente.nome}
+                  </span>
+                  <span
+                    className={`text-xs font-medium ${conectado ? 'text-emerald-300' : 'text-red-300'}`}
+                  >
+                    {conectado ? 'ONLINE' : 'OFFLINE'}
+                  </span>
+                </Link>
+              );
+            })
+          ) : (
+            <div className="flex min-h-52 flex-col items-center justify-center px-5 text-center">
+              <Monitor className="mb-3 h-8 w-8 text-zinc-700" />
+              <p className="text-sm text-zinc-400">Nenhum ambiente cadastrado.</p>
+              <Link href="/ambientes/novo" className="mt-2 text-xs font-medium text-[#8ca2ff]">
+                Adicionar ambiente
+              </Link>
+            </div>
+          )}
+        </Card>
       </section>
 
+      {/* Tabela de projetos com serviços */}
       <section>
-        <div className="mb-3 flex items-center gap-2"><FolderOpen className="h-4 w-4 text-[#8ca2ff]" /><h2 className="text-base font-semibold text-zinc-100">Projetos recentes</h2></div>
-        <Card padding="nenhum" className="overflow-x-auto"><table className="w-full min-w-[680px] border-collapse text-left text-[13px]"><thead className="bg-[#1e1e24] text-[11px] uppercase tracking-[0.08em] text-zinc-500"><tr><th className="px-5 py-3 font-medium">Projeto</th><th className="px-5 py-3 font-medium">Serviços</th><th className="px-5 py-3 font-medium">Ambiente</th><th className="px-5 py-3 font-medium">Status</th><th className="px-5 py-3 font-medium">Última atividade</th></tr></thead><tbody><tr><td colSpan={5} className="px-5 py-10 text-center text-zinc-500"><Server className="mx-auto mb-2 h-6 w-6 text-zinc-700" />O módulo de projetos será conectado nesta etapa.</td></tr></tbody></table></Card>
+        <div className="mb-3 flex items-center gap-2">
+          <FolderOpen className="h-4 w-4 text-[#8ca2ff]" />
+          <h2 className="text-base font-semibold text-zinc-100">Projetos</h2>
+        </div>
+        <Card padding="nenhum" className="overflow-x-auto">
+          <table className="w-full min-w-[680px] border-collapse text-left text-[13px]">
+            <thead className="bg-[#1e1e24] text-[11px] uppercase tracking-[0.08em] text-zinc-500">
+              <tr>
+                <th className="px-5 py-3 font-medium">Projeto</th>
+                <th className="px-5 py-3 font-medium">Serviços</th>
+                <th className="px-5 py-3 font-medium">Online</th>
+                <th className="px-5 py-3 font-medium">Parados</th>
+                <th className="px-5 py-3 font-medium">Criado em</th>
+              </tr>
+            </thead>
+            <tbody>
+              {carregando ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-10 text-center text-zinc-500">
+                    <Spinner tamanho="pequeno" />
+                  </td>
+                </tr>
+              ) : dashboard?.projetos && dashboard.projetos.length > 0 ? (
+                dashboard.projetos.map((projeto) => {
+                  const servicosProjeto = dashboard.servicos.filter(
+                    (s) => s.projetoId === projeto.id,
+                  );
+                  const online = servicosProjeto.filter((s) => s.statusPm2 === 'online').length;
+                  const parados = servicosProjeto.filter((s) => s.statusPm2 === 'stopped').length;
+                  return (
+                    <tr
+                      key={projeto.id}
+                      className="border-b border-[#2a2a32] hover:bg-[#1e1e24] transition-colors"
+                    >
+                      <td className="px-5 py-3">
+                        <Link
+                          href={`/projetos/${projeto.id}`}
+                          className="font-medium text-zinc-200 hover:text-[#8ca2ff] transition-colors"
+                        >
+                          {projeto.nome}
+                        </Link>
+                      </td>
+                      <td className="px-5 py-3 text-zinc-400">{servicosProjeto.length}</td>
+                      <td className="px-5 py-3">
+                        <span className="text-emerald-300">{online}</span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className="text-amber-300">{parados}</span>
+                      </td>
+                      <td className="px-5 py-3 text-zinc-500">
+                        {new Date(projeto.criadoEm).toLocaleDateString('pt-BR')}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-5 py-10 text-center text-zinc-500">
+                    <Server className="mx-auto mb-2 h-6 w-6 text-zinc-700" />
+                    Nenhum projeto cadastrado.
+                    <br />
+                    <Link
+                      href="/projetos/novo"
+                      className="mt-2 inline-block text-xs font-medium text-[#8ca2ff]"
+                    >
+                      Criar projeto
+                    </Link>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </Card>
       </section>
     </div>
   );

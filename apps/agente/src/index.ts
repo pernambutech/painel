@@ -363,6 +363,12 @@ async function processarComando(comando: any): Promise<void> {
       // COMANDOS GIT (somente operações seguras)
       // ===========================================
 
+      case 'OBTER_TODOS_PROCESSOS': {
+        const processos = await adaptadorPm2.listarProcessos();
+        resultado = { processos } as unknown as Record<string, unknown>;
+        break;
+      }
+
       case 'GIT_STATUS': {
         const dirGit = (comando.dados as any)?.diretorio;
         if (!dirGit) throw new Error('Diretório não informado');

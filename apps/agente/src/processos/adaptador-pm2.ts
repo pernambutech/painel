@@ -129,6 +129,12 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
     );
   }
 
+  /** Retorna lista bruta de processos PM2 (usado pelo dashboard). */
+  async listarProcessos(): Promise<ProcessoPm2[]> {
+    await this.inicializar();
+    return (await this.executar<ProcessoPm2[]>((concluir) => pm2.list(concluir))) || [];
+  }
+
   async obterLogs(id: string, opcoes: OpcoesLogs = {}): Promise<LogProcesso[]> {
     await this.inicializar();
     const processo = (await this.descrever(id))[0];
