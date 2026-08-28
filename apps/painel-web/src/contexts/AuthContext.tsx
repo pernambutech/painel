@@ -31,6 +31,10 @@ export interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
+function selecionarOrganizacao(organizacoes: Organizacao[]): Organizacao {
+  return organizacoes.find((organizacao) => organizacao.slug === 'pernambutech') || organizacoes[0];
+}
+
 // ===========================================
 // PROVIDER
 // ===========================================
@@ -62,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Buscar organizações
       const organizacoes = await organizacoesApi.listar();
       if (organizacoes && organizacoes.length > 0) {
-        setOrganizacao(organizacoes[0]);
+        setOrganizacao(selecionarOrganizacao(organizacoes));
       }
     } catch (erro) {
       // Se houver erro, limpar sessão
@@ -96,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Buscar organizações
     const organizacoes = await organizacoesApi.listar();
     if (organizacoes && organizacoes.length > 0) {
-      setOrganizacao(organizacoes[0]);
+      setOrganizacao(selecionarOrganizacao(organizacoes));
     }
   };
 
@@ -116,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Buscar organizações (a organização padrão foi criada no cadastro)
     const organizacoes = await organizacoesApi.listar();
     if (organizacoes && organizacoes.length > 0) {
-      setOrganizacao(organizacoes[0]);
+      setOrganizacao(selecionarOrganizacao(organizacoes));
     }
   };
 
@@ -140,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const organizacoes = await organizacoesApi.listar();
       if (organizacoes && organizacoes.length > 0) {
-        setOrganizacao(organizacoes[0]);
+        setOrganizacao(selecionarOrganizacao(organizacoes));
       }
     } catch (erro) {
       console.error('Erro ao recarregar organização:', erro);
