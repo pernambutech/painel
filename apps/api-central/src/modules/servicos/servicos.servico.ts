@@ -497,7 +497,7 @@ export class ServicosServico {
     }
 
     // Sanitizar branch e remoto para evitar injeção de comandos
-    const regexNomeGit = /^[a-zA-Z0-9._\-\/]+$/;
+    const regexNomeGit = /^[a-zA-Z0-9._/-]+$/;
     const remoto = dados.remoto || 'origin';
     const branch = dados.branch || '';
 
