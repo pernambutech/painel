@@ -70,6 +70,12 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
             }
           : {}),
       };
+
+      // Deletar processo existente antes de recriar para garantir
+      // que variáveis de ambiente (PORT, PORTA, APP_PORT) sejam atualizadas.
+      // pm2.start em processo existente NÃO atualiza o env.
+      await this.deletarSeExistir(nome);
+
       const processo = await this.executar<ProcessoPm2>((concluir) => {
         pm2.start(
           {
@@ -158,6 +164,19 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
     }
 
     return entradas.slice(-linhas);
+  }
+
+  /**
+   * Deleta um processo PM2 pelo nome se ele existir.
+   * Necessário porque pm2.start em processo existente não atualiza env.
+   */
+  private async deletarSeExistir(nome: string): Promise<void> {
+    try {
+      await this.inicializar();
+      await this.executar<void>((concluir) => pm2.delete(nome, concluir as any));
+    } catch {
+      // Processo não existia — ok, prosseguir com start
+    }
   }
 
   private async operar(
