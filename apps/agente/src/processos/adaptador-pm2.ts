@@ -75,8 +75,26 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
       // Injetar a porta indicada no painel como variável de ambiente
       // Cobre tanto convenção em inglês (PORT) quanto em português (PORTA)
       // ex: Pernambutech usa process.env.PORTA, Next.js/Nest padrão usa PORT
+      const variaveisFornecidas = configuracao.variaveisAmbiente || {};
+
+      // Define explicitamente o NODE_ENV do processo iniciado.
+      // Motivo: o PM2 herda o ambiente do daemon (e do agente), que roda com
+      // NODE_ENV=production. Se esse valor vazar para um comando de
+      // desenvolvimento (ex.: "next dev"), o Next.js entra em modo híbrido
+      // inconsistente e quebra (ex.: erro ENOENT do prerender-manifest.js).
+      // Prioridade:
+      //   1. NODE_ENV informado nas variáveis de ambiente do serviço;
+      //   2. Derivação pelo comando (dev/watch → development, senão production).
+      const nodeEnvFornecido = variaveisFornecidas.NODE_ENV?.trim();
+      const nodeEnv = nodeEnvFornecido
+        ? nodeEnvFornecido
+        : /\bdev\b|start:dev|--watch|tsx watch|--inspect/.test(configuracao.comando)
+          ? 'development'
+          : 'production';
+
       const env = {
-        ...(configuracao.variaveisAmbiente || {}),
+        ...variaveisFornecidas,
+        NODE_ENV: nodeEnv,
         ...(configuracao.porta
           ? {
               PORT: String(configuracao.porta),
