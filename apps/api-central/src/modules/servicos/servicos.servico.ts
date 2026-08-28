@@ -444,6 +444,70 @@ export class ServicosServico {
     return (comando.resultado as Record<string, unknown>) || { logs: [] };
   }
 
+  // ===========================================
+  // OPERAÇÕES GIT (somente operações seguras)
+  // ===========================================
+
+  async gitStatus(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente } = await this.obterServicoEAgente(id, projetoId, organizacaoId, usuarioId);
+    if (!servico.diretorio) {
+      throw new BadRequestException('Serviço sem diretório configurado');
+    }
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'GIT_STATUS',
+      dados: { servicoId: servico.id, diretorio: servico.diretorio },
+    });
+    return (comando.resultado as Record<string, unknown>) || {};
+  }
+
+  async gitBranch(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente } = await this.obterServicoEAgente(id, projetoId, organizacaoId, usuarioId);
+    if (!servico.diretorio) {
+      throw new BadRequestException('Serviço sem diretório configurado');
+    }
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'GIT_BRANCH',
+      dados: { servicoId: servico.id, diretorio: servico.diretorio },
+    });
+    return (comando.resultado as Record<string, unknown>) || {};
+  }
+
+  async gitPull(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+    dados: { remoto?: string; branch?: string },
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente } = await this.obterServicoEAgente(id, projetoId, organizacaoId, usuarioId);
+    if (!servico.diretorio) {
+      throw new BadRequestException('Serviço sem diretório configurado');
+    }
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'GIT_PULL',
+      dados: {
+        servicoId: servico.id,
+        diretorio: servico.diretorio,
+        remoto: dados.remoto || 'origin',
+        branch: dados.branch || '',
+      },
+    });
+    return (comando.resultado as Record<string, unknown>) || {};
+  }
+
   private async obterServicoEAgente(
     id: string,
     projetoId: string,

@@ -359,6 +359,45 @@ async function processarComando(comando: any): Promise<void> {
         break;
       }
 
+      // ===========================================
+      // COMANDOS GIT (somente operações seguras)
+      // ===========================================
+
+      case 'GIT_STATUS': {
+        const dirGit = (comando.dados as any)?.diretorio;
+        if (!dirGit) throw new Error('Diretório não informado');
+        const status = execSync('git status --porcelain -b', { cwd: dirGit, encoding: 'utf-8', timeout: 15000 });
+        const linhas = status.split('\n').filter(Boolean);
+        const branchAtual = linhas[0]?.replace('## ', '').split('...')[0] || 'desconhecida';
+        const arquivos = linhas.slice(1).map((l) => ({
+          status: l.substring(0, 2).trim(),
+          arquivo: l.substring(3),
+        }));
+        resultado = { branch: branchAtual, arquivos, branchInfo: linhas[0] } as unknown as Record<string, unknown>;
+        break;
+      }
+
+      case 'GIT_BRANCH': {
+        const dirBranch = (comando.dados as any)?.diretorio;
+        if (!dirBranch) throw new Error('Diretório não informado');
+        const branches = execSync('git branch --format=%(refname:short)', { cwd: dirBranch, encoding: 'utf-8', timeout: 10000 });
+        const lista = branches.split('\n').filter(Boolean);
+        const atual = execSync('git branch --show-current', { cwd: dirBranch, encoding: 'utf-8', timeout: 10000 }).trim();
+        resultado = { branches: lista, atual } as unknown as Record<string, unknown>;
+        break;
+      }
+
+      case 'GIT_PULL': {
+        const dirPull = (comando.dados as any)?.diretorio;
+        if (!dirPull) throw new Error('Diretório não informado');
+        const remoto = (comando.dados as any)?.remoto || 'origin';
+        const branch = (comando.dados as any)?.branch || '';
+        const cmd = branch ? `git pull ${remoto} ${branch}` : `git pull ${remoto}`;
+        const saida = execSync(cmd, { cwd: dirPull, encoding: 'utf-8', timeout: 60000 });
+        resultado = { saida } as unknown as Record<string, unknown>;
+        break;
+      }
+
       default:
         throw new Error(`Comando não suportado: ${comando.tipo}`);
     }

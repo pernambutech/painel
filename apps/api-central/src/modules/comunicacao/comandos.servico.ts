@@ -19,7 +19,10 @@ export type TipoComando =
   | 'PARAR_SERVICO'
   | 'REINICIAR_SERVICO'
   | 'OBTER_STATUS_SERVICO'
-  | 'OBTER_LOGS_SERVICO';
+  | 'OBTER_LOGS_SERVICO'
+  | 'GIT_STATUS'
+  | 'GIT_BRANCH'
+  | 'GIT_PULL';
 
 // ===========================================
 // STATUS DO COMANDO

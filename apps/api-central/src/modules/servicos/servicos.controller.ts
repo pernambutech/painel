@@ -163,4 +163,39 @@ export class ServicosController {
       tipo,
     });
   }
+
+  // ===========================================
+  // OPERAÇÕES GIT (somente operações seguras)
+  // ===========================================
+
+  @Get('projetos/:projetoId/servicos/:id/git/status')
+  async gitStatus(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Request() req,
+  ) {
+    return this.servicosServico.gitStatus(id, projetoId, organizacaoId, req.user.id);
+  }
+
+  @Get('projetos/:projetoId/servicos/:id/git/branch')
+  async gitBranch(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Request() req,
+  ) {
+    return this.servicosServico.gitBranch(id, projetoId, organizacaoId, req.user.id);
+  }
+
+  @Post('projetos/:projetoId/servicos/:id/git/pull')
+  async gitPull(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Body() dados: { remoto?: string; branch?: string },
+    @Request() req,
+  ) {
+    return this.servicosServico.gitPull(id, projetoId, organizacaoId, req.user.id, dados);
+  }
 }

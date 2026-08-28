@@ -23,6 +23,8 @@ import {
   Edit3,
   FileText,
   FolderKanban,
+  GitBranch,
+  GitPullRequest,
   HardDrive,
   Network,
   Play,
@@ -60,6 +62,15 @@ export default function ProjetoDetalhePage() {
   const [carregandoLogs, setCarregandoLogs] = useState(false);
   const [tipoLog, setTipoLog] = useState<'todos' | 'stdout' | 'stderr'>('todos');
   const [erroLogs, setErroLogs] = useState('');
+
+  // Estado do modal Git
+  const [gitModalServico, setGitModalServico] = useState<Servico | null>(null);
+  const [gitStatus, setGitStatus] = useState<any>(null);
+  const [gitBranches, setGitBranches] = useState<any>(null);
+  const [gitSaida, setGitSaida] = useState('');
+  const [carregandoGit, setCarregandoGit] = useState(false);
+  const [erroGit, setErroGit] = useState('');
+  const [gitAba, setGitAba] = useState<'status' | 'branch'>('status');
 
   useEffect(() => {
     if (organizacao && projetoId) {
@@ -136,6 +147,70 @@ export default function ProjetoDetalhePage() {
       setErroLogs(err?.response?.data?.message || err?.message || 'Erro ao carregar logs.');
     } finally {
       setCarregandoLogs(false);
+    }
+  };
+
+  // ===========================================
+  // OPERAÇÕES GIT
+  // ===========================================
+
+  const abrirGit = async (servico: Servico) => {
+    setGitModalServico(servico);
+    setGitStatus(null);
+    setGitBranches(null);
+    setGitSaida('');
+    setErroGit('');
+    setGitAba('status');
+    await carregarGitStatus(servico);
+  };
+
+  const carregarGitStatus = async (servico: Servico) => {
+    if (!organizacao) return;
+    try {
+      setCarregandoGit(true);
+      setErroGit('');
+      const dados = await servicosApi.gitStatus(organizacao.id, projetoId, servico.id);
+      setGitStatus(dados);
+    } catch (err: any) {
+      console.error('[GIT] Erro ao obter status:', err);
+      setGitStatus(null);
+      setErroGit(err?.response?.data?.message || err?.message || 'Erro ao obter status Git.');
+    } finally {
+      setCarregandoGit(false);
+    }
+  };
+
+  const carregarGitBranches = async (servico: Servico) => {
+    if (!organizacao) return;
+    try {
+      setCarregandoGit(true);
+      setErroGit('');
+      const dados = await servicosApi.gitBranch(organizacao.id, projetoId, servico.id);
+      setGitBranches(dados);
+    } catch (err: any) {
+      console.error('[GIT] Erro ao listar branches:', err);
+      setGitBranches(null);
+      setErroGit(err?.response?.data?.message || err?.message || 'Erro ao listar branches.');
+    } finally {
+      setCarregandoGit(false);
+    }
+  };
+
+  const executarGitPull = async (servico: Servico) => {
+    if (!organizacao) return;
+    try {
+      setCarregandoGit(true);
+      setErroGit('');
+      setGitSaida('Executando git pull...');
+      const dados = await servicosApi.gitPull(organizacao.id, projetoId, servico.id);
+      setGitSaida(dados.saida || 'Pull concluído.');
+      await carregarGitStatus(servico);
+    } catch (err: any) {
+      console.error('[GIT] Erro ao executar pull:', err);
+      setGitSaida('');
+      setErroGit(err?.response?.data?.message || err?.message || 'Erro ao executar git pull.');
+    } finally {
+      setCarregandoGit(false);
     }
   };
 
@@ -534,6 +609,14 @@ export default function ProjetoDetalhePage() {
                     >
                       <FileText className="w-4 h-4 text-zinc-400" />
                     </Button>
+                    <Button
+                      variante="fantasma"
+                      tamanho="pequeno"
+                      title="Git"
+                      onClick={() => abrirGit(servico)}
+                    >
+                      <GitBranch className="w-4 h-4 text-orange-400" />
+                    </Button>
                     <div className="ml-1 h-6 w-px bg-[#2a2a32]" />
                     <Button
                       variante="fantasma"
@@ -668,6 +751,137 @@ export default function ProjetoDetalhePage() {
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de Git */}
+      {gitModalServico && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="flex max-h-[80vh] w-full max-w-3xl flex-col">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-zinc-100">
+                Git — {gitModalServico.nome}
+              </h3>
+              <Button variante="fantasma" tamanho="pequeno" onClick={() => setGitModalServico(null)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Abas */}
+            <div className="mb-3 flex items-center gap-2">
+              {(['status', 'branch'] as const).map((aba) => (
+                <button
+                  key={aba}
+                  onClick={() => {
+                    setGitAba(aba);
+                    if (aba === 'status' && !gitStatus) carregarGitStatus(gitModalServico);
+                    if (aba === 'branch' && !gitBranches) carregarGitBranches(gitModalServico);
+                  }}
+                  className={`rounded-lg px-3 py-1 text-xs font-medium ${gitAba === aba ? 'bg-[#5b7cfa] text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+                >
+                  {aba === 'status' ? 'Status' : 'Branches'}
+                </button>
+              ))}
+              <div className="flex-1" />
+              <Button
+                variante="secundario"
+                tamanho="pequeno"
+                onClick={() => executarGitPull(gitModalServico)}
+                carregando={carregandoGit}
+              >
+                <GitPullRequest className="w-4 h-4" />
+                Pull
+              </Button>
+              <Button
+                variante="fantasma"
+                tamanho="pequeno"
+                onClick={() => {
+                  if (gitAba === 'status') carregarGitStatus(gitModalServico);
+                  else carregarGitBranches(gitModalServico);
+                }}
+                carregando={carregandoGit}
+              >
+                Atualizar
+              </Button>
+            </div>
+
+            {/* Erro */}
+            {erroGit && (
+              <div className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                {erroGit}
+              </div>
+            )}
+
+            {/* Saída do pull */}
+            {gitSaida && (
+              <div className="mb-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300 font-mono whitespace-pre-wrap">
+                {gitSaida}
+              </div>
+            )}
+
+            {/* Conteúdo */}
+            <div className="flex-1 overflow-auto rounded-lg border border-[#2a2a32] bg-[#0d0d0f] p-4">
+              {carregandoGit ? (
+                <div className="flex items-center justify-center py-8">
+                  <Spinner />
+                </div>
+              ) : gitAba === 'status' ? (
+                !gitStatus ? (
+                  <p className="text-sm text-zinc-500">Sem dados de status.</p>
+                ) : (
+                  <div className="space-y-2 text-xs font-mono">
+                    <div className="text-zinc-300">
+                      <span className="text-zinc-500">Branch: </span>
+                      <span className="text-[#8ca2ff] font-semibold">{gitStatus.branch}</span>
+                    </div>
+                    {gitStatus.branchInfo && (
+                      <div className="text-zinc-500">{gitStatus.branchInfo}</div>
+                    )}
+                    {gitStatus.arquivos?.length > 0 ? (
+                      <div className="mt-3 space-y-1">
+                        {gitStatus.arquivos.map((a: any, i: number) => (
+                          <div key={i} className="flex gap-2">
+                            <span className={`w-6 text-center font-bold ${
+                              a.status === 'M' ? 'text-amber-400' :
+                              a.status === 'A' ? 'text-emerald-400' :
+                              a.status === 'D' ? 'text-red-400' :
+                              a.status === '?' ? 'text-zinc-600' :
+                              'text-zinc-400'
+                            }`}>{a.status || ' '}</span>
+                            <span className="text-zinc-300">{a.arquivo}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-zinc-500 mt-2">Working tree limpa.</p>
+                    )}
+                  </div>
+                )
+              ) : (
+                !gitBranches ? (
+                  <p className="text-sm text-zinc-500">Sem dados de branches.</p>
+                ) : (
+                  <div className="space-y-1 text-xs font-mono">
+                    {gitBranches.branches?.map((b: string) => (
+                      <div key={b} className="flex items-center gap-2">
+                        {b === gitBranches.atual ? (
+                          <span className="text-[#5b7cfa]">●</span>
+                        ) : (
+                          <span className="text-zinc-700">○</span>
+                        )}
+                        <span className={b === gitBranches.atual ? 'text-zinc-100 font-semibold' : 'text-zinc-400'}>
+                          {b}
+                        </span>
+                        {b === gitBranches.atual && (
+                          <span className="text-[#5b7cfa] text-[10px]">(HEAD)</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )
               )}
             </div>
           </Card>

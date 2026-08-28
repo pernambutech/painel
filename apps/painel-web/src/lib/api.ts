@@ -357,6 +357,37 @@ export const servicosApi = {
     );
     return resposta.data;
   },
+
+  // ===========================================
+  // OPERAÇÕES GIT
+  // ===========================================
+
+  gitStatus: async (organizacaoId: string, projetoId: string, id: string) => {
+    const resposta = await api.get(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/git/status`,
+    );
+    return resposta.data;
+  },
+
+  gitBranch: async (organizacaoId: string, projetoId: string, id: string) => {
+    const resposta = await api.get(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/git/branch`,
+    );
+    return resposta.data;
+  },
+
+  gitPull: async (
+    organizacaoId: string,
+    projetoId: string,
+    id: string,
+    dados?: { remoto?: string; branch?: string },
+  ) => {
+    const resposta = await api.post(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/git/pull`,
+      dados || {},
+    );
+    return resposta.data;
+  },
 };
 
 // ===========================================
