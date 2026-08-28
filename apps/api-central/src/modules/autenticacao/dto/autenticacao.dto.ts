@@ -1,7 +1,7 @@
 // DTOs para autenticação
 // Data Transfer Objects para cadastro e login
 
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 
 // ===========================================
 // DTO DE CADASTRO
@@ -33,6 +33,27 @@ export class LoginDto {
   @IsString({ message: 'Senha deve ser uma string' })
   @IsNotEmpty({ message: 'Senha é obrigatória' })
   senha: string;
+}
+
+export class AtualizarPerfilDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  nome?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+}
+
+export class AlterarSenhaDto {
+  @IsString()
+  @IsNotEmpty()
+  senhaAtual: string;
+
+  @IsString()
+  @MinLength(6)
+  novaSenha: string;
 }
 
 // ===========================================

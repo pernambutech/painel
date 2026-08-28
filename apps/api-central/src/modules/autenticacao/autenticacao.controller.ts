@@ -1,9 +1,9 @@
 // Controller de autenticação
 // Endpoints para cadastro e login
 
-import { Controller, Post, Body, UseGuards, Get, Request } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Put, Request } from '@nestjs/common';
 import { AutenticacaoServico } from './autenticacao.servico';
-import { CadastroDto, LoginDto } from './dto/autenticacao.dto';
+import { AlterarSenhaDto, AtualizarPerfilDto, CadastroDto, LoginDto } from './dto/autenticacao.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
@@ -36,5 +36,17 @@ export class AutenticacaoController {
   @Get('perfil')
   async obterPerfil(@Request() req) {
     return this.autenticacaoServico.validarUsuario(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('perfil')
+  async atualizarPerfil(@Body() dados: AtualizarPerfilDto, @Request() req) {
+    return this.autenticacaoServico.atualizarPerfil(req.user.id, dados);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('senha')
+  async alterarSenha(@Body() dados: AlterarSenhaDto, @Request() req) {
+    return this.autenticacaoServico.alterarSenha(req.user.id, dados);
   }
 }

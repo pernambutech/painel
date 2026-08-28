@@ -1,7 +1,7 @@
 // DTOs para organizações
 // Data Transfer Objects para criação e consulta
 
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 // ===========================================
 // DTO DE CRIAÇÃO
@@ -12,6 +12,14 @@ export class CriarOrganizacaoDto {
   @IsNotEmpty({ message: 'Nome é obrigatório' })
   @MaxLength(100, { message: 'Nome deve ter no máximo 100 caracteres' })
   nome: string;
+}
+
+export class AtualizarOrganizacaoDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  nome?: string;
 }
 
 // ===========================================

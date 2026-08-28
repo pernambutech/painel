@@ -1,9 +1,9 @@
 // Serviço de organizações
 // Gerencia criação, listagem e contexto de organizações
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaServico } from '../database/prisma.servico';
-import { CriarOrganizacaoDto, RespostaOrganizacao } from './dto/organizacao.dto';
+import { AtualizarOrganizacaoDto, CriarOrganizacaoDto, RespostaOrganizacao } from './dto/organizacao.dto';
 
 @Injectable()
 export class OrganizacoesServico {
@@ -100,6 +100,14 @@ export class OrganizacoesServico {
       papel: membro.papel,
       criadoEm: membro.organizacao.criadoEm,
     };
+  }
+
+  async atualizar(id: string, dados: AtualizarOrganizacaoDto, usuarioId: string): Promise<RespostaOrganizacao> {
+    const membro = await this.prisma.membroOrganizacao.findUnique({ where: { usuarioId_organizacaoId: { usuarioId, organizacaoId: id } } });
+    if (!membro) throw new ForbiddenException('Você não é membro desta organização');
+    if (!['proprietario', 'admin'].includes(membro.papel)) throw new ForbiddenException('Sem permissão para alterar esta organização');
+    const organizacao = await this.prisma.organizacao.update({ where: { id }, data: { ...(dados.nome !== undefined && { nome: dados.nome }) } });
+    return { id: organizacao.id, nome: organizacao.nome, slug: organizacao.slug, papel: membro.papel, criadoEm: organizacao.criadoEm };
   }
 
   // ===========================================

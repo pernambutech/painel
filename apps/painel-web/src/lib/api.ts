@@ -83,6 +83,16 @@ export const autenticacaoApi = {
     const resposta = await api.get('/auth/perfil');
     return resposta.data;
   },
+
+  atualizarPerfil: async (dados: { nome?: string; email?: string }) => {
+    const resposta = await api.put('/auth/perfil', dados);
+    return resposta.data;
+  },
+
+  alterarSenha: async (dados: { senhaAtual: string; novaSenha: string }) => {
+    const resposta = await api.put('/auth/senha', dados);
+    return resposta.data;
+  },
 };
 
 // ===========================================
@@ -99,6 +109,11 @@ export const organizacoesApi = {
   // Obter organização por ID
   obterPorId: async (id: string) => {
     const resposta = await api.get(`/organizacoes/${id}`);
+    return resposta.data;
+  },
+
+  atualizar: async (id: string, dados: { nome: string }) => {
+    const resposta = await api.put(`/organizacoes/${id}`, dados);
     return resposta.data;
   },
 

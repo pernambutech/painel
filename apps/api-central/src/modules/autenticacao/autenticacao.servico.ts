@@ -5,7 +5,7 @@ import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/co
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaServico } from '../database/prisma.servico';
-import { CadastroDto, LoginDto, RespostaAutenticacao } from './dto/autenticacao.dto';
+import { AlterarSenhaDto, AtualizarPerfilDto, CadastroDto, LoginDto, RespostaAutenticacao } from './dto/autenticacao.dto';
 
 @Injectable()
 export class AutenticacaoServico {
@@ -113,6 +113,28 @@ export class AutenticacaoServico {
     }
 
     return usuario;
+  }
+
+  async atualizarPerfil(id: string, dados: AtualizarPerfilDto) {
+    if (dados.email) {
+      const existente = await this.prisma.usuario.findFirst({ where: { email: dados.email, NOT: { id } } });
+      if (existente) throw new ConflictException('Email já cadastrado');
+    }
+    return this.prisma.usuario.update({
+      where: { id },
+      data: { ...(dados.nome !== undefined && { nome: dados.nome }), ...(dados.email !== undefined && { email: dados.email }) },
+      select: { id: true, nome: true, email: true, ativo: true },
+    });
+  }
+
+  async alterarSenha(id: string, dados: AlterarSenhaDto) {
+    const usuario = await this.prisma.usuario.findUnique({ where: { id } });
+    if (!usuario || !(await bcrypt.compare(dados.senhaAtual, usuario.senha))) {
+      throw new UnauthorizedException('Senha atual inválida');
+    }
+    const senha = await bcrypt.hash(dados.novaSenha, 10);
+    await this.prisma.usuario.update({ where: { id }, data: { senha } });
+    return { mensagem: 'Senha alterada com sucesso' };
   }
 
   // ===========================================
