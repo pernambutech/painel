@@ -1,5 +1,6 @@
 import * as fs from 'fs/promises';
 import * as os from 'os';
+import * as path from 'path';
 import pm2 from 'pm2';
 import type {
   ConfiguracaoServico,
@@ -57,21 +58,40 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
       const nomeExistente = await this.encontrarNome(configuracao);
       if (nomeExistente) {
         const existente = (await this.descrever(nomeExistente))[0];
-        if (existente?.pm2_env?.status === 'stopped') {
-          await this.executar<ProcessoPm2>((concluir) => pm2.start(nomeExistente, concluir));
+        // Reutiliza somente se o processo já estiver ONLINE.
+        // Processos parados/erro caem no fluxo de criação abaixo, que deleta e
+        // recria com o comando/ambiente/logs atuais — pm2.start(nome) apenas
+        // reativaria a configuração antiga (ex.: sem redirecionamento de logs).
+        if (existente?.pm2_env?.status === 'online') {
+          return {
+            sucesso: true,
+            processoId: configuracao.id,
+            pid: existente?.pid,
+            dados: { nomePm2: nomeExistente, reutilizado: true },
+          };
         }
-        return {
-          sucesso: true,
-          processoId: configuracao.id,
-          pid: existente?.pid,
-          dados: { nomePm2: nomeExistente, reutilizado: true },
-        };
       }
       const shell = os.platform() === 'win32' ? 'cmd.exe' : 'sh';
-      const argumentosShell =
-        os.platform() === 'win32'
-          ? ['/d', '/s', '/c', configuracao.comando, ...(configuracao.argumentos || [])]
-          : ['-lc', [configuracao.comando, ...(configuracao.argumentos || [])].join(' ')];
+      const ehWindows = os.platform() === 'win32';
+// Caminhos de log: no Windows o PM2 não captura a saída de processos
+      // via cmd.exe, então o comando redireciona explicitamente para arquivos
+      // na pasta de logs do painel. Essa pasta é SEPARADA da pasta do PM2:
+      // apontar out_file/error_file para os mesmos arquivos do redirecionamento
+      // causa disputa de escrita no Windows ("arquivo já está sendo usado").
+
+      const caminhoOut = this.caminhoLog(nome, 'out');
+      const caminhoErro = this.caminhoLog(nome, 'error');
+
+      // Garante que a pasta de logs do painel exista antes do redirecionamento.
+      await fs.mkdir(path.dirname(caminhoOut), { recursive: true });
+
+      const comandoExecutado = ehWindows
+        ? this.comandoComLogs(configuracao.comando, caminhoOut, caminhoErro)
+        : configuracao.comando;
+
+      const argumentosShell = ehWindows
+        ? ['/d', '/s', '/c', comandoExecutado, ...(configuracao.argumentos || [])]
+        : ['-lc', [configuracao.comando, ...(configuracao.argumentos || [])].join(' ')];
       // Injetar a porta indicada no painel como variável de ambiente
       // Cobre tanto convenção em inglês (PORT) quanto em português (PORTA)
       // ex: Pernambutech usa process.env.PORTA, Next.js/Nest padrão usa PORT
@@ -120,6 +140,9 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
             autorestart: true,
             max_restarts: configuracao.maxReinicios,
             restart_delay: configuracao.restartDelay,
+            // NOTA: não definir out_file/error_file aqui. No Windows o PM2
+            // segura esses arquivos com handle próprio e o redirecionamento do
+            // cmd.exe para o mesmo caminho causaria conflito de escrita.
           },
           concluir,
         );
@@ -183,14 +206,26 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
 
     const linhas = opcoes.linhas || 100;
     const entradas: LogProcesso[] = [];
+
+    // No Windows o PM2 não captura a saída de processos via cmd.exe, então os
+    // logs ficam nos arquivos da pasta do painel (redirecionamento explícito
+    // no comando). Nas demais plataformas o PM2 captura normalmente e usamos
+    // pm_out_log_path/pm_err_log_path (campos padrão).
+    const ehWindows = os.platform() === 'win32';
+    const caminhoOut = ehWindows
+      ? this.caminhoLog(processo.name || id, 'out')
+      : processo.pm2_env.pm_out_log_path;
+    const caminhoErro = ehWindows
+      ? this.caminhoLog(processo.name || id, 'error')
+      : processo.pm2_env.pm_err_log_path;
     const arquivos =
       opcoes.tipo === 'stderr'
-        ? [['stderr', processo.pm2_env.pm_err_log_path]]
+        ? [['stderr', caminhoErro]]
         : opcoes.tipo === 'stdout'
-          ? [['stdout', processo.pm2_env.pm_out_log_path]]
+          ? [['stdout', caminhoOut]]
           : [
-              ['stdout', processo.pm2_env.pm_out_log_path],
-              ['stderr', processo.pm2_env.pm_err_log_path],
+              ['stdout', caminhoOut],
+              ['stderr', caminhoErro],
             ];
 
     for (const [fonte, caminho] of arquivos) {
@@ -237,6 +272,39 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
     } catch (erro) {
       return { sucesso: false, processoId: id, erro: this.mensagemErro(erro) };
     }
+  }
+
+  /**
+   * Pasta de logs do painel (separada da pasta de logs do PM2 para evitar
+   * conflito de escrita no Windows, onde o PM2 segura o arquivo de log com
+   * handle próprio e o redirecionamento do cmd.exe geraria disputa pelo
+   * mesmo arquivo: "O arquivo já está sendo usado por outro processo").
+   */
+  private pastaLogs(): string {
+    return process.env.PAINEL_LOGS_DIR || path.join(os.homedir(), '.painel', 'logs');
+  }
+
+  /**
+   * Caminho do arquivo de log de um processo, na pasta de logs do painel.
+   * No Windows o PM2 NÃO captura a saída de processos iniciados via cmd.exe,
+   * então gravamos nesses arquivos por redirecionamento explícito no comando
+   * (ver comandoComLogs) e o obterLogs lê exatamente desses arquivos.
+   */
+  private caminhoLog(nome: string, tipo: 'out' | 'error'): string {
+    const nomeSeguro = nome.replace(/[^a-zA-Z0-9._-]+/g, '-');
+    return path.join(this.pastaLogs(), `${nomeSeguro}-${tipo}.log`);
+  }
+
+  /**
+   * Adiciona redirecionamento de saída ao comando. Necessário no Windows:
+   * processos iniciados via cmd.exe não têm stdout/stderr capturados pelo PM2
+   * (os arquivos de log ficam vazios). O redirecionamento aponta para os
+   * mesmos arquivos usados pelo PM2 (out_file/error_file), então o
+   * obterLogs continua lendo pm_out_log_path/pm_err_log_path normalmente.
+   */
+  private comandoComLogs(comando: string, saida: string, erro: string): string {
+    const citar = (caminho: string) => (/\s/.test(caminho) ? `"${caminho}"` : caminho);
+    return `${comando} 1> ${citar(saida)} 2> ${citar(erro)}`;
   }
 
   private async descrever(id: string): Promise<ProcessoPm2[]> {
