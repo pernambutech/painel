@@ -89,6 +89,7 @@ export class AgentesController {
     'INICIAR_SERVICO',
     'PARAR_SERVICO',
     'REINICIAR_SERVICO',
+    'PM2_SAVE',
     'OBTER_STATUS_SERVICO',
     'OBTER_LOGS_SERVICO',
     'OBTER_TODOS_PROCESSOS',
@@ -123,6 +124,21 @@ export class AgentesController {
       tipo: dados.tipo,
       dados: dados.dados,
       timeoutMs,
+    });
+  }
+
+  @Post(':id/pm2/save')
+  async salvarProcessosPm2(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('id') agenteId: string,
+    @Request() req,
+  ) {
+    await this.agentesServico.obterPorId(agenteId, organizacaoId, req.user.id);
+
+    return this.comandosServico.enviarEAguardar({
+      agenteId: agenteId,
+      tipo: 'PM2_SAVE',
+      timeoutMs: 30_000,
     });
   }
 

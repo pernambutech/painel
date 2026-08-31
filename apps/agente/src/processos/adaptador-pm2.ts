@@ -27,6 +27,11 @@ interface ProcessoPm2 {
   };
 }
 
+export function obterComandoStartup(plataforma: NodeJS.Platform = process.platform): string {
+  if (plataforma === 'win32') return 'pm2 startup';
+  return 'pm2 startup';
+}
+
 export class AdaptadorPm2 implements IAdaptadorProcessos {
   private conectado = false;
 
@@ -157,11 +162,21 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
         );
       });
 
+      const persistencia = await this.salvar();
+      if (!persistencia.sucesso) {
+        return {
+          sucesso: false,
+          processoId: configuracao.id,
+          pid: processo?.pid,
+          erro: persistencia.erro || 'Falha ao salvar processo no PM2 para reinicialização automática',
+        };
+      }
+
       return {
         sucesso: true,
         processoId: configuracao.id,
         pid: processo?.pid,
-        dados: { nomePm2: nome },
+        dados: { nomePm2: nome, persistido: true },
       };
     } catch (erro) {
       return { sucesso: false, erro: this.mensagemErro(erro) };
@@ -174,6 +189,27 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
 
   async reiniciar(id: string): Promise<ResultadoProcesso> {
     return this.operar(id, (nome, concluir) => pm2.restart(nome, concluir));
+  }
+
+  async salvar(): Promise<ResultadoProcesso> {
+    try {
+      await this.inicializar();
+      await this.executar<void>((concluir) => {
+        const pm2Any = pm2 as any;
+        if (typeof pm2Any.save === 'function') {
+          pm2Any.save(concluir);
+          return;
+        }
+        if (typeof pm2Any.dump === 'function') {
+          pm2Any.dump(concluir);
+          return;
+        }
+        concluir(new Error('PM2 não possui método de persistência disponível.'));
+      });
+      return { sucesso: true, dados: { comando: obterComandoStartup() } };
+    } catch (erro) {
+      return { sucesso: false, erro: this.mensagemErro(erro) };
+    }
   }
 
   async obterStatus(id: string): Promise<StatusProcesso> {

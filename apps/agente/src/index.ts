@@ -339,6 +339,13 @@ async function processarComando(comando: any): Promise<void> {
         break;
       }
 
+      case 'PM2_SAVE': {
+        const resultadoPm2 = await adaptadorPm2.salvar();
+        if (!resultadoPm2.sucesso) throw new Error(resultadoPm2.erro || 'Falha ao salvar processos do PM2');
+        resultado = { mensagem: 'Processos PM2 persistidos para reinicialização automática', ...resultadoPm2 } as any;
+        break;
+      }
+
       case 'OBTER_STATUS_SERVICO': {
         const servicoId = (comando.dados as any)?.servicoId;
         const dados = (comando.dados as any) || {};
