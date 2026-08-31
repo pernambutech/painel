@@ -203,6 +203,18 @@ export const agentesApi = {
     const resposta = await api.delete(`/organizacoes/${organizacaoId}/agentes/${id}`);
     return resposta.data;
   },
+
+  // Persistir processos PM2 para reinicialização automática do sistema
+  salvarPm2: async (organizacaoId: string, id: string) => {
+    const resposta = await api.post(`/organizacoes/${organizacaoId}/agentes/${id}/pm2/save`);
+    return resposta.data;
+  },
+};
+
+export const servicosPm2Api = {
+  salvar: async (organizacaoId: string, agenteId: string) => {
+    return agentesApi.salvarPm2(organizacaoId, agenteId);
+  },
 };
 
 // ===========================================

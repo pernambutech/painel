@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { projetosApi, servicosApi } from '@/lib/api';
+import { projetosApi, servicosApi, servicosPm2Api } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { BadgeSimples } from '@/components/ui/Badge';
@@ -119,6 +119,24 @@ export default function ProjetoDetalhePage() {
       setStatusPorServico((prev) => ({ ...prev, [servicoId]: status }));
     } catch (err: any) {
       setErro(err.response?.data?.message || `Erro ao ${acao} serviço.`);
+    } finally {
+      setControleCarregando(null);
+    }
+  };
+
+  const salvarPm2DoServico = async (servico: Servico) => {
+    if (!organizacao || !servico.ambiente?.id) return;
+
+    try {
+      setControleCarregando(`pm2-save-${servico.id}`);
+      await servicosPm2Api.salvar(organizacao.id, servico.ambiente.id);
+      setErro('');
+    } catch (err: any) {
+      setErro(
+        err?.response?.data?.message ||
+          err?.message ||
+          `Erro ao persistir o PM2 do serviço ${servico.nome}.`,
+      );
     } finally {
       setControleCarregando(null);
     }
@@ -600,6 +618,16 @@ export default function ProjetoDetalhePage() {
                       disabled={!!carregandoAcao}
                     >
                       <RotateCw className="w-4 h-4 text-blue-400" />
+                    </Button>
+                    <Button
+                      variante="fantasma"
+                      tamanho="pequeno"
+                      title="Salvar PM2"
+                      onClick={() => salvarPm2DoServico(servico)}
+                      carregando={controleCarregando === `pm2-save-${servico.id}`}
+                      disabled={!!carregandoAcao}
+                    >
+                      <Terminal className="w-4 h-4 text-violet-400" />
                     </Button>
                     <Button
                       variante="fantasma"

@@ -116,6 +116,20 @@ export default function AmbienteDetalhePage() {
     }
   };
 
+  const salvarProcessosPm2 = async () => {
+    if (!organizacao || !agente) return;
+
+    try {
+      setSalvando(true);
+      await agentesApi.salvarPm2(organizacao.id, agente.id);
+      setErro('');
+    } catch (err: any) {
+      setErro(err?.response?.data?.message || err?.message || 'Erro ao persistir processos PM2.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
   const copiarToken = async () => {
     try {
       await navigator.clipboard.writeText(tokenAgente);
@@ -386,7 +400,18 @@ export default function AmbienteDetalhePage() {
       {/* Seção 2 - Agente */}
       {agente ? (
         <Card>
-          <h2 className="text-lg font-semibold text-zinc-100 mb-4">Agente</h2>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-zinc-100">Agente</h2>
+            <Button
+              variante="secundario"
+              tamanho="pequeno"
+              onClick={salvarProcessosPm2}
+              carregando={salvando}
+            >
+              <Terminal className="w-4 h-4" />
+              Salvar PM2
+            </Button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-zinc-500 mb-1">ID do Agente</p>
