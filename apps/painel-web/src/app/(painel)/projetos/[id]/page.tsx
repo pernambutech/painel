@@ -20,6 +20,8 @@ import {
   ArchiveRestore,
   CalendarDays,
   Check,
+  ChevronDown,
+  ChevronUp,
   Edit3,
   FileText,
   FolderKanban,
@@ -57,6 +59,7 @@ export default function ProjetoDetalhePage() {
   const [servicoParaRemover, setServicoParaRemover] = useState<Servico | null>(null);
   const [statusPorServico, setStatusPorServico] = useState<Record<string, any>>({});
   const [controleCarregando, setControleCarregando] = useState<string | null>(null);
+  const [servicoExpandidoId, setServicoExpandidoId] = useState<string | null>(null);
   const [logsModalServico, setLogsModalServico] = useState<Servico | null>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [carregandoLogs, setCarregandoLogs] = useState(false);
@@ -544,116 +547,163 @@ export default function ProjetoDetalhePage() {
                       ? 'erro'
                       : 'neutro';
               const carregandoAcao = controleCarregando?.endsWith(servico.id);
+              const expandido = servicoExpandidoId === servico.id;
               return (
                 <div
                   key={servico.id}
-                  className="flex flex-col gap-3 rounded-lg border border-[#2a2a32] bg-[#17171c] p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="rounded-lg border border-[#2a2a32] bg-[#17171c]"
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium text-zinc-100">{servico.nome}</h3>
-                      <BadgeSimples variante="neutro">
-                        {tipoLabels[servico.tipo] || servico.tipo}
-                      </BadgeSimples>
-                      <BadgeSimples variante={varianteStatus as any}>{estado}</BadgeSimples>
-                      {status?.pid && (
-                        <span className="text-xs text-zinc-500">PID {status.pid}</span>
-                      )}
-                      {status?.reinicios !== undefined && status.reinicios > 0 && (
-                        <span className="text-xs text-amber-400">{status.reinicios} reinícios</span>
-                      )}
+                  {/* Linha principal — clicável para expandir */}
+                  <div
+                    className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between cursor-pointer hover:bg-[#1c1c22] transition-colors"
+                    onClick={() => setServicoExpandidoId(expandido ? null : servico.id)}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium text-zinc-100">{servico.nome}</h3>
+                        <BadgeSimples variante="neutro">
+                          {tipoLabels[servico.tipo] || servico.tipo}
+                        </BadgeSimples>
+                        <BadgeSimples variante={varianteStatus as any}>{estado}</BadgeSimples>
+                        {status?.pid && (
+                          <span className="text-xs text-zinc-500">PID {status.pid}</span>
+                        )}
+                        {status?.reinicios !== undefined && status.reinicios > 0 && (
+                          <span className="text-xs text-amber-400">{status.reinicios} reinícios</span>
+                        )}
+                      </div>
+                      <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-zinc-500">
+                        {servico.diretorio && (
+                          <span className="flex items-center gap-1">
+                            <HardDrive className="w-3 h-3" /> {servico.diretorio}
+                          </span>
+                        )}
+                        {servico.comando && (
+                          <span className="flex items-center gap-1">
+                            <Terminal className="w-3 h-3" /> {servico.comando}
+                          </span>
+                        )}
+                        {servico.porta && (
+                          <span className="flex items-center gap-1">
+                            <Network className="w-3 h-3" /> :{servico.porta}
+                          </span>
+                        )}
+                        {servico.ambiente && <span>Ambiente: {servico.ambiente.nome}</span>}
+                        {status?.uptimeMs !== undefined && (
+                          <span className="flex items-center gap-1">
+                            <Activity className="w-3 h-3" /> {Math.floor(status.uptimeMs / 1000)}s
+                            ativo
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-zinc-500">
-                      {servico.diretorio && (
-                        <span className="flex items-center gap-1">
-                          <HardDrive className="w-3 h-3" /> {servico.diretorio}
-                        </span>
-                      )}
-                      {servico.comando && (
-                        <span className="flex items-center gap-1">
-                          <Terminal className="w-3 h-3" /> {servico.comando}
-                        </span>
-                      )}
-                      {servico.porta && (
-                        <span className="flex items-center gap-1">
-                          <Network className="w-3 h-3" /> :{servico.porta}
-                        </span>
-                      )}
-                      {servico.ambiente && <span>Ambiente: {servico.ambiente.nome}</span>}
-                      {status?.uptimeMs !== undefined && (
-                        <span className="flex items-center gap-1">
-                          <Activity className="w-3 h-3" /> {Math.floor(status.uptimeMs / 1000)}s
-                          ativo
-                        </span>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variante="fantasma"
+                        tamanho="pequeno"
+                        title="Iniciar"
+                        onClick={(e) => { e.stopPropagation(); controlarServico(servico.id, 'iniciar'); }}
+                        carregando={controleCarregando === `iniciar-${servico.id}`}
+                        disabled={!!carregandoAcao}
+                      >
+                        <Play className="w-4 h-4 text-emerald-400" />
+                      </Button>
+                      <Button
+                        variante="fantasma"
+                        tamanho="pequeno"
+                        title="Parar"
+                        onClick={(e) => { e.stopPropagation(); controlarServico(servico.id, 'parar'); }}
+                        carregando={controleCarregando === `parar-${servico.id}`}
+                        disabled={!!carregandoAcao}
+                      >
+                        <Square className="w-4 h-4 text-amber-400" />
+                      </Button>
+                      <Button
+                        variante="fantasma"
+                        tamanho="pequeno"
+                        title="Reiniciar"
+                        onClick={(e) => { e.stopPropagation(); controlarServico(servico.id, 'reiniciar'); }}
+                        carregando={controleCarregando === `reiniciar-${servico.id}`}
+                        disabled={!!carregandoAcao}
+                      >
+                        <RotateCw className="w-4 h-4 text-blue-400" />
+                      </Button>
+                      <div className="ml-1 h-6 w-px bg-[#2a2a32]" />
+                      {expandido ? (
+                        <ChevronUp className="h-4 w-4 text-zinc-500" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-zinc-500" />
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Button
-                      variante="fantasma"
-                      tamanho="pequeno"
-                      title="Iniciar"
-                      onClick={() => controlarServico(servico.id, 'iniciar')}
-                      carregando={controleCarregando === `iniciar-${servico.id}`}
-                      disabled={!!carregandoAcao}
-                    >
-                      <Play className="w-4 h-4 text-emerald-400" />
-                    </Button>
-                    <Button
-                      variante="fantasma"
-                      tamanho="pequeno"
-                      title="Parar"
-                      onClick={() => controlarServico(servico.id, 'parar')}
-                      carregando={controleCarregando === `parar-${servico.id}`}
-                      disabled={!!carregandoAcao}
-                    >
-                      <Square className="w-4 h-4 text-amber-400" />
-                    </Button>
-                    <Button
-                      variante="fantasma"
-                      tamanho="pequeno"
-                      title="Reiniciar"
-                      onClick={() => controlarServico(servico.id, 'reiniciar')}
-                      carregando={controleCarregando === `reiniciar-${servico.id}`}
-                      disabled={!!carregandoAcao}
-                    >
-                      <RotateCw className="w-4 h-4 text-blue-400" />
-                    </Button>
-                    <Button
-                      variante="fantasma"
-                      tamanho="pequeno"
-                      title="Salvar PM2"
-                      onClick={() => salvarPm2DoServico(servico)}
-                      carregando={controleCarregando === `pm2-save-${servico.id}`}
-                      disabled={!!carregandoAcao}
-                    >
-                      <Terminal className="w-4 h-4 text-violet-400" />
-                    </Button>
-                    <Button
-                      variante="fantasma"
-                      tamanho="pequeno"
-                      title="Ver logs"
-                      onClick={() => abrirLogs(servico)}
-                    >
-                      <FileText className="w-4 h-4 text-zinc-400" />
-                    </Button>
-                    <Button
-                      variante="fantasma"
-                      tamanho="pequeno"
-                      title="Git"
-                      onClick={() => abrirGit(servico)}
-                    >
-                      <GitBranch className="w-4 h-4 text-orange-400" />
-                    </Button>
-                    <div className="ml-1 h-6 w-px bg-[#2a2a32]" />
-                    <Button
-                      variante="fantasma"
-                      tamanho="pequeno"
-                      onClick={() => setServicoParaRemover(servico)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+
+                  {/* Painel expandido — detalhes do serviço */}
+                  {expandido && (
+                    <div className="border-t border-[#2a2a32] px-4 py-3 bg-[#13131a]">
+                      <div className="grid gap-3 text-xs sm:grid-cols-2">
+                        {/* Coluna 1: Configuração */}
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Configuração</p>
+                          <div className="space-y-1 text-zinc-400">
+                            <div><span className="text-zinc-600">ID:</span> <span className="font-mono text-zinc-500">{servico.id.slice(0, 8)}...</span></div>
+                            {servico.diretorio && <div><span className="text-zinc-600">Diretório:</span> {servico.diretorio}</div>}
+                            {servico.comando && <div><span className="text-zinc-600">Comando:</span> {servico.comando}</div>}
+                            {servico.porta && <div><span className="text-zinc-600">Porta:</span> {servico.porta}</div>}
+                            {servico.ambiente && <div><span className="text-zinc-600">Ambiente:</span> {servico.ambiente.nome}</div>}
+                          </div>
+                        </div>
+                        {/* Coluna 2: Status e ações */}
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Status</p>
+                          <div className="space-y-1 text-zinc-400">
+                            <div><span className="text-zinc-600">Estado:</span> {estado}</div>
+                            {status?.pid && <div><span className="text-zinc-600">PID:</span> {status.pid}</div>}
+                            {status?.uptimeMs !== undefined && (
+                              <div><span className="text-zinc-600">Uptime:</span> {Math.floor(status.uptimeMs / 1000)}s</div>
+                            )}
+                            {status?.reinicios !== undefined && (
+                              <div><span className="text-zinc-600">Reinícios:</span> {status.reinicios}</div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 pt-1">
+                            <Button
+                              variante="fantasma"
+                              tamanho="pequeno"
+                              title="Ver logs"
+                              onClick={(e) => { e.stopPropagation(); abrirLogs(servico); }}
+                            >
+                              <FileText className="w-4 h-4 text-zinc-400" /> <span className="text-xs">Logs</span>
+                            </Button>
+                            <Button
+                              variante="fantasma"
+                              tamanho="pequeno"
+                              title="Git"
+                              onClick={(e) => { e.stopPropagation(); abrirGit(servico); }}
+                            >
+                              <GitBranch className="w-4 h-4 text-orange-400" /> <span className="text-xs">Git</span>
+                            </Button>
+                            <Button
+                              variante="fantasma"
+                              tamanho="pequeno"
+                              title="Salvar PM2"
+                              onClick={(e) => { e.stopPropagation(); salvarPm2DoServico(servico); }}
+                              carregando={controleCarregando === `pm2-save-${servico.id}`}
+                            >
+                              <Terminal className="w-4 h-4 text-violet-400" /> <span className="text-xs">PM2</span>
+                            </Button>
+                            <div className="ml-1 h-6 w-px bg-[#2a2a32]" />
+                            <Button
+                              variante="fantasma"
+                              tamanho="pequeno"
+                              onClick={(e) => { e.stopPropagation(); setServicoParaRemover(servico); }}
+                            >
+                              <Trash2 className="w-4 h-4 text-red-400" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
