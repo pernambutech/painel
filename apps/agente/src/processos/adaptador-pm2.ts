@@ -303,7 +303,7 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
         for (const linha of conteudo.split(/\r?\n/).filter(Boolean).slice(-linhas)) {
           const correspondencia = regexTimestamp.exec(linha);
           const timestamp = correspondencia
-            ? new Date(correspondencia[1].replace(' ', 'T') + ':00').toISOString()
+            ? new Date(correspondencia[1].replace(' ', 'T')).toISOString()
             : new Date().toISOString();
           const mensagem = correspondencia ? correspondencia[2] : linha;
 
