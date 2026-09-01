@@ -415,6 +415,30 @@ export const servicosApi = {
     );
     return resposta.data;
   },
+
+  gitLog: async (organizacaoId: string, projetoId: string, id: string, limite = 50) => {
+    const resposta = await api.get(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/git/log`,
+      { params: { limite } },
+    );
+    return resposta.data;
+  },
+
+  gitCheckout: async (organizacaoId: string, projetoId: string, id: string, hash: string) => {
+    const resposta = await api.post(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/git/checkout`,
+      { hash },
+    );
+    return resposta.data;
+  },
+
+  gitCheckoutBranch: async (organizacaoId: string, projetoId: string, id: string, branch: string) => {
+    const resposta = await api.post(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/git/checkout-branch`,
+      { branch },
+    );
+    return resposta.data;
+  },
 };
 
 // ===========================================

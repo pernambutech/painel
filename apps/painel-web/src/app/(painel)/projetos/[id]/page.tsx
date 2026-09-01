@@ -26,6 +26,7 @@ import {
   FileText,
   FolderKanban,
   GitBranch,
+  GitCommit,
   GitPullRequest,
   HardDrive,
   Network,
@@ -38,6 +39,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+import { CommitsModal } from '@/components/CommitsModal';
 import type { Projeto, Servico } from '@/types';
 
 export default function ProjetoDetalhePage() {
@@ -75,6 +77,10 @@ export default function ProjetoDetalhePage() {
   const [erroGit, setErroGit] = useState('');
   const [gitAba, setGitAba] = useState<'status' | 'branch'>('status');
 
+  // Estado do modal de Commits
+  const [commitsModalServico, setCommitsModalServico] = useState<Servico | null>(null);
+  const [commitsPorServico, setCommitsPorServico] = useState<Record<string, any[]>>({});
+
   useEffect(() => {
     if (organizacao && projetoId) {
       carregarProjeto();
@@ -98,6 +104,17 @@ export default function ProjetoDetalhePage() {
           .catch(() => {
             setStatusPorServico((prev) => ({ ...prev, [s.id]: { status: 'desconhecido' } }));
           });
+        // Buscar últimos 2 commits se o serviço tem diretório Git
+        if (s.diretorio) {
+          servicosApi
+            .gitLog(organizacao.id, projetoId, s.id, 2)
+            .then((dados) => {
+              setCommitsPorServico((prev) => ({ ...prev, [s.id]: dados.commits || [] }));
+            })
+            .catch(() => {
+              setCommitsPorServico((prev) => ({ ...prev, [s.id]: [] }));
+            });
+        }
       });
     } catch {
       // Silencioso — lista vazia
@@ -688,6 +705,16 @@ export default function ProjetoDetalhePage() {
                             >
                               <GitBranch className="w-4 h-4 text-orange-400" /> <span className="text-xs">Git</span>
                             </Button>
+                            {servico.diretorio && (
+                              <Button
+                                variante="fantasma"
+                                tamanho="pequeno"
+                                title="Commits"
+                                onClick={(e) => { e.stopPropagation(); setCommitsModalServico(servico); }}
+                              >
+                                <GitCommit className="w-4 h-4 text-cyan-400" /> <span className="text-xs">Commits</span>
+                              </Button>
+                            )}
                             <Button
                               variante="fantasma"
                               tamanho="pequeno"
@@ -706,6 +733,18 @@ export default function ProjetoDetalhePage() {
                               <Trash2 className="w-4 h-4 text-red-400" />
                             </Button>
                           </div>
+                          {/* Últimos 2 commits */}
+                          {commitsPorServico[servico.id]?.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Últimos commits</p>
+                              {commitsPorServico[servico.id].slice(0, 2).map((c: any) => (
+                                <div key={c.hash} className="flex items-center gap-2 text-[11px]">
+                                  <span className="font-mono text-[#8ca2ff] bg-[#5b7cfa]/10 px-1 py-0.5 rounded">{c.hash.slice(0, 7)}</span>
+                                  <span className="text-zinc-500 truncate">{c.mensagem}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -970,6 +1009,18 @@ export default function ProjetoDetalhePage() {
             </div>
           </Card>
         </div>
+      )}
+
+      {/* Modal de Commits */}
+      {commitsModalServico && (
+        <CommitsModal
+          servicoId={commitsModalServico.id}
+          projetoId={projetoId}
+          nomeServico={commitsModalServico.nome}
+          branchAtual={gitBranches?.atual}
+          aoFechar={() => setCommitsModalServico(null)}
+          aoAtualizar={() => carregarServicos()}
+        />
       )}
     </div>
   );
