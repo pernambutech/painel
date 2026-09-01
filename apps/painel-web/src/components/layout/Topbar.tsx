@@ -1,19 +1,39 @@
 // Componente Topbar
-// Barra superior com botão hamburger e informação da organização
+// Barra superior com: organização, notificações reais, ajuda e perfil
 
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { ambientesApi, organizacoesApi } from '@/lib/api';
-import { Bell, Building2, ChevronDown, CircleHelp, LogOut, UserRound } from 'lucide-react';
+import {
+  Bell,
+  Building2,
+  ChevronDown,
+  CircleHelp,
+  LogOut,
+  Settings,
+  UserRound,
+  WifiOff,
+  BookOpen,
+} from 'lucide-react';
 import type { Ambiente, Organizacao } from '@/types';
+
+interface Notificacao {
+  id: string;
+  tipo: 'ambiente_offline' | 'info';
+  titulo: string;
+  descricao: string;
+  criadoEm: string;
+}
 
 export function Topbar() {
   const { organizacao, usuario, alterarOrganizacao, logout } = useAuth();
   const [ambientesOnline, setAmbientesOnline] = useState(0);
   const [ambientesOffline, setAmbientesOffline] = useState(0);
   const [organizacoes, setOrganizacoes] = useState<Organizacao[]>([]);
+  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [menuAberto, setMenuAberto] = useState<'organizacao' | 'notificacoes' | 'ajuda' | 'perfil' | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -21,11 +41,30 @@ export function Topbar() {
     if (!organizacao) return;
 
     ambientesApi.listar(organizacao.id).then((ambientes: Ambiente[]) => {
-      setAmbientesOnline(ambientes.filter((ambiente) => ambiente.agente?.status === 'online').length);
-      setAmbientesOffline(ambientes.filter((ambiente) => ambiente.agente && ambiente.agente.status !== 'online').length);
+      const online = ambientes.filter((amb) => amb.agente?.status === 'online').length;
+      const offline = ambientes.filter((amb) => amb.agente && amb.agente.status !== 'online');
+
+      setAmbientesOnline(online);
+      setAmbientesOffline(offline.length);
+
+      // Gerar notificações reais a partir de agentes offline
+      const novasNotificacoes: Notificacao[] = offline.map((amb) => ({
+        id: amb.id,
+        tipo: 'ambiente_offline' as const,
+        titulo: `${amb.nome} — Agente desconectado`,
+        descricao: `O agente deste ambiente está offline. Último heartbeat: ${
+          amb.agente?.ultimoHeartbeat
+            ? new Date(amb.agente.ultimoHeartbeat).toLocaleString('pt-BR')
+            : 'nunca registrado'
+        }.`,
+        criadoEm: amb.agente?.ultimoHeartbeat || new Date().toISOString(),
+      }));
+
+      setNotificacoes(novasNotificacoes);
     }).catch(() => {
       setAmbientesOnline(0);
       setAmbientesOffline(0);
+      setNotificacoes([]);
     });
   }, [organizacao]);
 
@@ -45,6 +84,8 @@ export function Topbar() {
     setMenuAberto((atual) => (atual === menu ? null : menu));
   };
 
+  const temNotificacoes = notificacoes.length > 0;
+
   return (
     <header className="sticky top-0 z-30 flex min-h-[58px] flex-wrap items-center gap-4 border-b border-[#2a2a32] bg-[#16161a] px-4 py-3 sm:px-8">
       <div className="relative" ref={menuRef}>
@@ -61,23 +102,131 @@ export function Topbar() {
           <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-emerald-300" />{ambientesOnline} ambientes online</span>
           <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-red-300" />{ambientesOffline} offline</span>
         </div>
+
+        {/* ===== SININHO — Notificações reais ===== */}
         <div className="relative">
-        <button type="button" onClick={() => alternarMenu('notificacoes')}
-          className="rounded-md p-1 text-zinc-400 transition-colors hover:bg-[#28282f] hover:text-zinc-100"
-          aria-label="Notificações"
-          title="Notificações"
-        >
-          <Bell className="h-[18px] w-[18px]" />
-        </button>
-        {menuAberto === 'notificacoes' && <div className="absolute right-0 top-9 z-50 w-56 rounded-lg border border-[#2a2a32] bg-[#1e1e24] p-3 text-xs text-zinc-400 shadow-xl">Nenhuma notificação nova.</div>}
+          <button
+            type="button"
+            onClick={() => alternarMenu('notificacoes')}
+            className="relative rounded-md p-1 text-zinc-400 transition-colors hover:bg-[#28282f] hover:text-zinc-100"
+            aria-label="Notificações"
+            title="Notificações"
+          >
+            <Bell className="h-[18px] w-[18px]" />
+            {temNotificacoes && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white">
+                {notificacoes.length}
+              </span>
+            )}
+          </button>
+          {menuAberto === 'notificacoes' && (
+            <div className="absolute right-0 top-9 z-50 w-72 rounded-lg border border-[#2a2a32] bg-[#1e1e24] shadow-xl">
+              <div className="border-b border-[#2a2a32] px-3 py-2.5">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Notificações</p>
+              </div>
+              {temNotificacoes ? (
+                <div className="max-h-64 overflow-y-auto">
+                  {notificacoes.map((notif) => (
+                    <div key={notif.id} className="flex items-start gap-2.5 border-b border-[#2a2a32] px-3 py-2.5 last:border-0 hover:bg-[#28282f]">
+                      <WifiOff className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-400" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-zinc-200">{notif.titulo}</p>
+                        <p className="mt-0.5 text-[11px] text-zinc-500">{notif.descricao}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-3 py-4 text-center">
+                  <p className="text-xs text-zinc-500">Nenhuma notificação nova.</p>
+                  <p className="mt-1 text-[11px] text-zinc-600">Todos os agentes estão conectados.</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
+        {/* ===== AJUDA — Passo a passo / Documentação ===== */}
         <div className="relative">
-          <button type="button" onClick={() => alternarMenu('ajuda')} className="hidden rounded-md p-1 text-zinc-400 transition-colors hover:bg-[#28282f] hover:text-zinc-100 sm:block" aria-label="Ajuda" title="Ajuda"><CircleHelp className="h-[18px] w-[18px]" /></button>
-          {menuAberto === 'ajuda' && <div className="absolute right-0 top-9 z-50 w-52 rounded-lg border border-[#2a2a32] bg-[#1e1e24] p-2 shadow-xl"><a href="/configuracoes" className="block rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]">Configurações e suporte</a></div>}
+          <button
+            type="button"
+            onClick={() => alternarMenu('ajuda')}
+            className="hidden rounded-md p-1 text-zinc-400 transition-colors hover:bg-[#28282f] hover:text-zinc-100 sm:block"
+            aria-label="Ajuda"
+            title="Ajuda"
+          >
+            <CircleHelp className="h-[18px] w-[18px]" />
+          </button>
+          {menuAberto === 'ajuda' && (
+            <div className="absolute right-0 top-9 z-50 w-64 rounded-lg border border-[#2a2a32] bg-[#1e1e24] p-1 shadow-xl">
+              <p className="px-3 py-2 text-[11px] font-medium uppercase text-zinc-500">Ajuda e Documentação</p>
+
+              <Link href="/ajuda" onClick={() => setMenuAberto(null)} className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]">
+                <BookOpen className="h-3.5 w-3.5 text-[#8ca2ff]" />
+                Guia rápido de uso
+              </Link>
+
+              <Link href="/configuracoes" onClick={() => setMenuAberto(null)} className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]">
+                <Settings className="h-3.5 w-3.5 text-zinc-400" />
+                Configurações
+              </Link>
+
+              <div className="my-1 border-t border-[#2a2a32]" />
+
+              <div className="px-3 py-2">
+                <p className="text-[11px] font-medium text-zinc-400">Passo a passo rápido</p>
+                <ol className="mt-1.5 space-y-1 text-[11px] text-zinc-500">
+                  <li><span className="font-medium text-zinc-400">1.</span> Crie um ambiente</li>
+                  <li><span className="font-medium text-zinc-400">2.</span> Conecte o agente na máquina</li>
+                  <li><span className="font-medium text-zinc-400">3.</span> Crie um projeto</li>
+                  <li><span className="font-medium text-zinc-400">4.</span> Adicione serviços (frontend, backend…)</li>
+                  <li><span className="font-medium text-zinc-400">5.</span> Inicie e monitore pelo painel</li>
+                </ol>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* ===== PERFIL — Menu expandido ===== */}
         <div className="relative">
-          <button type="button" onClick={() => alternarMenu('perfil')} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5b7cfa] text-sm font-semibold text-white" title={usuario?.nome || 'Usuário'} aria-label="Abrir perfil">{usuario?.nome?.split(' ').map((parte) => parte[0]).join('').slice(0, 2).toUpperCase() || 'U'}</button>
-          {menuAberto === 'perfil' && <div className="absolute right-0 top-10 z-50 w-56 rounded-lg border border-[#2a2a32] bg-[#1e1e24] p-2 shadow-xl"><div className="flex items-center gap-2 border-b border-[#2a2a32] px-3 py-2"><UserRound className="h-4 w-4 text-[#8ca2ff]" /><span className="truncate text-xs text-zinc-300">{usuario?.email}</span></div><button type="button" onClick={logout} className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]"><LogOut className="h-4 w-4" />Sair</button></div>}
+          <button
+            type="button"
+            onClick={() => alternarMenu('perfil')}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5b7cfa] text-sm font-semibold text-white"
+            title={usuario?.nome || 'Usuário'}
+            aria-label="Abrir perfil"
+          >
+            {usuario?.nome?.split(' ').map((parte) => parte[0]).join('').slice(0, 2).toUpperCase() || 'U'}
+          </button>
+          {menuAberto === 'perfil' && (
+            <div className="absolute right-0 top-10 z-50 w-56 rounded-lg border border-[#2a2a32] bg-[#1e1e24] p-2 shadow-xl">
+              <div className="flex items-center gap-2 border-b border-[#2a2a32] px-3 py-2">
+                <UserRound className="h-4 w-4 text-[#8ca2ff]" />
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-medium text-zinc-200">{usuario?.nome || 'Usuário'}</p>
+                  <p className="truncate text-[11px] text-zinc-500">{usuario?.email}</p>
+                </div>
+              </div>
+
+              <Link
+                href="/configuracoes"
+                onClick={() => setMenuAberto(null)}
+                className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]"
+              >
+                <Settings className="h-4 w-4" />
+                Configurações
+              </Link>
+
+              <button
+                type="button"
+                onClick={logout}
+                className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
