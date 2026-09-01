@@ -46,6 +46,26 @@ export class ServicosServico {
 
     if (dados.porta !== undefined && dados.porta !== null) {
       this.validarPorta(dados.porta);
+
+      // Verificar se já existe outro serviço ativo usando a mesma porta
+      // no mesmo ambiente (ou sem ambiente, se nenhum especificado)
+      const conflito = await this.prisma.servico.findFirst({
+        where: {
+          organizacaoId,
+          ativo: true,
+          porta: dados.porta,
+          ...(dados.ambienteId
+            ? { ambienteId: dados.ambienteId }
+            : {}),
+        },
+        select: { id: true, nome: true },
+      });
+
+      if (conflito) {
+        throw new BadRequestException(
+          `Já existe o serviço "${conflito.nome}" usando a porta ${dados.porta} neste ambiente`,
+        );
+      }
     }
 
     const servico = await this.prisma.servico.create({
