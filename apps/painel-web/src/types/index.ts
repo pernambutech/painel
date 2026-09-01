@@ -102,6 +102,7 @@ export interface Projeto {
   ativo: boolean;
   criadoEm: string;
   atualizadoEm: string;
+  totalServicos?: number;
 }
 
 export interface CriarProjetoDto {

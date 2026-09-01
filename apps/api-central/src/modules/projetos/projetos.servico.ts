@@ -3,7 +3,7 @@
 
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaServico } from '../database/prisma.servico';
-import { CriarProjetoDto, AtualizarProjetoDto, RespostaProjeto } from './dto/projeto.dto';
+import { CriarProjetoDto, AtualizarProjetoDto, RespostaProjeto, RespostaListagemProjeto } from './dto/projeto.dto';
 
 @Injectable()
 export class ProjetosServico {
@@ -50,9 +50,31 @@ export class ProjetosServico {
         ...(incluirArquivados ? {} : { ativo: true }),
       },
       orderBy: { criadoEm: 'asc' },
+      // Conta os serviços (ativos) de cada projeto para exibição nos cards
+      select: {
+        id: true,
+        nome: true,
+        descricao: true,
+        organizacaoId: true,
+        ativo: true,
+        criadoEm: true,
+        atualizadoEm: true,
+        _count: { select: { servicos: { where: { ativo: true } } } },
+      },
     });
 
-    return projetos.map((projeto) => this.mapearResposta(projeto));
+    return projetos.map((projeto) =>
+      this.mapearListagem({
+        id: projeto.id,
+        nome: projeto.nome,
+        descricao: projeto.descricao,
+        organizacaoId: projeto.organizacaoId,
+        ativo: projeto.ativo,
+        criadoEm: projeto.criadoEm,
+        atualizadoEm: projeto.atualizadoEm,
+        totalServicos: projeto._count.servicos,
+      }),
+    );
   }
 
   // ===========================================
@@ -209,6 +231,20 @@ export class ProjetosServico {
       ativo: projeto.ativo,
       criadoEm: projeto.criadoEm,
       atualizadoEm: projeto.atualizadoEm,
+    };
+  }
+
+  // Resposta da listagem: inclui a contagem de serviços ativos do projeto
+  private mapearListagem(projeto: any): RespostaListagemProjeto {
+    return {
+      id: projeto.id,
+      nome: projeto.nome,
+      descricao: projeto.descricao,
+      organizacaoId: projeto.organizacaoId,
+      ativo: projeto.ativo,
+      criadoEm: projeto.criadoEm,
+      atualizadoEm: projeto.atualizadoEm,
+      totalServicos: projeto.totalServicos,
     };
   }
 }

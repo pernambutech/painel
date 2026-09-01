@@ -163,7 +163,7 @@ export default function ProjetosPage() {
                     <div className="flex items-center gap-4 text-xs text-zinc-500">
                       <div className="flex items-center gap-1">
                         <FileText className="w-3 h-3" />
-                        <span>Sem serviços</span>
+                        <span>{projeto.totalServicos ?? 0} {(projeto.totalServicos ?? 0) === 1 ? 'serviço' : 'serviços'}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <CalendarDays className="w-3 h-3" />

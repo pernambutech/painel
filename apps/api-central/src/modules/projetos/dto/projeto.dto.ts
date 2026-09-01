@@ -49,3 +49,15 @@ export interface RespostaProjeto {
   criadoEm: Date;
   atualizadoEm: Date;
 }
+
+// Contagem de serviços da listagem
+export interface RespostaListagemProjeto {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  organizacaoId: string;
+  ativo: boolean;
+  criadoEm: Date;
+  atualizadoEm: Date;
+  totalServicos: number;
+}
