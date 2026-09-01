@@ -199,6 +199,39 @@ export class ServicosController {
     return this.servicosServico.gitPull(id, projetoId, organizacaoId, req.user.id, dados);
   }
 
+  @Get('projetos/:projetoId/servicos/:id/git/log')
+  async gitLog(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Request() req,
+  ) {
+    const limite = req.query.limite ? parseInt(req.query.limite as string, 10) : 50;
+    return this.servicosServico.gitLog(id, projetoId, organizacaoId, req.user.id, limite);
+  }
+
+  @Post('projetos/:projetoId/servicos/:id/git/checkout')
+  async gitCheckout(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Body() dados: { hash: string },
+    @Request() req,
+  ) {
+    return this.servicosServico.gitCheckout(id, projetoId, organizacaoId, req.user.id, dados.hash);
+  }
+
+  @Post('projetos/:projetoId/servicos/:id/git/checkout-branch')
+  async gitCheckoutBranch(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Body() dados: { branch: string },
+    @Request() req,
+  ) {
+    return this.servicosServico.gitCheckoutBranch(id, projetoId, organizacaoId, req.user.id, dados.branch);
+  }
+
   // ===========================================
   // DASHBOARD — DADOS CONSOLIDADOS
   // ===========================================

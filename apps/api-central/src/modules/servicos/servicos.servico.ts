@@ -541,6 +541,76 @@ export class ServicosServico {
     return (comando.resultado as Record<string, unknown>) || {};
   }
 
+  // ===========================================
+  // HISTÓRICO DE COMMITS E RESTAURAÇÃO
+  // ===========================================
+
+  async gitLog(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+    limite?: number,
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente } = await this.obterServicoEAgente(id, projetoId, organizacaoId, usuarioId);
+    if (!servico.diretorio) {
+      throw new BadRequestException('Serviço sem diretório configurado');
+    }
+    const n = Math.min(Math.max(limite || 50, 1), 200);
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'GIT_LOG',
+      dados: { servicoId: servico.id, diretorio: servico.diretorio, limite: n },
+    });
+    return (comando.resultado as Record<string, unknown>) || { commits: [] };
+  }
+
+  async gitCheckout(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+    hash: string,
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente } = await this.obterServicoEAgente(id, projetoId, organizacaoId, usuarioId);
+    if (!servico.diretorio) {
+      throw new BadRequestException('Serviço sem diretório configurado');
+    }
+    // Validar hash: apenas caracteres hexadecimais (40 chars)
+    if (!/^[0-9a-f]{7,40}$/i.test(hash)) {
+      throw new BadRequestException('Hash de commit inválido');
+    }
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'GIT_CHECKOUT',
+      dados: { servicoId: servico.id, diretorio: servico.diretorio, hash },
+    });
+    return (comando.resultado as Record<string, unknown>) || {};
+  }
+
+  async gitCheckoutBranch(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+    branch: string,
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente } = await this.obterServicoEAgente(id, projetoId, organizacaoId, usuarioId);
+    if (!servico.diretorio) {
+      throw new BadRequestException('Serviço sem diretório configurado');
+    }
+    // Validar nome da branch
+    if (!/^[a-zA-Z0-9._\/-]+$/.test(branch)) {
+      throw new BadRequestException('Nome da branch inválido');
+    }
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'GIT_CHECKOUT_BRANCH',
+      dados: { servicoId: servico.id, diretorio: servico.diretorio, branch },
+    });
+    return (comando.resultado as Record<string, unknown>) || {};
+  }
+
   private async obterServicoEAgente(
     id: string,
     projetoId: string,

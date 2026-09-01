@@ -447,6 +447,68 @@ async function processarComando(comando: any): Promise<void> {
         break;
       }
 
+      case 'GIT_LOG': {
+        const dirLog = (comando.dados as any)?.diretorio;
+        if (!dirLog) throw new Error('Diretório não informado');
+        const limite = (comando.dados as any)?.limite || 50;
+        // Formato: hash|authorName|date|subject (separado por § para evitar conflito)
+        const formato = '%H§%an§%ai§%s';
+        const logSaida = execSync(
+          `git log --format="${formato}" -n ${limite}`,
+          { cwd: dirLog, encoding: 'utf-8', timeout: 15000 },
+        );
+        const commits = logSaida
+          .split('\n')
+          .filter(Boolean)
+          .map((linha) => {
+            const [hash, autor, data, mensagem] = linha.split('§');
+            return { hash, autor, data, mensagem };
+          });
+        // Verificar se há alterações não commitadas
+        const temAlteracoes = execSync('git status --porcelain', {
+          cwd: dirLog, encoding: 'utf-8', timeout: 5000,
+        }).trim().length > 0;
+        resultado = { commits, temAlteracoes } as unknown as Record<string, unknown>;
+        break;
+      }
+
+      case 'GIT_CHECKOUT': {
+        const dirCheckout = (comando.dados as any)?.diretorio;
+        if (!dirCheckout) throw new Error('Diretório não informado');
+        const hash = (comando.dados as any)?.hash;
+        if (!hash) throw new Error('Hash do commit não informado');
+        // Criar backup do estado atual antes de checkout
+        const branchAtual = execSync('git branch --show-current', {
+          cwd: dirCheckout, encoding: 'utf-8', timeout: 5000,
+        }).trim();
+        const hashAtual = execSync('git rev-parse HEAD', {
+          cwd: dirCheckout, encoding: 'utf-8', timeout: 5000,
+        }).trim();
+        // Checkout para o commit especificado (detached HEAD)
+        const checkoutSaida = execSync(`git checkout ${hash}`, {
+          cwd: dirCheckout, encoding: 'utf-8', timeout: 15000,
+        });
+        resultado = {
+          saida: checkoutSaida,
+          branchAnterior: branchAtual,
+          hashAnterior: hashAtual,
+          hashNovo: hash,
+        } as unknown as Record<string, unknown>;
+        break;
+      }
+
+      case 'GIT_CHECKOUT_BRANCH': {
+        const dirCheckoutBranch = (comando.dados as any)?.diretorio;
+        if (!dirCheckoutBranch) throw new Error('Diretório não informado');
+        const branchAlvo = (comando.dados as any)?.branch;
+        if (!branchAlvo) throw new Error('Nome da branch não informado');
+        const checkoutBranchSaida = execSync(`git checkout ${branchAlvo}`, {
+          cwd: dirCheckoutBranch, encoding: 'utf-8', timeout: 15000,
+        });
+        resultado = { saida: checkoutBranchSaida, branch: branchAlvo } as unknown as Record<string, unknown>;
+        break;
+      }
+
       default:
         throw new Error(`Comando não suportado: ${comando.tipo}`);
     }

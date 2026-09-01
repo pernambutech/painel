@@ -96,6 +96,9 @@ export class AgentesController {
     'GIT_STATUS',
     'GIT_BRANCH',
     'GIT_PULL',
+    'GIT_LOG',
+    'GIT_CHECKOUT',
+    'GIT_CHECKOUT_BRANCH',
   ];
 
   // Limite máximo de timeout em milissegundos (30 segundos)

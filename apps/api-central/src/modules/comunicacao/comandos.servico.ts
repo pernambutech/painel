@@ -23,7 +23,10 @@ export type TipoComando =
   | 'OBTER_TODOS_PROCESSOS'
   | 'GIT_STATUS'
   | 'GIT_BRANCH'
-  | 'GIT_PULL';
+  | 'GIT_PULL'
+  | 'GIT_LOG'
+  | 'GIT_CHECKOUT'
+  | 'GIT_CHECKOUT_BRANCH';
 
 // ===========================================
 // STATUS DO COMANDO
