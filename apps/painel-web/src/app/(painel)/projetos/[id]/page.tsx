@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { projetosApi, servicosApi, servicosPm2Api } from '@/lib/api';
+import { projetosApi, servicosApi, servicosPm2Api, agentesApi } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { BadgeSimples } from '@/components/ui/Badge';
@@ -132,7 +132,13 @@ export default function ProjetoDetalhePage() {
 
     try {
       setControleCarregando(`pm2-save-${servico.id}`);
-      await servicosPm2Api.salvar(organizacao.id, servico.ambiente.id);
+      // Busca o agente associado ao ambiente do serviço
+      const agente = await agentesApi.obterPorAmbiente(organizacao.id, servico.ambiente.id);
+      if (!agente?.id) {
+        setErro(`Nenhum agente encontrado para o ambiente "${servico.ambiente.nome}".`);
+        return;
+      }
+      await servicosPm2Api.salvar(organizacao.id, agente.id);
       setErro('');
     } catch (err: any) {
       setErro(
