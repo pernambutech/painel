@@ -58,9 +58,15 @@ module.exports = {
       script: 'dist/index.js',
       interpreter: 'node',
       env: {
+        ...Object.fromEntries(
+          // O agente não publica nenhuma porta; remover PORT evita falso
+          // positivo na resolução de processos por porta no adaptador PM2
+          // (conflito com serviços que usam a mesma porta).
+          Object.entries(ambiente).filter(([chave]) => !['PORT'].includes(chave)),
+        ),
         NODE_ENV: 'production',
-        AGENT_API_URL: process.env.AGENT_API_URL || 'http://localhost:4001',
-        AGENT_TOKEN: process.env.AGENT_TOKEN,
+        AGENT_API_URL: process.env.AGENT_API_URL || ambiente.AGENT_API_URL || 'http://localhost:4001',
+        AGENT_TOKEN: process.env.AGENT_TOKEN || ambiente.AGENT_TOKEN,
       },
       autorestart: true,
       restart_delay: 3000,

@@ -292,13 +292,23 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
               ['stderr', caminhoErro],
             ];
 
+    // Regex para extrair timestamp real das linhas gravadas pelo runner:
+    // Formato: [2026-09-01 12:30:45] mensagem
+    const regexTimestamp = /^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s*(.*)/;
+
     for (const [fonte, caminho] of arquivos) {
       if (!caminho) continue;
       try {
         const conteudo = await fs.readFile(caminho, 'utf8');
-        for (const mensagem of conteudo.split(/\r?\n/).filter(Boolean).slice(-linhas)) {
+        for (const linha of conteudo.split(/\r?\n/).filter(Boolean).slice(-linhas)) {
+          const correspondencia = regexTimestamp.exec(linha);
+          const timestamp = correspondencia
+            ? new Date(correspondencia[1].replace(' ', 'T') + ':00').toISOString()
+            : new Date().toISOString();
+          const mensagem = correspondencia ? correspondencia[2] : linha;
+
           entradas.push({
-            timestamp: new Date().toISOString(),
+            timestamp,
             nivel: fonte === 'stderr' ? 'error' : 'info',
             mensagem,
             fonte: fonte as 'stdout' | 'stderr',
@@ -381,7 +391,12 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
     });
     if (correspondente?.name) return correspondente.name;
 
-    if (configuracao.porta) {
+    // Busca por porta: só é confiável quando não há diretório informado.
+    // Com diretório presente, a busca por porta já foi tentada acima (casa a
+    // porta dentro do diretório). Casar porta sozinha seria ambíguo: dois
+    // processos podem expor a mesma porta (ex.: o próprio agente que herda uma
+    // variável PORT), retornando o processo errado.
+    if (configuracao.porta && !diretorio) {
       const processoPorPorta = processos.find((processo) => {
         if (!processo.name || processo.pm2_env?.status !== 'online') return false;
         const ambiente = processo.pm2_env?.env || {};
