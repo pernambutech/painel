@@ -124,6 +124,7 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
           : 'production';
 
       const env = {
+        // Variáveis fornecidas pelo usuário no cadastro do serviço
         ...variaveisFornecidas,
         NODE_ENV: nodeEnv,
         ...(configuracao.porta
@@ -139,6 +140,16 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
         ...(ehWindows
           ? { PAINEL_LOG_OUT: caminhoOut, PAINEL_LOG_ERRO: caminhoErro }
           : {}),
+        // ============================================================
+        // BLOQUEIO DE VAZAMENTO DE ENV DO DAEMON PM2
+        // O PM2 herda variáveis do daemon (agente/painel). Variáveis
+        // NEXT_PUBLIC_* do painel NÃO devem vazar para serviços de
+        // terceiros (ex: frontend Pernambutech apontando para API errada).
+        // Definir como vazio para sobrescrever o valor do daemon.
+        // ============================================================
+        NEXT_PUBLIC_API_URL: variaveisFornecidas.NEXT_PUBLIC_API_URL ?? '',
+        AGENT_API_URL: variaveisFornecidas.AGENT_API_URL ?? '',
+        AGENT_TOKEN: variaveisFornecidas.AGENT_TOKEN ?? '',
       };
 
       // Deletar processo existente antes de recriar para garantir
