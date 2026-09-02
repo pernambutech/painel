@@ -3,9 +3,6 @@ const nextConfig = {
   // Habilitar modo estrito
   reactStrictMode: true,
 
-  // Configurações de build
-  output: 'standalone',
-
   // Configurações de otimização
   experimental: {
     // Otimizar importações
