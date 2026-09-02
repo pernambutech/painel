@@ -132,7 +132,7 @@ export default function DashboardPage() {
       icone: CircleCheck,
       cor: 'text-emerald-300',
       detalhe: 'Processos ativos no PM2',
-      href: '/projetos',
+      href: '/servicos?status=online',
     },
     {
       rotulo: 'Serviços parados',
@@ -140,7 +140,7 @@ export default function DashboardPage() {
       icone: CirclePause,
       cor: 'text-amber-300',
       detalhe: 'Processos parados',
-      href: '/projetos',
+      href: '/servicos?status=stopped',
     },
     {
       rotulo: 'Com erro',
@@ -148,7 +148,7 @@ export default function DashboardPage() {
       icone: CircleX,
       cor: 'text-red-300',
       detalhe: 'Processos com erro',
-      href: '/projetos',
+      href: '/servicos?status=erro',
     },
     {
       rotulo: 'Ambientes online',
