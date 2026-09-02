@@ -40,6 +40,7 @@ export interface HeartbeatAgenteDto {
     total: number;
     online: number;
     offline: number;
+    erro: number;
   };
 }
 

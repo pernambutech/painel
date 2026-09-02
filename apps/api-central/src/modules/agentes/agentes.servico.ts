@@ -125,6 +125,10 @@ export class AgentesServico {
         memoriaUso: dados.sistema.memoriaUso,
         memoriaTotal: dados.sistema.memoriaTotal,
         uptime: dados.sistema.uptime,
+        processosTotal: dados.processos.total,
+        processosOnline: dados.processos.online,
+        processosParados: dados.processos.offline,
+        processosErro: dados.processos.erro,
       },
     });
   }

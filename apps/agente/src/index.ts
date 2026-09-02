@@ -246,12 +246,26 @@ function pararHeartbeat(): void {
   }
 }
 
-function enviarHeartbeat(): void {
+async function enviarHeartbeat(): Promise<void> {
   if (!socket?.connected) return;
 
   const informacoes = obterInformacoesSistema();
   const usoCpu = calcularUsoCpu();
   const memoriaUso = informacoes.memoriaTotal - informacoes.memoriaLivre;
+
+  // Consultar processos PM2 reais
+  let processos = { total: 0, online: 0, offline: 0, erro: 0 };
+  try {
+    const lista = await adaptadorPm2.listarProcessos();
+    processos = {
+      total: lista.length,
+      online: lista.filter((p) => p.status === 'online').length,
+      offline: lista.filter((p) => p.status === 'stopped').length,
+      erro: lista.filter((p) => p.status === 'erro' || p.status === 'launch_error' || p.status === 'erro_restart').length,
+    };
+  } catch {
+    // Se falhar, mantém zeros
+  }
 
   socket.emit('heartbeat', {
     sistema: {
@@ -260,11 +274,7 @@ function enviarHeartbeat(): void {
       memoriaTotal: informacoes.memoriaTotal,
       uptime: Math.floor(informacoes.uptime),
     },
-    processos: {
-      total: 0,
-      online: 0,
-      offline: 0,
-    },
+    processos,
   });
 }
 
