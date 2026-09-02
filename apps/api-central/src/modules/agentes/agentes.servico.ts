@@ -3,10 +3,12 @@
 
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaServico } from '../database/prisma.servico';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -20,6 +22,7 @@ import {
 export class AgentesServico {
   // Intervalo máximo sem heartbeat para considerar offline (90 segundos)
   private readonly INTERVALO_OFFLINE_MS = 90 * 1000;
+  private readonly logger = new Logger(AgentesServico.name);
 
   constructor(private prisma: PrismaServico) {}
 
@@ -145,10 +148,11 @@ export class AgentesServico {
   }
 
   // ===========================================
-  // VERIFICAR AGENTES INATIVOS
+  // VERIFICAR AGENTES INATIVOS (cron a cada 60s)
   // ===========================================
 
-  async verificarAgentesInativos(): Promise<string[]> {
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async verificarAgentesInativos(): Promise<void> {
     const dataLimite = new Date(Date.now() - this.INTERVALO_OFFLINE_MS);
 
     // Buscar agentes que estão marcados como online mas não enviaram heartbeat
@@ -166,7 +170,9 @@ export class AgentesServico {
       await this.marcarComoOffline(agente.id);
     }
 
-    return agentesInativos.map((a) => a.id);
+    if (agentesInativos.length > 0) {
+      this.logger.warn(`Marcando ${agentesInativos.length} agente(s) como offline (sem heartbeat)`);
+    }
   }
 
   // ===========================================
