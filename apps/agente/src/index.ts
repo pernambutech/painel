@@ -259,9 +259,9 @@ async function enviarHeartbeat(): Promise<void> {
     const lista = await adaptadorPm2.listarProcessos();
     processos = {
       total: lista.length,
-      online: lista.filter((p) => p.status === 'online').length,
-      offline: lista.filter((p) => p.status === 'stopped').length,
-      erro: lista.filter((p) => p.status === 'erro' || p.status === 'launch_error' || p.status === 'erro_restart').length,
+      online: lista.filter((p) => p.pm2_env?.status === 'online').length,
+      offline: lista.filter((p) => p.pm2_env?.status === 'stopped').length,
+      erro: lista.filter((p) => p.pm2_env?.status === 'errored' || p.pm2_env?.status === 'launch_error' || p.pm2_env?.status === 'erro_restart').length,
     };
   } catch {
     // Se falhar, mantém zeros
