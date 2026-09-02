@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Activity,
@@ -19,6 +19,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useSocket } from '@/lib/hooks/useSocket';
 import { ambientesApi, dashboardApi, execucoesApi } from '@/lib/api';
 import type { Ambiente, Execucao } from '@/types';
 
@@ -47,26 +48,59 @@ export default function DashboardPage() {
   const [carregando, setCarregando] = useState(true);
   const [carregandoExecucoes, setCarregandoExecucoes] = useState(true);
 
+  // Função para carregar dados do dashboard
+  const carregarDados = useCallback(async () => {
+    if (!organizacao) return;
+
+    const [ambientesDados, dashboardDados] = await Promise.all([
+      ambientesApi.listar(organizacao.id).catch(() => []),
+      dashboardApi.obterDados(organizacao.id).catch(() => null),
+    ]);
+
+    setAmbientes(ambientesDados || []);
+    setDashboard(dashboardDados);
+  }, [organizacao]);
+
+  const carregarExecucoes = useCallback(async () => {
+    if (!organizacao) return;
+
+    const dados = await execucoesApi
+      .listarPorOrganizacao(organizacao.id, 10)
+      .catch(() => []);
+    setExecucoes(dados || []);
+  }, [organizacao]);
+
+  // Carregar dados iniciais
   useEffect(() => {
     if (!organizacao) return;
 
-    Promise.all([
-      ambientesApi.listar(organizacao.id).catch(() => []),
-      dashboardApi.obterDados(organizacao.id).catch(() => null),
-    ])
-      .then(([ambientesDados, dashboardDados]) => {
-        setAmbientes(ambientesDados || []);
-        setDashboard(dashboardDados);
-      })
-      .finally(() => setCarregando(false));
+    carregarDados().finally(() => setCarregando(false));
+    carregarExecucoes().finally(() => setCarregandoExecucoes(false));
+  }, [organizacao, carregarDados, carregarExecucoes]);
 
-    // Carregar execuções recentes separadamente
-    execucoesApi
-      .listarPorOrganizacao(organizacao.id, 10)
-      .then((dados) => setExecucoes(dados || []))
-      .catch(() => setExecucoes([]))
-      .finally(() => setCarregandoExecucoes(false));
-  }, [organizacao]);
+  // WebSocket para atualizações em tempo real
+  useSocket({
+    onStatusAgente: () => {
+      // Quando um agente muda de status, recarregar dados
+      carregarDados();
+    },
+    onDashboardAtualizado: () => {
+      carregarDados();
+      carregarExecucoes();
+    },
+  });
+
+  // Polling como fallback: atualizar a cada 15 segundos
+  useEffect(() => {
+    if (!organizacao) return;
+
+    const intervalo = setInterval(() => {
+      carregarDados();
+      carregarExecucoes();
+    }, 15000);
+
+    return () => clearInterval(intervalo);
+  }, [organizacao, carregarDados, carregarExecucoes]);
 
   const resumoAmbientes = useMemo(
     () => ({

@@ -14,6 +14,7 @@ import { Server, Socket } from 'socket.io';
 import { Inject, forwardRef } from '@nestjs/common';
 import { AgentesServico } from '../agentes/agentes.servico';
 import { ComandosServico } from './comandos.servico';
+import { ComunicacaoPainelGateway } from './comunicacao-painel.gateway';
 
 // ===========================================
 // INTERFACE DO CLIENTE CONECTADO
@@ -50,6 +51,8 @@ export class ComunicacaoGateway implements OnGatewayConnection, OnGatewayDisconn
     private agentesServico: AgentesServico,
     @Inject(forwardRef(() => ComandosServico))
     private comandosServico: ComandosServico,
+    @Inject(forwardRef(() => ComunicacaoPainelGateway))
+    private painelGateway: ComunicacaoPainelGateway,
   ) {}
 
   // ===========================================
@@ -98,6 +101,13 @@ export class ComunicacaoGateway implements OnGatewayConnection, OnGatewayDisconn
       // Entrar na sala da organização
       client.join(`org:${agente.organizacaoId}`);
 
+      // Notificar o painel que o agente ficou online
+      this.painelGateway.broadcastStatusAgente(agente.organizacaoId, {
+        agenteId: agente.id,
+        ambienteId: agente.ambienteId,
+        status: 'online',
+      });
+
       console.log(`✅ Agente conectado: ${agente.nome} (${client.id})`);
     } catch (error) {
       console.error('❌ Erro na conexão:', error);
@@ -115,6 +125,13 @@ export class ComunicacaoGateway implements OnGatewayConnection, OnGatewayDisconn
     if (cliente) {
       // Marcar agente como offline
       await this.agentesServico.marcarComoOffline(cliente.agenteId);
+
+      // Notificar o painel que o agente ficou offline
+      this.painelGateway.broadcastStatusAgente(cliente.organizacaoId, {
+        agenteId: cliente.agenteId,
+        ambienteId: cliente.ambienteId,
+        status: 'offline',
+      });
 
       console.log(`⚠️  Agente desconectado: ${cliente.agenteId}`);
 
@@ -141,6 +158,7 @@ export class ComunicacaoGateway implements OnGatewayConnection, OnGatewayDisconn
         total: number;
         online: number;
         offline: number;
+        erro?: number;
       };
     },
   ): Promise<void> {
@@ -150,7 +168,12 @@ export class ComunicacaoGateway implements OnGatewayConnection, OnGatewayDisconn
       await this.agentesServico.processarHeartbeat({
         agenteId: cliente.agenteId,
         sistema: dados.sistema,
-        processos: dados.processos,
+        processos: {
+          total: dados.processos.total,
+          online: dados.processos.online,
+          offline: dados.processos.offline,
+          erro: dados.processos.erro ?? 0,
+        },
       });
     }
   }
