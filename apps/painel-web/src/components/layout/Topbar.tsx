@@ -87,8 +87,8 @@ export function Topbar() {
   const temNotificacoes = notificacoes.length > 0;
 
   return (
-    <header className="sticky top-0 z-30 flex min-h-[58px] flex-wrap items-center gap-4 border-b border-[#2a2a32] bg-[#16161a] px-4 py-3 sm:px-8">
-      <div className="relative" ref={menuRef}>
+    <header ref={menuRef} className="sticky top-0 z-30 flex min-h-[58px] flex-wrap items-center gap-4 border-b border-[#2a2a32] bg-[#16161a] px-4 py-3 sm:px-8">
+      <div className="relative">
         <button type="button" onClick={() => alternarMenu('organizacao')} className="flex items-center gap-2 rounded-full border border-[#2a2a32] bg-[#1e1e24] py-1.5 pl-3 pr-2.5 text-zinc-300 hover:border-[#5b7cfa]" aria-expanded={menuAberto === 'organizacao'}>
           <Building2 className="h-3.5 w-3.5 text-[#7f98ff]" />
           <span className="text-xs font-medium">{organizacao?.nome || 'Carregando...'}</span>

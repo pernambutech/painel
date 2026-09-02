@@ -76,13 +76,21 @@ export default function DashboardPage() {
     [ambientes],
   );
 
-  const estatisticas = [
+  const estatisticas: {
+    rotulo: string;
+    valor: number | string;
+    icone: typeof Activity;
+    cor: string;
+    detalhe: string;
+    href?: string;
+  }[] = [
     {
       rotulo: 'Projetos ativos',
       valor: carregando ? '—' : (dashboard?.totalProjetos ?? 0),
       icone: FolderOpen,
       cor: 'text-[#8ca2ff]',
       detalhe: 'Projetos cadastrados',
+      href: '/projetos',
     },
     {
       rotulo: 'Serviços online',
@@ -90,6 +98,7 @@ export default function DashboardPage() {
       icone: CircleCheck,
       cor: 'text-emerald-300',
       detalhe: 'Processos ativos no PM2',
+      href: '/projetos',
     },
     {
       rotulo: 'Serviços parados',
@@ -97,6 +106,7 @@ export default function DashboardPage() {
       icone: CirclePause,
       cor: 'text-amber-300',
       detalhe: 'Processos parados',
+      href: '/projetos',
     },
     {
       rotulo: 'Com erro',
@@ -104,6 +114,7 @@ export default function DashboardPage() {
       icone: CircleX,
       cor: 'text-red-300',
       detalhe: 'Processos com erro',
+      href: '/projetos',
     },
     {
       rotulo: 'Ambientes online',
@@ -111,6 +122,7 @@ export default function DashboardPage() {
       icone: Cloud,
       cor: 'text-emerald-300',
       detalhe: carregando ? 'Carregando' : `de ${ambientes.length} cadastrados`,
+      href: '/ambientes',
     },
   ];
 
@@ -164,20 +176,38 @@ export default function DashboardPage() {
 
       {/* Cards de estatísticas */}
       <section aria-label="Resumo operacional" className="grid grid-cols-2 gap-4 xl:grid-cols-5">
-        {estatisticas.map(({ rotulo, valor, icone: Icone, cor, detalhe }) => (
-          <Card key={rotulo} padding="nenhum" className="p-4 sm:p-[18px]">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
-                {rotulo}
+        {estatisticas.map(({ rotulo, valor, icone: Icone, cor, detalhe, href }) => {
+          const Conteudo = (
+            <>
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+                  {rotulo}
+                </p>
+                <Icone className={`h-4 w-4 ${cor}`} />
+              </div>
+              <p className="mt-2 text-[28px] font-semibold tracking-[-0.04em] text-zinc-100">
+                {valor}
               </p>
-              <Icone className={`h-4 w-4 ${cor}`} />
-            </div>
-            <p className="mt-2 text-[28px] font-semibold tracking-[-0.04em] text-zinc-100">
-              {valor}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">{detalhe}</p>
-          </Card>
-        ))}
+              <p className="mt-1 text-xs text-zinc-500">{detalhe}</p>
+            </>
+          );
+
+          if (href) {
+            return (
+              <Link key={rotulo} href={href}>
+                <Card padding="nenhum" className="p-4 sm:p-[18px] transition-colors hover:border-[#5b7cfa]/40 cursor-pointer">
+                  {Conteudo}
+                </Card>
+              </Link>
+            );
+          }
+
+          return (
+            <Card key={rotulo} padding="nenhum" className="p-4 sm:p-[18px]">
+              {Conteudo}
+            </Card>
+          );
+        })}
       </section>
 
       {/* Ambientes que precisam de atenção */}

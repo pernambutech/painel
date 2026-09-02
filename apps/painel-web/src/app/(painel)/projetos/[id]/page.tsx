@@ -42,6 +42,35 @@ import {
 import { CommitsModal } from '@/components/CommitsModal';
 import type { Projeto, Servico } from '@/types';
 
+/**
+ * Formata milissegundos em tempo legível.
+ * <1min → "45s" | <1h → "3m 45s" | <1d → "2h 15m 30s" | ≥1d → "1d 5h 15m"
+ */
+function formatarUptime(ms: number): string {
+  const totalSeg = Math.floor(ms / 1000);
+  const seg = totalSeg % 60;
+  const totalMin = Math.floor(totalSeg / 60);
+  const min = totalMin % 60;
+  const totalHoras = Math.floor(totalMin / 60);
+  const horas = totalHoras % 24;
+  const dias = Math.floor(totalHoras / 24);
+
+  const partes: string[] = [];
+  if (dias > 0) partes.push(`${dias}d`);
+  if (horas > 0 || dias > 0) partes.push(`${horas}h`);
+  if (min > 0 || horas > 0 || dias > 0) partes.push(`${min}m`);
+  if (partes.length === 0 || (dias === 0 && horas === 0 && min === 0)) partes.push(`${seg}s`);
+  else if (dias > 0) {
+    // Para dias, incluir segundos apenas se relevante
+    if (seg > 0) partes.push(`${seg}s`);
+  } else {
+    // Para horas/minutos, sempre incluir segundos
+    partes.push(`${seg}s`);
+  }
+
+  return partes.join(' ');
+}
+
 export default function ProjetoDetalhePage() {
   const params = useParams();
   const { organizacao } = useAuth();
@@ -614,8 +643,7 @@ export default function ProjetoDetalhePage() {
                         {servico.ambiente && <span>Ambiente: {servico.ambiente.nome}</span>}
                         {status?.uptimeMs !== undefined && (
                           <span className="flex items-center gap-1">
-                            <Activity className="w-3 h-3" /> {Math.floor(status.uptimeMs / 1000)}s
-                            ativo
+                            <Activity className="w-3 h-3" /> {formatarUptime(status.uptimeMs)}
                           </span>
                         )}
                       </div>
@@ -682,7 +710,7 @@ export default function ProjetoDetalhePage() {
                             <div><span className="text-zinc-600">Estado:</span> {estado}</div>
                             {status?.pid && <div><span className="text-zinc-600">PID:</span> {status.pid}</div>}
                             {status?.uptimeMs !== undefined && (
-                              <div><span className="text-zinc-600">Uptime:</span> {Math.floor(status.uptimeMs / 1000)}s</div>
+                              <div><span className="text-zinc-600">Uptime:</span> {formatarUptime(status.uptimeMs)}</div>
                             )}
                             {status?.reinicios !== undefined && (
                               <div><span className="text-zinc-600">Reinícios:</span> {status.reinicios}</div>
