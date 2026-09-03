@@ -26,7 +26,7 @@ export default function LoginPage() {
 
     try {
       await login(email, senha);
-      router.push('/ambientes');
+      router.push('/dashboard');
     } catch (err: unknown) {
       const erroMensagem =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
