@@ -54,7 +54,7 @@ export function Button({
       className={`
         inline-flex items-center justify-center gap-2
         rounded-full font-medium transition-colors duration-150
-        focus:outline-none
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5b7cfa] focus-visible:ring-offset-2 focus-visible:ring-offset-[#16161a]
         disabled:opacity-50 disabled:cursor-not-allowed
         ${estilosVariante[variante]}
         ${estilosTamanho[tamanho]}

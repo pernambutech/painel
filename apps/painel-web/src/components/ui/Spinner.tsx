@@ -15,7 +15,7 @@ const estilosTamanho = {
 export function Spinner({ tamanho = 'medio', className = '' }: SpinnerProps) {
   return (
     <svg
-      className={`animate-spin text-indigo-500 ${estilosTamanho[tamanho]} ${className}`}
+      className={`animate-spin text-[#5b7cfa] ${estilosTamanho[tamanho]} ${className}`}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
