@@ -6,7 +6,16 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 
-const URL_API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+// Detecta automaticamente o host atual e usa porta 4001 para a API
+function obterUrlApi(): string {
+  if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== 'undefined') {
+    return `${window.location.protocol}//${window.location.hostname}:4001`;
+  }
+  return 'http://localhost:4001';
+}
 
 interface UseSocketOpcoes {
   token?: string;
@@ -31,7 +40,7 @@ export function useSocket(opcoes: UseSocketOpcoes) {
 
     if (!tokenFinal) return;
 
-    const socket = io(`${URL_API}/painel`, {
+    const socket = io(`${obterUrlApi()}/painel`, {
       auth: { token: tokenFinal },
       reconnection: true,
       reconnectionDelay: 5000,

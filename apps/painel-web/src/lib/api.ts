@@ -3,12 +3,29 @@
 import axios from 'axios';
 
 // ===========================================
+// URL BASE DA API
+// ===========================================
+
+// Detecta automaticamente o host atual e usa porta 4001 para a API
+// Permite acesso via IP (ex: 192.168.1.66:4000 → API em 192.168.1.66:4001)
+function obterUrlApi(): string {
+  if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== 'undefined') {
+    // Usa o mesmo hostname da página, mas porta 4001
+    return `${window.location.protocol}//${window.location.hostname}:4001`;
+  }
+  return 'http://localhost:4001';
+}
+
+// ===========================================
 // INSTÂNCIA DO AXIOS
 // ===========================================
 
 const api = axios.create({
   // URL base da API Central
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001',
+  baseURL: obterUrlApi(),
   // Timeout de 10 segundos
   timeout: 10000,
   // Headers padrão
