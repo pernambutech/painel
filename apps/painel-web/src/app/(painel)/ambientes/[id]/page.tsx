@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { ambientesApi, agentesApi } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Input } from '@/components/ui/Input';
@@ -595,33 +596,33 @@ export default function AmbienteDetalhePage() {
       </Card>
 
       {/* Modal de confirmação de exclusão */}
-      {confirmandoExclusao && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <h3 className="text-lg font-semibold text-zinc-100 mb-2">Excluir ambiente?</h3>
-            <p className="text-sm text-zinc-500 mb-6">
-              Esta ação não pode ser desfeita. Todos os dados associados serão perdidos.
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variante="secundario"
-                larguraTotal
-                onClick={() => setConfirmandoExclusao(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variante="perigo"
-                larguraTotal
-                onClick={excluirAmbiente}
-                carregando={salvando}
-              >
-                Excluir
-              </Button>
-            </div>
-          </Card>
+      <Modal
+        aberto={confirmandoExclusao}
+        aoFechar={() => setConfirmandoExclusao(false)}
+        titulo="Excluir ambiente"
+      >
+        <h3 className="text-lg font-semibold text-zinc-100 mb-2">Excluir ambiente?</h3>
+        <p className="text-sm text-zinc-500 mb-6">
+          Esta ação não pode ser desfeita. Todos os dados associados serão perdidos.
+        </p>
+        <div className="flex gap-3">
+          <Button
+            variante="secundario"
+            larguraTotal
+            onClick={() => setConfirmandoExclusao(false)}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variante="perigo"
+            larguraTotal
+            onClick={excluirAmbiente}
+            carregando={salvando}
+          >
+            Excluir
+          </Button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

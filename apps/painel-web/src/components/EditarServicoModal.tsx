@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { servicosApi, ambientesApi } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Card } from '@/components/ui/Card';
+import { Modal } from '@/components/ui/Modal';
 import { X } from 'lucide-react';
 import type { Servico, Ambiente } from '@/types';
 
@@ -117,32 +117,22 @@ export function EditarServicoModal({
     }
   };
 
-  // Fechar com ESC
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') aoFechar();
-  };
-
   // ===========================================
   // RENDERIZAÇÃO
   // ===========================================
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) aoFechar(); }}
-      onKeyDown={handleKeyDown}
-    >
-      <Card className="w-full max-w-lg">
-        {/* Cabeçalho */}
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-100">Editar serviço</h2>
-            <p className="text-xs text-zinc-500">{servico.nome}</p>
-          </div>
-          <Button variante="fantasma" tamanho="pequeno" onClick={aoFechar}>
-            <X className="h-4 w-4" />
-          </Button>
+    <Modal aberto aoFechar={aoFechar} titulo="Editar serviço" larguraMaxima="max-w-lg">
+      {/* Cabeçalho */}
+      <div className="mb-5 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-zinc-100">Editar serviço</h2>
+          <p className="text-xs text-zinc-500">{servico.nome}</p>
         </div>
+        <Button variante="fantasma" tamanho="pequeno" onClick={aoFechar}>
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
 
         {/* Erro */}
         {erro && (
@@ -259,7 +249,6 @@ export function EditarServicoModal({
             </Button>
           </div>
         </form>
-      </Card>
-    </div>
+    </Modal>
   );
 }
