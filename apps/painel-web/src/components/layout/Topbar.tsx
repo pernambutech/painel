@@ -105,12 +105,35 @@ export function Topbar({ aoAbrirSidebar }: TopbarProps) {
       )}
 
       <div className="relative">
-        <button type="button" onClick={() => alternarMenu('organizacao')} className="flex items-center gap-2 rounded-full border border-[#2a2a32] bg-[#1e1e24] py-1.5 pl-3 pr-2.5 text-zinc-300 hover:border-[#5b7cfa]" aria-expanded={menuAberto === 'organizacao'}>
+        <button
+          type="button"
+          onClick={() => alternarMenu('organizacao')}
+          className="flex items-center gap-2 rounded-full border border-[#2a2a32] bg-[#1e1e24] py-1.5 pl-3 pr-2.5 text-zinc-300 hover:border-[#5b7cfa]"
+          aria-expanded={menuAberto === 'organizacao'}
+          aria-haspopup="true"
+          aria-label="Selecionar organização"
+        >
           <Building2 className="h-3.5 w-3.5 text-[#7f98ff]" />
           <span className="text-xs font-medium">{organizacao?.nome || 'Carregando...'}</span>
           <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
         </button>
-        {menuAberto === 'organizacao' && <div className="absolute left-0 top-11 z-50 min-w-64 rounded-lg border border-[#2a2a32] bg-[#1e1e24] p-1 shadow-xl"><p className="px-3 py-2 text-[11px] uppercase text-zinc-500">Organizações</p>{organizacoes.map((item) => <button key={item.id} type="button" onClick={() => { alterarOrganizacao(item); setMenuAberto(null); }} className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-xs text-zinc-300 hover:bg-[#28282f]"><span>{item.nome}</span>{item.id === organizacao?.id && <span className="text-[#8ca2ff]">Ativa</span>}</button>)}</div>}
+        {menuAberto === 'organizacao' && (
+          <div role="menu" aria-label="Lista de organizações" className="absolute left-0 top-11 z-50 min-w-64 rounded-lg border border-[#2a2a32] bg-[#1e1e24] p-1 shadow-xl">
+            <p className="px-3 py-2 text-[11px] uppercase text-zinc-500">Organizações</p>
+            {organizacoes.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="menuitem"
+                onClick={() => { alterarOrganizacao(item); setMenuAberto(null); }}
+                className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-xs text-zinc-300 hover:bg-[#28282f]"
+              >
+                <span>{item.nome}</span>
+                {item.id === organizacao?.id && <span className="text-[#8ca2ff]">Ativa</span>}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="ml-auto flex items-center gap-4">
@@ -125,7 +148,9 @@ export function Topbar({ aoAbrirSidebar }: TopbarProps) {
             type="button"
             onClick={() => alternarMenu('notificacoes')}
             className="relative rounded-md p-1 text-zinc-400 transition-colors hover:bg-[#28282f] hover:text-zinc-100"
-            aria-label="Notificações"
+            aria-label={`Notificações${temNotificacoes ? ` (${notificacoes.length} não lidas)` : ''}`}
+            aria-expanded={menuAberto === 'notificacoes'}
+            aria-haspopup="true"
             title="Notificações"
           >
             <Bell className="h-[18px] w-[18px]" />
@@ -136,14 +161,14 @@ export function Topbar({ aoAbrirSidebar }: TopbarProps) {
             )}
           </button>
           {menuAberto === 'notificacoes' && (
-            <div className="absolute right-0 top-9 z-50 w-72 rounded-lg border border-[#2a2a32] bg-[#1e1e24] shadow-xl">
+            <div role="menu" aria-label="Lista de notificações" className="absolute right-0 top-9 z-50 w-72 rounded-lg border border-[#2a2a32] bg-[#1e1e24] shadow-xl">
               <div className="border-b border-[#2a2a32] px-3 py-2.5">
                 <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Notificações</p>
               </div>
               {temNotificacoes ? (
                 <div className="max-h-64 overflow-y-auto">
                   {notificacoes.map((notif) => (
-                    <div key={notif.id} className="flex items-start gap-2.5 border-b border-[#2a2a32] px-3 py-2.5 last:border-0 hover:bg-[#28282f]">
+                    <div key={notif.id} role="menuitem" className="flex items-start gap-2.5 border-b border-[#2a2a32] px-3 py-2.5 last:border-0 hover:bg-[#28282f]">
                       <WifiOff className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-400" />
                       <div className="min-w-0">
                         <p className="text-xs font-medium text-zinc-200">{notif.titulo}</p>
@@ -169,20 +194,22 @@ export function Topbar({ aoAbrirSidebar }: TopbarProps) {
             onClick={() => alternarMenu('ajuda')}
             className="hidden rounded-md p-1 text-zinc-400 transition-colors hover:bg-[#28282f] hover:text-zinc-100 sm:block"
             aria-label="Ajuda"
+            aria-expanded={menuAberto === 'ajuda'}
+            aria-haspopup="true"
             title="Ajuda"
           >
             <CircleHelp className="h-[18px] w-[18px]" />
           </button>
           {menuAberto === 'ajuda' && (
-            <div className="absolute right-0 top-9 z-50 w-64 rounded-lg border border-[#2a2a32] bg-[#1e1e24] p-1 shadow-xl">
+            <div role="menu" aria-label="Menu de ajuda" className="absolute right-0 top-9 z-50 w-64 rounded-lg border border-[#2a2a32] bg-[#1e1e24] p-1 shadow-xl">
               <p className="px-3 py-2 text-[11px] font-medium uppercase text-zinc-500">Ajuda e Documentação</p>
 
-              <Link href="/ajuda" onClick={() => setMenuAberto(null)} className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]">
+              <Link href="/ajuda" onClick={() => setMenuAberto(null)} role="menuitem" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]">
                 <BookOpen className="h-3.5 w-3.5 text-[#8ca2ff]" />
                 Guia rápido de uso
               </Link>
 
-              <Link href="/configuracoes" onClick={() => setMenuAberto(null)} className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]">
+              <Link href="/configuracoes" onClick={() => setMenuAberto(null)} role="menuitem" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]">
                 <Settings className="h-3.5 w-3.5 text-zinc-400" />
                 Configurações
               </Link>
@@ -211,11 +238,13 @@ export function Topbar({ aoAbrirSidebar }: TopbarProps) {
             className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5b7cfa] text-sm font-semibold text-white"
             title={usuario?.nome || 'Usuário'}
             aria-label="Abrir perfil"
+            aria-expanded={menuAberto === 'perfil'}
+            aria-haspopup="true"
           >
             {usuario?.nome?.split(' ').map((parte) => parte[0]).join('').slice(0, 2).toUpperCase() || 'U'}
           </button>
           {menuAberto === 'perfil' && (
-            <div className="absolute right-0 top-10 z-50 w-56 rounded-lg border border-[#2a2a32] bg-[#1e1e24] p-2 shadow-xl">
+            <div role="menu" aria-label="Menu do perfil" className="absolute right-0 top-10 z-50 w-56 rounded-lg border border-[#2a2a32] bg-[#1e1e24] p-2 shadow-xl">
               <div className="flex items-center gap-2 border-b border-[#2a2a32] px-3 py-2">
                 <UserRound className="h-4 w-4 text-[#8ca2ff]" />
                 <div className="min-w-0">
@@ -227,6 +256,7 @@ export function Topbar({ aoAbrirSidebar }: TopbarProps) {
               <Link
                 href="/configuracoes"
                 onClick={() => setMenuAberto(null)}
+                role="menuitem"
                 className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]"
               >
                 <Settings className="h-4 w-4" />
@@ -235,6 +265,7 @@ export function Topbar({ aoAbrirSidebar }: TopbarProps) {
 
               <button
                 type="button"
+                role="menuitem"
                 onClick={logout}
                 className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]"
               >
