@@ -1,10 +1,10 @@
 // Página de histórico e auditoria
-// Lista execuções de controle de serviços
+// Lista execuções de controle de serviços com paginação
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { History, Play, Square, RotateCw, Clock, User, Server, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { History, Play, Square, RotateCw, Clock, User, Server, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { BadgeSimples } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
@@ -25,28 +25,37 @@ const acaoIcones: Record<string, any> = {
   reiniciar: RotateCw,
 };
 
+const ITENS_POR_PAGINA_PADRAO = 20;
+
 export default function HistoricoPage() {
   const { organizacao } = useAuth();
   const [execucoes, setExecucoes] = useState<Execucao[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalItens, setTotalItens] = useState(0);
 
-  useEffect(() => {
-    if (organizacao) carregar();
-  }, [organizacao]);
-
-  const carregar = async () => {
+  const carregar = useCallback(async (pagina: number) => {
     if (!organizacao) return;
     try {
       setCarregando(true);
-      const dados = await execucoesApi.listarPorOrganizacao(organizacao.id, 50);
-      setExecucoes(dados || []);
+      const itensPagina = parseInt(localStorage.getItem('preferencia_itens_pagina') || String(ITENS_POR_PAGINA_PADRAO), 10);
+      const dados = await execucoesApi.listarPorOrganizacao(organizacao.id, itensPagina, pagina);
+      setExecucoes(dados.dados || []);
+      setTotalPaginas(dados.paginas || 1);
+      setTotalItens(dados.total || 0);
+      setPaginaAtual(pagina);
     } catch {
       setErro('Erro ao carregar histórico.');
     } finally {
       setCarregando(false);
     }
-  };
+  }, [organizacao]);
+
+  useEffect(() => {
+    if (organizacao) carregar(1);
+  }, [organizacao, carregar]);
 
   const formatarData = (data: string) => {
     return new Date(data).toLocaleString('pt-BR', {
@@ -81,7 +90,7 @@ export default function HistoricoPage() {
             Ações executadas nos serviços • Auditoria por usuário
           </p>
         </div>
-        <Button variante="fantasma" tamanho="pequeno" onClick={carregar}>
+        <Button variante="fantasma" tamanho="pequeno" onClick={() => carregar(paginaAtual)}>
           <History className="w-4 h-4" />
           Atualizar
         </Button>
@@ -92,7 +101,7 @@ export default function HistoricoPage() {
           <div className="flex items-center gap-2">
             <History className="h-4 w-4 text-[#8ca2ff]" />
             <h2 className="text-base font-semibold text-zinc-100">Linha do tempo</h2>
-            <span className="text-xs text-zinc-500">({execucoes.length} execuções)</span>
+            <span className="text-xs text-zinc-500">({totalItens} execuções)</span>
           </div>
         </div>
 
@@ -106,7 +115,7 @@ export default function HistoricoPage() {
         ) : erro ? (
           <div className="p-6 text-center">
             <p className="text-sm text-red-400">{erro}</p>
-            <Button variante="fantasma" tamanho="pequeno" onClick={carregar} className="mt-3">
+            <Button variante="fantasma" tamanho="pequeno" onClick={() => carregar(paginaAtual)} className="mt-3">
               Tentar novamente
             </Button>
           </div>
@@ -119,48 +128,79 @@ export default function HistoricoPage() {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[#2a2a32]">
-            {execucoes.map((exec) => {
-              const IconeAcao = acaoIcones[exec.acao] || History;
-              const StatusIcon = exec.status === 'sucesso' ? CheckCircle2 : exec.status === 'falhou' ? AlertCircle : Clock;
-              return (
-                <div key={exec.id} className="flex gap-4 px-5 py-4 hover:bg-[#1e1e24] transition-colors">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#1e1e24] border border-[#2a2a32]">
-                    <IconeAcao className="h-4 w-4 text-[#8ca2ff]" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-zinc-100">{acaoLabels[exec.acao] || exec.acao}</span>
-                      <BadgeSimples variante={obterVarianteStatus(exec.status) as any}>{exec.status}</BadgeSimples>
-                      {exec.servico && (
-                        <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
-                          <Server className="h-3 w-3" /> {exec.servico.nome}
+          <>
+            <div className="divide-y divide-[#2a2a32]">
+              {execucoes.map((exec) => {
+                const IconeAcao = acaoIcones[exec.acao] || History;
+                const StatusIcon = exec.status === 'sucesso' ? CheckCircle2 : exec.status === 'falhou' ? AlertCircle : Clock;
+                return (
+                  <div key={exec.id} className="flex gap-4 px-5 py-4 hover:bg-[#1e1e24] transition-colors">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#1e1e24] border border-[#2a2a32]">
+                      <IconeAcao className="h-4 w-4 text-[#8ca2ff]" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium text-zinc-100">{acaoLabels[exec.acao] || exec.acao}</span>
+                        <BadgeSimples variante={obterVarianteStatus(exec.status) as any}>{exec.status}</BadgeSimples>
+                        {exec.servico && (
+                          <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
+                            <Server className="h-3 w-3" /> {exec.servico.nome}
+                          </span>
+                        )}
+                        {exec.projeto && (
+                          <span className="text-xs text-zinc-500">• {exec.projeto.nome}</span>
+                        )}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-500">
+                        <span className="inline-flex items-center gap-1">
+                          <User className="h-3 w-3" /> {exec.usuario?.nome || '—'}
                         </span>
-                      )}
-                      {exec.projeto && (
-                        <span className="text-xs text-zinc-500">• {exec.projeto.nome}</span>
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {formatarData(exec.criadoEm)}
+                        </span>
+                        {exec.ambiente && <span>Ambiente: {exec.ambiente.nome}</span>}
+                      </div>
+                      {exec.erro && (
+                        <p className="mt-2 rounded bg-red-500/10 px-2 py-1 text-xs text-red-300">{exec.erro}</p>
                       )}
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-                      <span className="inline-flex items-center gap-1">
-                        <User className="h-3 w-3" /> {exec.usuario?.nome || '—'}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> {formatarData(exec.criadoEm)}
-                      </span>
-                      {exec.ambiente && <span>Ambiente: {exec.ambiente.nome}</span>}
-                    </div>
-                    {exec.erro && (
-                      <p className="mt-2 rounded bg-red-500/10 px-2 py-1 text-xs text-red-300">{exec.erro}</p>
-                    )}
+                    <StatusIcon
+                      className={`h-4 w-4 shrink-0 ${exec.status === 'sucesso' ? 'text-emerald-400' : exec.status === 'falhou' ? 'text-red-400' : 'text-amber-400'}`}
+                    />
                   </div>
-                  <StatusIcon
-                    className={`h-4 w-4 shrink-0 ${exec.status === 'sucesso' ? 'text-emerald-400' : exec.status === 'falhou' ? 'text-red-400' : 'text-amber-400'}`}
-                  />
+                );
+              })}
+            </div>
+
+            {/* Paginação */}
+            {totalPaginas > 1 && (
+              <div className="flex items-center justify-between border-t border-[#2a2a32] px-5 py-3">
+                <p className="text-xs text-zinc-500">
+                  Página {paginaAtual} de {totalPaginas}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variante="fantasma"
+                    tamanho="pequeno"
+                    onClick={() => carregar(paginaAtual - 1)}
+                    disabled={paginaAtual <= 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Anterior
+                  </Button>
+                  <Button
+                    variante="fantasma"
+                    tamanho="pequeno"
+                    onClick={() => carregar(paginaAtual + 1)}
+                    disabled={paginaAtual >= totalPaginas}
+                  >
+                    Próxima
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            )}
+          </>
         )}
       </Card>
     </div>

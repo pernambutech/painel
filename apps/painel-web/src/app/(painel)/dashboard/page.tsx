@@ -71,8 +71,8 @@ export default function DashboardPage() {
     if (!organizacao) return;
 
     try {
-      const dados = await execucoesApi.listarPorOrganizacao(organizacao.id, 10);
-      setExecucoes(dados || []);
+      const resposta = await execucoesApi.listarPorOrganizacao(organizacao.id, 10);
+      setExecucoes(resposta.dados || []);
     } catch {
       // Erro silencioso para execucoes (não crítico)
     }

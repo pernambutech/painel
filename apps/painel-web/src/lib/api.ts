@@ -463,10 +463,10 @@ export const servicosApi = {
 // ===========================================
 
 export const execucoesApi = {
-  // Listar histórico da organização
-  listarPorOrganizacao: async (organizacaoId: string, limite = 50) => {
+  // Listar histórico da organização (com paginação)
+  listarPorOrganizacao: async (organizacaoId: string, limite = 20, pagina = 1) => {
     const resposta = await api.get(`/organizacoes/${organizacaoId}/execucoes`, {
-      params: { limite },
+      params: { limite, pagina },
     });
     return resposta.data;
   },

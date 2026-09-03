@@ -17,10 +17,12 @@ export class ExecucoesController {
   async listarPorOrganizacao(
     @Param('organizacaoId') organizacaoId: string,
     @Query('limite') limite: string,
+    @Query('pagina') pagina: string,
     @Request() req,
   ) {
-    const lim = Math.min(Math.max(parseInt(limite, 10) || 50, 1), 100);
-    return this.execucoesServico.listarPorOrganizacao(organizacaoId, req.user.id, lim);
+    const lim = Math.min(Math.max(parseInt(limite, 10) || 20, 1), 100);
+    const pag = Math.max(parseInt(pagina, 10) || 1, 1);
+    return this.execucoesServico.listarPorOrganizacao(organizacaoId, req.user.id, lim, pag);
   }
 
   // ===========================================

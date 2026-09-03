@@ -75,23 +75,34 @@ export class ExecucoesServico {
   async listarPorOrganizacao(
     organizacaoId: string,
     usuarioId: string,
-    limite = 50,
-  ): Promise<RespostaExecucao[]> {
+    limite = 20,
+    pagina = 1,
+  ): Promise<{ dados: RespostaExecucao[]; total: number; paginas: number }> {
     await this.verificarMembro(organizacaoId, usuarioId);
 
-    const execucoes = await this.prisma.execucao.findMany({
-      where: { organizacaoId },
-      include: {
-        usuario: { select: { id: true, nome: true, email: true } },
-        servico: { select: { id: true, nome: true, tipo: true } },
-        projeto: { select: { id: true, nome: true } },
-        ambiente: { select: { id: true, nome: true } },
-      },
-      orderBy: { criadoEm: 'desc' },
-      take: limite,
-    });
+    const skip = (pagina - 1) * limite;
 
-    return execucoes.map((e) => this.mapearResposta(e));
+    const [execucoes, total] = await Promise.all([
+      this.prisma.execucao.findMany({
+        where: { organizacaoId },
+        include: {
+          usuario: { select: { id: true, nome: true, email: true } },
+          servico: { select: { id: true, nome: true, tipo: true } },
+          projeto: { select: { id: true, nome: true } },
+          ambiente: { select: { id: true, nome: true } },
+        },
+        orderBy: { criadoEm: 'desc' },
+        take: limite,
+        skip,
+      }),
+      this.prisma.execucao.count({ where: { organizacaoId } }),
+    ]);
+
+    return {
+      dados: execucoes.map((e) => this.mapearResposta(e)),
+      total,
+      paginas: Math.ceil(total / limite),
+    };
   }
 
   // ===========================================
