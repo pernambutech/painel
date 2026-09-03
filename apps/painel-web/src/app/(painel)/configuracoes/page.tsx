@@ -39,7 +39,9 @@ export default function ConfiguracoesPage() {
   const salvarConta = () => executar(async () => {
     const atualizado = await autenticacaoApi.atualizarPerfil({ nome, email });
     localStorage.setItem('usuario_painel', JSON.stringify(atualizado));
-    if (novaSenha) {
+    if (novaSenha || senhaAtual || confirmacao) {
+      if (!senhaAtual) throw new Error('Informe a senha atual para alterar a senha.');
+      if (novaSenha.length < 6) throw new Error('A nova senha deve ter pelo menos 6 caracteres.');
       if (novaSenha !== confirmacao) throw new Error('As senhas não conferem.');
       await autenticacaoApi.alterarSenha({ senhaAtual, novaSenha });
       setSenhaAtual(''); setNovaSenha(''); setConfirmacao('');
