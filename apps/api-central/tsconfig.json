@@ -18,7 +18,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "incremental": true,
+    "incremental": false,
     "strictNullChecks": false,
     "noImplicitAny": false,
     "strictBindCallApply": false,
