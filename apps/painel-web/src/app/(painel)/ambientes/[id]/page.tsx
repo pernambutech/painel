@@ -587,14 +587,6 @@ export default function AmbienteDetalhePage() {
         </div>
       </Card>
 
-      {/* Seção 4 - Métricas (Placeholder) */}
-      <Card>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-4">Métricas do Sistema</h2>
-        <div className="text-center py-6">
-          <p className="text-sm text-zinc-500">Métricas detalhadas disponíveis em breve.</p>
-        </div>
-      </Card>
-
       {/* Modal de confirmação de exclusão */}
       <Modal
         aberto={confirmandoExclusao}
