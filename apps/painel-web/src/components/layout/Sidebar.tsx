@@ -78,7 +78,7 @@ export function Sidebar() {
               <Boxes className="h-[18px] w-[18px]" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-[18px] font-bold tracking-tight text-zinc-100">DevManager</h1>
+              <h1 className="text-[18px] font-bold tracking-tight text-zinc-100">Painel</h1>
             </div>
           </div>
         </div>
