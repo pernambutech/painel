@@ -6,8 +6,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { servicosApi } from '@/lib/api';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { Spinner } from '@/components/ui/Spinner';
 import {
   X,
@@ -131,27 +131,26 @@ export function CommitsModal({
   const formatarHash = (hash: string) => hash.slice(0, 7);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="flex max-h-[85vh] w-full max-w-4xl flex-col">
-        {/* Cabeçalho */}
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <GitCommit className="w-5 h-5 text-[#8ca2ff]" />
-            <div>
-              <h3 className="text-lg font-semibold text-zinc-100">
-                Commits — {nomeServico}
-              </h3>
-              {branchAtual && (
-                <p className="text-xs text-zinc-500">
-                  Branch: <span className="text-[#8ca2ff]">{branchAtual}</span>
-                </p>
-              )}
-            </div>
+    <Modal aberto aoFechar={aoFechar} titulo={`Commits — ${nomeServico}`} larguraMaxima="max-w-4xl" naoFecharBackdrop>
+      {/* Cabeçalho */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <GitCommit className="w-5 h-5 text-[#8ca2ff]" />
+          <div>
+            <h3 className="text-lg font-semibold text-zinc-100">
+              Commits — {nomeServico}
+            </h3>
+            {branchAtual && (
+              <p className="text-xs text-zinc-500">
+                Branch: <span className="text-[#8ca2ff]">{branchAtual}</span>
+              </p>
+            )}
           </div>
-          <Button variante="fantasma" tamanho="pequeno" onClick={aoFechar}>
-            <X className="w-4 h-4" />
-          </Button>
         </div>
+        <Button variante="fantasma" tamanho="pequeno" onClick={aoFechar}>
+          <X className="w-4 h-4" />
+        </Button>
+      </div>
 
         {/* Aviso de alterações não commitadas */}
         {temAlteracoes && (
@@ -286,7 +285,6 @@ export function CommitsModal({
             </Button>
           </div>
         )}
-      </Card>
-    </div>
+    </Modal>
   );
 }
