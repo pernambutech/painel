@@ -4,6 +4,7 @@
 'use client';
 
 import { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { autenticacaoApi, organizacoesApi } from '@/lib/api';
 import type { Usuario, Organizacao } from '@/types';
 
@@ -48,6 +49,7 @@ function selecionarOrganizacao(organizacoes: Organizacao[]): Organizacao {
 // ===========================================
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [organizacao, setOrganizacao] = useState<Organizacao | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -142,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('organizacao_painel');
     setUsuario(null);
     setOrganizacao(null);
-    window.location.href = '/login';
+    router.push('/login');
   };
 
   // ===========================================
