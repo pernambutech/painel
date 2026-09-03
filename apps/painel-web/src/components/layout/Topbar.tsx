@@ -17,6 +17,7 @@ import {
   UserRound,
   WifiOff,
   BookOpen,
+  Menu,
 } from 'lucide-react';
 import type { Ambiente, Organizacao } from '@/types';
 
@@ -28,7 +29,11 @@ interface Notificacao {
   criadoEm: string;
 }
 
-export function Topbar() {
+interface TopbarProps {
+  aoAbrirSidebar?: () => void;
+}
+
+export function Topbar({ aoAbrirSidebar }: TopbarProps) {
   const { organizacao, usuario, alterarOrganizacao, logout } = useAuth();
   const [ambientesOnline, setAmbientesOnline] = useState(0);
   const [ambientesOffline, setAmbientesOffline] = useState(0);
@@ -88,6 +93,17 @@ export function Topbar() {
 
   return (
     <header ref={menuRef} className="sticky top-0 z-30 flex min-h-[58px] flex-wrap items-center gap-4 border-b border-[#2a2a32] bg-[#16161a] px-4 py-3 sm:px-8">
+      {/* Hamburger — apenas no mobile */}
+      {aoAbrirSidebar && (
+        <button
+          onClick={aoAbrirSidebar}
+          className="p-1.5 text-zinc-400 hover:text-zinc-100 lg:hidden"
+          aria-label="Abrir menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      )}
+
       <div className="relative">
         <button type="button" onClick={() => alternarMenu('organizacao')} className="flex items-center gap-2 rounded-full border border-[#2a2a32] bg-[#1e1e24] py-1.5 pl-3 pr-2.5 text-zinc-300 hover:border-[#5b7cfa]" aria-expanded={menuAberto === 'organizacao'}>
           <Building2 className="h-3.5 w-3.5 text-[#7f98ff]" />

@@ -92,46 +92,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (max-width: 768px) {
-  .dashboard-sidebar {
-    width: 64px;
-    padding-left: 8px;
-    padding-right: 8px;
-  }
-
-  .dashboard-sidebar h1,
-  .dashboard-sidebar p,
-  .dashboard-sidebar a:not(:has(svg)) {
-    display: none;
-  }
-
-  .dashboard-sidebar > div:first-child {
-    display: flex;
-    justify-content: center;
-    padding-left: 0;
-    padding-right: 0;
-  }
-
-  .dashboard-sidebar > div:first-child > div > div:last-child,
-  .dashboard-sidebar nav > p,
-  .dashboard-sidebar a > span,
-  .dashboard-sidebar button,
-  .dashboard-sidebar .text-xs {
-    display: none;
-  }
-
-  .dashboard-sidebar nav a,
-  .dashboard-sidebar nav + div a {
-    justify-content: center;
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-
-  .dashboard-sidebar nav + div > div {
-    justify-content: center;
-  }
-}
-
 button,
 input,
 select {

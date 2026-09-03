@@ -1,5 +1,5 @@
 // Componente Sidebar
-// Navegação lateral principal com toggle de visibilidade
+// Navegação lateral principal com drawer responsivo no mobile
 
 'use client';
 
@@ -14,6 +14,8 @@ import {
   Settings,
   LogOut,
   Boxes,
+  History,
+  X,
 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 
@@ -50,7 +52,7 @@ const itensNavegacao = [
   {
     nome: 'Histórico',
     href: '/historico',
-    icone: FileText,
+    icone: History,
   },
 ];
 
@@ -63,14 +65,60 @@ const itensInferior = [
 ];
 
 // ===========================================
+// TIPOS
+// ===========================================
+
+interface SidebarProps {
+  aberta: boolean;
+  aoFechar: () => void;
+}
+
+// ===========================================
 // COMPONENTE
 // ===========================================
 
-export function Sidebar() {
+export function Sidebar({ aberta, aoFechar }: SidebarProps) {
   const pathname = usePathname();
   const { logout, usuario } = useAuth();
+
+  // Fecha o drawer ao navegar (mobile)
+  const handleNavegacao = () => {
+    if (window.innerWidth < 1024) {
+      aoFechar();
+    }
+  };
+
   return (
-    <aside className="dashboard-sidebar flex h-dvh w-[240px] shrink-0 flex-col overflow-y-auto border-r border-[#2a2a32] bg-[#16161a] px-4 py-5">
+    <>
+      {/* Backdrop — apenas no mobile quando sidebar está aberta */}
+      {aberta && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={aoFechar}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          dashboard-sidebar
+          fixed inset-y-0 left-0 z-50 flex h-dvh w-[240px] flex-col overflow-y-auto
+          border-r border-[#2a2a32] bg-[#16161a] px-4 py-5
+          transition-transform duration-200 ease-in-out
+          lg:static lg:translate-x-0
+          ${aberta ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        {/* Botão fechar — apenas no mobile */}
+        <button
+          onClick={aoFechar}
+          className="absolute right-3 top-3 p-1.5 text-zinc-500 hover:text-zinc-300 lg:hidden"
+          aria-label="Fechar menu"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
         {/* Logo */}
         <div className="mb-6 border-b border-[#2a2a32] px-1 pb-6">
           <div className="flex items-center gap-2.5">
@@ -94,6 +142,7 @@ export function Sidebar() {
               <Link
                 key={item.nome}
                 href={item.href}
+                onClick={handleNavegacao}
                 className={`
                   flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-[13px] transition-colors duration-150
                   ${
@@ -120,6 +169,7 @@ export function Sidebar() {
               <Link
                 key={item.nome}
                 href={item.href}
+                onClick={handleNavegacao}
                 className={`
                   flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-[13px] transition-colors duration-150
                   ${
@@ -149,11 +199,13 @@ export function Sidebar() {
               onClick={logout}
               className="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors"
               title="Sair"
+              aria-label="Sair da conta"
             >
               <LogOut className="h-4 w-4" />
             </button>
           </div>
         </div>
-    </aside>
+      </aside>
+    </>
   );
 }
