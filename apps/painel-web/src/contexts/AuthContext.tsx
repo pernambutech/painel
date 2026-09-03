@@ -33,7 +33,14 @@ export interface AuthContextType {
 export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 function selecionarOrganizacao(organizacoes: Organizacao[]): Organizacao {
-  return organizacoes.find((organizacao) => organizacao.slug === 'pernambutech') || organizacoes[0];
+  // Verificar se há organização salva no localStorage
+  const idSalvo = localStorage.getItem('organizacao_painel');
+  if (idSalvo) {
+    const encontrada = organizacoes.find((o) => o.id === idSalvo);
+    if (encontrada) return encontrada;
+  }
+  // Caso contrário, usar a primeira organização
+  return organizacoes[0];
 }
 
 // ===========================================
@@ -132,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     localStorage.removeItem('token_painel');
     localStorage.removeItem('usuario_painel');
+    localStorage.removeItem('organizacao_painel');
     setUsuario(null);
     setOrganizacao(null);
     window.location.href = '/login';
@@ -154,6 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const alterarOrganizacao = (organizacaoSelecionada: Organizacao) => {
     setOrganizacao(organizacaoSelecionada);
+    localStorage.setItem('organizacao_painel', organizacaoSelecionada.id);
   };
 
   // ===========================================
