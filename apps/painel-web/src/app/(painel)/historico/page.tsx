@@ -73,7 +73,7 @@ export default function HistoricoPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-8">
+    <div className="mx-auto max-w-6xl space-y-8">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-zinc-100">Histórico</h1>

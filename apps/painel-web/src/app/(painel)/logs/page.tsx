@@ -100,7 +100,7 @@ export default function LogsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-7">
+    <div className="mx-auto max-w-6xl space-y-7">
       <header>
         <h1 className="text-2xl font-bold text-zinc-100">Logs</h1>
         <p className="mt-1 text-sm text-zinc-400">Visualize os logs básicos de cada serviço.</p>

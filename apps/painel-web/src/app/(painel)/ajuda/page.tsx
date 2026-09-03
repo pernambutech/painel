@@ -89,7 +89,7 @@ const passos = [
 
 export default function AjudaPage() {
   return (
-    <div className="mx-auto max-w-[800px] space-y-8">
+    <div className="mx-auto max-w-3xl space-y-8">
       {/* Cabeçalho */}
       <header>
         <div className="flex items-center gap-3 mb-2">
