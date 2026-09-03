@@ -47,27 +47,35 @@ export default function DashboardPage() {
   const [execucoes, setExecucoes] = useState<Execucao[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [carregandoExecucoes, setCarregandoExecucoes] = useState(true);
+  const [erroDashboard, setErroDashboard] = useState('');
 
   // Função para carregar dados do dashboard
   const carregarDados = useCallback(async () => {
     if (!organizacao) return;
 
-    const [ambientesDados, dashboardDados] = await Promise.all([
-      ambientesApi.listar(organizacao.id).catch(() => []),
-      dashboardApi.obterDados(organizacao.id).catch(() => null),
-    ]);
+    try {
+      const [ambientesDados, dashboardDados] = await Promise.all([
+        ambientesApi.listar(organizacao.id),
+        dashboardApi.obterDados(organizacao.id),
+      ]);
 
-    setAmbientes(ambientesDados || []);
-    setDashboard(dashboardDados);
+      setAmbientes(ambientesDados || []);
+      setDashboard(dashboardDados);
+      setErroDashboard('');
+    } catch {
+      setErroDashboard('Erro ao carregar dados do dashboard. Verifique se a API está acessível.');
+    }
   }, [organizacao]);
 
   const carregarExecucoes = useCallback(async () => {
     if (!organizacao) return;
 
-    const dados = await execucoesApi
-      .listarPorOrganizacao(organizacao.id, 10)
-      .catch(() => []);
-    setExecucoes(dados || []);
+    try {
+      const dados = await execucoesApi.listarPorOrganizacao(organizacao.id, 10);
+      setExecucoes(dados || []);
+    } catch {
+      // Erro silencioso para execucoes (não crítico)
+    }
   }, [organizacao]);
 
   // Carregar dados iniciais
@@ -210,6 +218,19 @@ export default function DashboardPage() {
           <Plus className="h-4 w-4" /> Novo ambiente
         </Link>
       </header>
+
+      {/* Erro de carregamento */}
+      {erroDashboard && (
+        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-red-400">{erroDashboard}</p>
+            <p className="text-xs text-red-400/70 mt-1">Verifique se a API Central está rodando na porta 4001.</p>
+          </div>
+          <Button variante="fantasma" tamanho="pequeno" onClick={() => { setErroDashboard(''); setCarregando(true); carregarDados().finally(() => setCarregando(false)); }}>
+            Tentar novamente
+          </Button>
+        </div>
+      )}
 
       {/* Cards de estatísticas */}
       <section aria-label="Resumo operacional" className="grid grid-cols-2 gap-4 xl:grid-cols-5">
