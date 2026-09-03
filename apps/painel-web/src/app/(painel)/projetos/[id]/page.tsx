@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { projetosApi, servicosApi, servicosPm2Api, agentesApi } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { BadgeSimples } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Input } from '@/components/ui/Input';
@@ -797,259 +798,263 @@ export default function ProjetoDetalhePage() {
       </Card>
 
       {/* Modal de confirmação de arquivamento */}
-      {confirmandoArquivamento && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <h3 className="text-lg font-semibold text-zinc-100 mb-2">Arquivar projeto?</h3>
-            <p className="text-sm text-zinc-500 mb-6">
-              O projeto ficará oculto da lista principal, mas poderá ser reativado a qualquer
-              momento.
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variante="secundario"
-                larguraTotal
-                onClick={() => setConfirmandoArquivamento(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variante="perigo"
-                larguraTotal
-                onClick={arquivarProjeto}
-                carregando={salvando}
-              >
-                Arquivar
-              </Button>
-            </div>
-          </Card>
+      <Modal
+        aberto={confirmandoArquivamento}
+        aoFechar={() => setConfirmandoArquivamento(false)}
+        titulo="Arquivar projeto"
+      >
+        <h3 className="text-lg font-semibold text-zinc-100 mb-2">Arquivar projeto?</h3>
+        <p className="text-sm text-zinc-500 mb-6">
+          O projeto ficará oculto da lista principal, mas poderá ser reativado a qualquer
+          momento.
+        </p>
+        <div className="flex gap-3">
+          <Button
+            variante="secundario"
+            larguraTotal
+            onClick={() => setConfirmandoArquivamento(false)}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variante="perigo"
+            larguraTotal
+            onClick={arquivarProjeto}
+            carregando={salvando}
+          >
+            Arquivar
+          </Button>
         </div>
-      )}
+      </Modal>
 
       {/* Modal de confirmação de remoção de serviço */}
-      {servicoParaRemover && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <h3 className="text-lg font-semibold text-zinc-100 mb-2">Remover serviço?</h3>
-            <p className="text-sm text-zinc-500 mb-6">
-              O serviço <strong className="text-zinc-300">{servicoParaRemover.nome}</strong> será
-              removido. Esta ação não pode ser desfeita.
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variante="secundario"
-                larguraTotal
-                onClick={() => setServicoParaRemover(null)}
-              >
-                Cancelar
-              </Button>
-              <Button variante="perigo" larguraTotal onClick={removerServico} carregando={salvando}>
-                Remover
-              </Button>
-            </div>
-          </Card>
+      <Modal
+        aberto={!!servicoParaRemover}
+        aoFechar={() => setServicoParaRemover(null)}
+        titulo="Remover serviço"
+      >
+        <h3 className="text-lg font-semibold text-zinc-100 mb-2">Remover serviço?</h3>
+        <p className="text-sm text-zinc-500 mb-6">
+          O serviço <strong className="text-zinc-300">{servicoParaRemover?.nome}</strong> será
+          removido. Esta ação não pode ser desfeita.
+        </p>
+        <div className="flex gap-3">
+          <Button
+            variante="secundario"
+            larguraTotal
+            onClick={() => setServicoParaRemover(null)}
+          >
+            Cancelar
+          </Button>
+          <Button variante="perigo" larguraTotal onClick={removerServico} carregando={salvando}>
+            Remover
+          </Button>
         </div>
-      )}
+      </Modal>
 
       {/* Modal de logs */}
-      {logsModalServico && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="flex max-h-[80vh] w-full max-w-3xl flex-col">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-zinc-100">
-                Logs — {logsModalServico.nome}
-              </h3>
-              <Button
-                variante="fantasma"
-                tamanho="pequeno"
-                onClick={() => setLogsModalServico(null)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="mb-3 flex items-center gap-2">
-              {(['todos', 'stdout', 'stderr'] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => {
-                    setTipoLog(t);
-                    carregarLogs(logsModalServico, t);
-                  }}
-                  className={`rounded-lg px-3 py-1 text-xs font-medium ${tipoLog === t ? 'bg-[#5b7cfa] text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
-                >
-                  {t}
-                </button>
-              ))}
-              <Button
-                variante="fantasma"
-                tamanho="pequeno"
-                onClick={() => carregarLogs(logsModalServico, tipoLog)}
-                carregando={carregandoLogs}
-              >
-                Atualizar
-              </Button>
-            </div>
-            {erroLogs && (
-              <div className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-                {erroLogs}
-              </div>
-            )}
-            <div className="flex-1 overflow-auto rounded-lg border border-[#2a2a32] bg-[#0d0d0f] p-4">
-              {carregandoLogs ? (
-                <div className="flex items-center justify-center py-8">
-                  <Spinner />
-                </div>
-              ) : logs.length === 0 ? (
-                <p className="text-sm text-zinc-500">Nenhum log encontrado.</p>
-              ) : (
-                <div className="space-y-1 text-xs font-mono">
-                  {logs.map((l: any, i: number) => (
-                    <div key={i} className={l.nivel === 'error' ? 'text-red-300' : 'text-zinc-300'}>
-                      <span className="text-zinc-500">
-                        {new Date(l.timestamp).toLocaleTimeString('pt-BR')}{' '}
-                      </span>
-                      <span className={l.fonte === 'stderr' ? 'text-red-400' : ''}>
-                        {l.mensagem}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </Card>
+      <Modal
+        aberto={!!logsModalServico}
+        aoFechar={() => setLogsModalServico(null)}
+        titulo={`Logs — ${logsModalServico?.nome || ''}`}
+        larguraMaxima="max-w-3xl"
+        naoFecharBackdrop
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-zinc-100">
+            Logs — {logsModalServico?.nome}
+          </h3>
+          <Button
+            variante="fantasma"
+            tamanho="pequeno"
+            onClick={() => setLogsModalServico(null)}
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
-      )}
+        <div className="mb-3 flex items-center gap-2">
+          {(['todos', 'stdout', 'stderr'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => {
+                setTipoLog(t);
+                if (logsModalServico) carregarLogs(logsModalServico, t);
+              }}
+              className={`rounded-lg px-3 py-1 text-xs font-medium ${tipoLog === t ? 'bg-[#5b7cfa] text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+            >
+              {t}
+            </button>
+          ))}
+          <Button
+            variante="fantasma"
+            tamanho="pequeno"
+            onClick={() => { if (logsModalServico) carregarLogs(logsModalServico, tipoLog); }}
+            carregando={carregandoLogs}
+          >
+            Atualizar
+          </Button>
+        </div>
+        {erroLogs && (
+          <div className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            {erroLogs}
+          </div>
+        )}
+        <div className="flex-1 overflow-auto rounded-lg border border-[#2a2a32] bg-[#0d0d0f] p-4 max-h-[50vh]">
+          {carregandoLogs ? (
+            <div className="flex items-center justify-center py-8">
+              <Spinner />
+            </div>
+          ) : logs.length === 0 ? (
+            <p className="text-sm text-zinc-500">Nenhum log encontrado.</p>
+          ) : (
+            <div className="space-y-1 text-xs font-mono">
+              {logs.map((l: any, i: number) => (
+                <div key={i} className={l.nivel === 'error' ? 'text-red-300' : 'text-zinc-300'}>
+                  <span className="text-zinc-500">
+                    {new Date(l.timestamp).toLocaleTimeString('pt-BR')}{' '}
+                  </span>
+                  <span className={l.fonte === 'stderr' ? 'text-red-400' : ''}>
+                    {l.mensagem}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Modal>
 
       {/* Modal de Git */}
-      {gitModalServico && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="flex max-h-[80vh] w-full max-w-3xl flex-col">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-zinc-100">
-                Git — {gitModalServico.nome}
-              </h3>
-              <Button variante="fantasma" tamanho="pequeno" onClick={() => setGitModalServico(null)}>
-                <X className="w-4 h-4" />
-              </Button>
+      <Modal
+        aberto={!!gitModalServico}
+        aoFechar={() => setGitModalServico(null)}
+        titulo={`Git — ${gitModalServico?.nome || ''}`}
+        larguraMaxima="max-w-3xl"
+        naoFecharBackdrop
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-zinc-100">
+            Git — {gitModalServico?.nome}
+          </h3>
+          <Button variante="fantasma" tamanho="pequeno" onClick={() => setGitModalServico(null)}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Abas */}
+        <div className="mb-3 flex items-center gap-2">
+          {(['status', 'branch'] as const).map((aba) => (
+            <button
+              key={aba}
+              onClick={() => {
+                setGitAba(aba);
+                if (aba === 'status' && !gitStatus && gitModalServico) carregarGitStatus(gitModalServico);
+                if (aba === 'branch' && !gitBranches && gitModalServico) carregarGitBranches(gitModalServico);
+              }}
+              className={`rounded-lg px-3 py-1 text-xs font-medium ${gitAba === aba ? 'bg-[#5b7cfa] text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+            >
+              {aba === 'status' ? 'Status' : 'Branches'}
+            </button>
+          ))}
+          <div className="flex-1" />
+          <Button
+            variante="secundario"
+            tamanho="pequeno"
+            onClick={() => { if (gitModalServico) executarGitPull(gitModalServico); }}
+            carregando={carregandoGit}
+          >
+            <GitPullRequest className="w-4 h-4" />
+            Pull
+          </Button>
+          <Button
+            variante="fantasma"
+            tamanho="pequeno"
+            onClick={() => {
+              if (gitAba === 'status' && gitModalServico) carregarGitStatus(gitModalServico);
+              else if (gitModalServico) carregarGitBranches(gitModalServico);
+            }}
+            carregando={carregandoGit}
+          >
+            Atualizar
+          </Button>
+        </div>
+
+        {/* Erro */}
+        {erroGit && (
+          <div className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            {erroGit}
+          </div>
+        )}
+
+        {/* Saída do pull */}
+        {gitSaida && (
+          <div className="mb-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300 font-mono whitespace-pre-wrap">
+            {gitSaida}
+          </div>
+        )}
+
+        {/* Conteúdo */}
+        <div className="flex-1 overflow-auto rounded-lg border border-[#2a2a32] bg-[#0d0d0f] p-4 max-h-[50vh]">
+          {carregandoGit ? (
+            <div className="flex items-center justify-center py-8">
+              <Spinner />
             </div>
-
-            {/* Abas */}
-            <div className="mb-3 flex items-center gap-2">
-              {(['status', 'branch'] as const).map((aba) => (
-                <button
-                  key={aba}
-                  onClick={() => {
-                    setGitAba(aba);
-                    if (aba === 'status' && !gitStatus) carregarGitStatus(gitModalServico);
-                    if (aba === 'branch' && !gitBranches) carregarGitBranches(gitModalServico);
-                  }}
-                  className={`rounded-lg px-3 py-1 text-xs font-medium ${gitAba === aba ? 'bg-[#5b7cfa] text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
-                >
-                  {aba === 'status' ? 'Status' : 'Branches'}
-                </button>
-              ))}
-              <div className="flex-1" />
-              <Button
-                variante="secundario"
-                tamanho="pequeno"
-                onClick={() => executarGitPull(gitModalServico)}
-                carregando={carregandoGit}
-              >
-                <GitPullRequest className="w-4 h-4" />
-                Pull
-              </Button>
-              <Button
-                variante="fantasma"
-                tamanho="pequeno"
-                onClick={() => {
-                  if (gitAba === 'status') carregarGitStatus(gitModalServico);
-                  else carregarGitBranches(gitModalServico);
-                }}
-                carregando={carregandoGit}
-              >
-                Atualizar
-              </Button>
-            </div>
-
-            {/* Erro */}
-            {erroGit && (
-              <div className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-                {erroGit}
-              </div>
-            )}
-
-            {/* Saída do pull */}
-            {gitSaida && (
-              <div className="mb-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300 font-mono whitespace-pre-wrap">
-                {gitSaida}
-              </div>
-            )}
-
-            {/* Conteúdo */}
-            <div className="flex-1 overflow-auto rounded-lg border border-[#2a2a32] bg-[#0d0d0f] p-4">
-              {carregandoGit ? (
-                <div className="flex items-center justify-center py-8">
-                  <Spinner />
+          ) : gitAba === 'status' ? (
+            !gitStatus ? (
+              <p className="text-sm text-zinc-500">Sem dados de status.</p>
+            ) : (
+              <div className="space-y-2 text-xs font-mono">
+                <div className="text-zinc-300">
+                  <span className="text-zinc-500">Branch: </span>
+                  <span className="text-[#8ca2ff] font-semibold">{gitStatus.branch}</span>
                 </div>
-              ) : gitAba === 'status' ? (
-                !gitStatus ? (
-                  <p className="text-sm text-zinc-500">Sem dados de status.</p>
-                ) : (
-                  <div className="space-y-2 text-xs font-mono">
-                    <div className="text-zinc-300">
-                      <span className="text-zinc-500">Branch: </span>
-                      <span className="text-[#8ca2ff] font-semibold">{gitStatus.branch}</span>
-                    </div>
-                    {gitStatus.branchInfo && (
-                      <div className="text-zinc-500">{gitStatus.branchInfo}</div>
-                    )}
-                    {gitStatus.arquivos?.length > 0 ? (
-                      <div className="mt-3 space-y-1">
-                        {gitStatus.arquivos.map((a: any, i: number) => (
-                          <div key={i} className="flex gap-2">
-                            <span className={`w-6 text-center font-bold ${
-                              a.status === 'M' ? 'text-amber-400' :
-                              a.status === 'A' ? 'text-emerald-400' :
-                              a.status === 'D' ? 'text-red-400' :
-                              a.status === '?' ? 'text-zinc-600' :
-                              'text-zinc-400'
-                            }`}>{a.status || ' '}</span>
-                            <span className="text-zinc-300">{a.arquivo}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-zinc-500 mt-2">Working tree limpa.</p>
-                    )}
-                  </div>
-                )
-              ) : (
-                !gitBranches ? (
-                  <p className="text-sm text-zinc-500">Sem dados de branches.</p>
-                ) : (
-                  <div className="space-y-1 text-xs font-mono">
-                    {gitBranches.branches?.map((b: string) => (
-                      <div key={b} className="flex items-center gap-2">
-                        {b === gitBranches.atual ? (
-                          <span className="text-[#5b7cfa]">●</span>
-                        ) : (
-                          <span className="text-zinc-700">○</span>
-                        )}
-                        <span className={b === gitBranches.atual ? 'text-zinc-100 font-semibold' : 'text-zinc-400'}>
-                          {b}
-                        </span>
-                        {b === gitBranches.atual && (
-                          <span className="text-[#5b7cfa] text-[10px]">(HEAD)</span>
-                        )}
+                {gitStatus.branchInfo && (
+                  <div className="text-zinc-500">{gitStatus.branchInfo}</div>
+                )}
+                {gitStatus.arquivos?.length > 0 ? (
+                  <div className="mt-3 space-y-1">
+                    {gitStatus.arquivos.map((a: any, i: number) => (
+                      <div key={i} className="flex gap-2">
+                        <span className={`w-6 text-center font-bold ${
+                          a.status === 'M' ? 'text-amber-400' :
+                          a.status === 'A' ? 'text-emerald-400' :
+                          a.status === 'D' ? 'text-red-400' :
+                          a.status === '?' ? 'text-zinc-600' :
+                          'text-zinc-400'
+                        }`}>{a.status || ' '}</span>
+                        <span className="text-zinc-300">{a.arquivo}</span>
                       </div>
                     ))}
                   </div>
-                )
-              )}
-            </div>
-          </Card>
+                ) : (
+                  <p className="text-zinc-500 mt-2">Working tree limpa.</p>
+                )}
+              </div>
+            )
+          ) : (
+            !gitBranches ? (
+              <p className="text-sm text-zinc-500">Sem dados de branches.</p>
+            ) : (
+              <div className="space-y-1 text-xs font-mono">
+                {gitBranches.branches?.map((b: string) => (
+                  <div key={b} className="flex items-center gap-2">
+                    {b === gitBranches.atual ? (
+                      <span className="text-[#5b7cfa]">●</span>
+                    ) : (
+                      <span className="text-zinc-700">○</span>
+                    )}
+                    <span className={b === gitBranches.atual ? 'text-zinc-100 font-semibold' : 'text-zinc-400'}>
+                      {b}
+                    </span>
+                    {b === gitBranches.atual && (
+                      <span className="text-[#5b7cfa] text-[10px]">(HEAD)</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          )}
         </div>
-      )}
+      </Modal>
 
       {/* Modal de Commits */}
       {commitsModalServico && (
