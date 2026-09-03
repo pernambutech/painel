@@ -40,6 +40,7 @@ import {
   X,
 } from 'lucide-react';
 import { CommitsModal } from '@/components/CommitsModal';
+import { EditarServicoModal } from '@/components/EditarServicoModal';
 import type { Projeto, Servico } from '@/types';
 
 /**
@@ -109,6 +110,9 @@ export default function ProjetoDetalhePage() {
   // Estado do modal de Commits
   const [commitsModalServico, setCommitsModalServico] = useState<Servico | null>(null);
   const [commitsPorServico, setCommitsPorServico] = useState<Record<string, any[]>>({});
+
+  // Estado do modal de edição de serviço
+  const [servicoEditando, setServicoEditando] = useState<Servico | null>(null);
 
   useEffect(() => {
     if (organizacao && projetoId) {
@@ -756,6 +760,14 @@ export default function ProjetoDetalhePage() {
                             <Button
                               variante="fantasma"
                               tamanho="pequeno"
+                              title="Editar serviço"
+                              onClick={(e) => { e.stopPropagation(); setServicoEditando(servico); }}
+                            >
+                              <Edit3 className="w-4 h-4 text-zinc-400" />
+                            </Button>
+                            <Button
+                              variante="fantasma"
+                              tamanho="pequeno"
                               onClick={(e) => { e.stopPropagation(); setServicoParaRemover(servico); }}
                             >
                               <Trash2 className="w-4 h-4 text-red-400" />
@@ -1047,6 +1059,16 @@ export default function ProjetoDetalhePage() {
           nomeServico={commitsModalServico.nome}
           branchAtual={gitBranches?.atual}
           aoFechar={() => setCommitsModalServico(null)}
+          aoAtualizar={() => carregarServicos()}
+        />
+      )}
+
+      {/* Modal de edição de serviço */}
+      {servicoEditando && (
+        <EditarServicoModal
+          servico={servicoEditando}
+          projetoId={projetoId}
+          aoFechar={() => setServicoEditando(null)}
           aoAtualizar={() => carregarServicos()}
         />
       )}

@@ -287,30 +287,50 @@ export default function AmbienteDetalhePage() {
             <div className="text-4xl">{obterIconeSO(ambiente.sistemaOperacional)}</div>
             <div>
               {editando ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={nomeEditado}
-                    onChange={(e) => setNomeEditado(e.target.value)}
-                    className="text-lg font-bold"
-                  />
-                  <Button
-                    variante="fantasma"
-                    tamanho="pequeno"
-                    onClick={salvarEdicao}
-                    carregando={salvando}
-                  >
-                    <Check className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variante="fantasma"
-                    tamanho="pequeno"
-                    onClick={() => {
-                      setEditando(false);
-                      setNomeEditado(ambiente.nome);
-                    }}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={nomeEditado}
+                      onChange={(e) => setNomeEditado(e.target.value)}
+                      className="text-lg font-bold"
+                      placeholder="Nome do ambiente"
+                    />
+                    <Button
+                      variante="fantasma"
+                      tamanho="pequeno"
+                      onClick={salvarEdicao}
+                      carregando={salvando}
+                    >
+                      <Check className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variante="fantasma"
+                      tamanho="pequeno"
+                      onClick={() => {
+                        setEditando(false);
+                        setNomeEditado(ambiente.nome);
+                        setTipoEditado(ambiente.tipo);
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={tipoEditado}
+                      onChange={(e) => setTipoEditado(e.target.value)}
+                      className="rounded-lg border border-[#2a2a32] bg-[#17171c] px-3 py-1.5 text-sm text-zinc-100 outline-none focus:border-[#5b7cfa]"
+                    >
+                      <option value="desenvolvimento">Desenvolvimento</option>
+                      <option value="producao">Produção</option>
+                      <option value="homologacao">Homologação</option>
+                      <option value="teste">Teste</option>
+                      <option value="staging">Staging</option>
+                    </select>
+                    <span className="text-xs text-zinc-500">
+                      {ambiente.sistemaOperacional}
+                    </span>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
