@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { dashboardApi } from '@/lib/api';
+import { dashboardApi, servicosApi } from '@/lib/api';
 import { useSocket } from '@/lib/hooks/useSocket';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
@@ -20,6 +20,9 @@ import {
   CircleX,
   HelpCircle,
   Activity,
+  Play,
+  Square,
+  RotateCw,
 } from 'lucide-react';
 
 // ===========================================
@@ -76,6 +79,7 @@ export default function ServicosPage() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
   const [filtroAtivo, setFiltroAtivo] = useState<FiltroChave>(filtroInicial);
+  const [controleCarregando, setControleCarregando] = useState<string | null>(null);
 
   // Carregar dados do dashboard (já inclui status PM2)
   const carregar = useCallback(async () => {
@@ -117,6 +121,22 @@ export default function ServicosPage() {
     if (filtroAtivo === 'todos') return servicos;
     return servicos.filter((s) => s.statusPm2 === filtroAtivo);
   }, [servicos, filtroAtivo]);
+
+  // Controle de serviço (iniciar/parar/reiniciar)
+  const controlarServico = async (servico: ServicoComStatus, acao: 'iniciar' | 'parar' | 'reiniciar') => {
+    if (!organizacao) return;
+    try {
+      setControleCarregando(`${acao}-${servico.id}`);
+      const acaoApi = acao === 'iniciar' ? servicosApi.iniciar : acao === 'parar' ? servicosApi.parar : servicosApi.reiniciar;
+      await acaoApi(organizacao.id, servico.projetoId, servico.id);
+      // Recarregar status
+      await carregar();
+    } catch {
+      setErro(`Erro ao ${acao} serviço.`);
+    } finally {
+      setControleCarregando(null);
+    }
+  };
 
   // Contadores
   const contadores = useMemo(() => ({
@@ -263,25 +283,26 @@ export default function ServicosPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {servicosFiltrados.map((servico) => (
-            <Link key={servico.id} href={`/projetos/${servico.projetoId}`}>
-              <Card className="group cursor-pointer transition-colors hover:border-[#5b7cfa]/40">
+          {servicosFiltrados.map((servico) => {
+            const emControle = controleCarregando?.includes(servico.id);
+            return (
+              <Card key={servico.id} className="group transition-colors">
                 <div className="mb-3 flex items-start justify-between">
-                  <div className="flex items-center gap-3">
+                  <Link href={`/projetos/${servico.projetoId}`} className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1e1e24]">
                       <Server className="h-5 w-5 text-[#8ca2ff]" />
                     </div>
-                    <div>
-                      <h3 className="font-medium text-zinc-100 group-hover:text-white">
+                    <div className="min-w-0">
+                      <h3 className="font-medium text-zinc-100 group-hover:text-white truncate">
                         {servico.nome}
                       </h3>
-                      <p className="flex items-center gap-1 text-xs text-zinc-500">
-                        <FolderKanban className="h-3 w-3" />
+                      <p className="flex items-center gap-1 text-xs text-zinc-500 truncate">
+                        <FolderKanban className="h-3 w-3 shrink-0" />
                         {servico.projetoNome || 'Projeto'}
                       </p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
+                  </Link>
+                  <div className="flex items-center gap-2 shrink-0">
                     {statusIcone(servico.statusPm2)}
                     <span className={`text-xs font-medium ${statusCor(servico.statusPm2)}`}>
                       {statusLabel(servico.statusPm2)}
@@ -289,7 +310,7 @@ export default function ServicosPage() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5 text-xs text-zinc-500">
+                <div className="space-y-1.5 text-xs text-zinc-500 mb-3">
                   {servico.porta && (
                     <div className="flex items-center gap-1.5">
                       <Network className="h-3 w-3 shrink-0" />
@@ -297,9 +318,49 @@ export default function ServicosPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Botões de controle */}
+                <div className="flex items-center gap-1.5 border-t border-[#2a2a32] pt-3">
+                  {servico.statusPm2 !== 'online' && (
+                    <button
+                      onClick={(e) => { e.preventDefault(); controlarServico(servico, 'iniciar'); }}
+                      disabled={emControle}
+                      className="flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                      title="Iniciar"
+                    >
+                      <Play className="h-3 w-3" />
+                      Iniciar
+                    </button>
+                  )}
+                  {servico.statusPm2 === 'online' && (
+                    <button
+                      onClick={(e) => { e.preventDefault(); controlarServico(servico, 'parar'); }}
+                      disabled={emControle}
+                      className="flex items-center gap-1 rounded-md bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 text-xs font-medium text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
+                      title="Parar"
+                    >
+                      <Square className="h-3 w-3" />
+                      Parar
+                    </button>
+                  )}
+                  {servico.statusPm2 === 'online' && (
+                    <button
+                      onClick={(e) => { e.preventDefault(); controlarServico(servico, 'reiniciar'); }}
+                      disabled={emControle}
+                      className="flex items-center gap-1 rounded-md bg-[#5b7cfa]/10 border border-[#5b7cfa]/20 px-2.5 py-1.5 text-xs font-medium text-[#8ca2ff] hover:bg-[#5b7cfa]/20 transition-colors disabled:opacity-50"
+                      title="Reiniciar"
+                    >
+                      <RotateCw className="h-3 w-3" />
+                      Reiniciar
+                    </button>
+                  )}
+                  {emControle && (
+                    <Spinner tamanho="pequeno" />
+                  )}
+                </div>
               </Card>
-            </Link>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
