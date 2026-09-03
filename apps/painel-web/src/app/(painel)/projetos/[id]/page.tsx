@@ -81,7 +81,8 @@ export default function ProjetoDetalhePage() {
 
   const [projeto, setProjeto] = useState<Projeto | null>(null);
   const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState('');
+  const [erroProjeto, setErroProjeto] = useState('');
+  const [erroServico, setErroServico] = useState('');
   const [editando, setEditando] = useState(false);
   const [nomeEditado, setNomeEditado] = useState('');
   const [descricaoEditada, setDescricaoEditada] = useState('');
@@ -172,7 +173,7 @@ export default function ProjetoDetalhePage() {
       const status = await servicosApi.obterStatus(organizacao.id, projetoId, servicoId);
       setStatusPorServico((prev) => ({ ...prev, [servicoId]: status }));
     } catch (err: any) {
-      setErro(err.response?.data?.message || `Erro ao ${acao} serviço.`);
+      setErroServico(err.response?.data?.message || `Erro ao ${acao} serviço.`);
     } finally {
       setControleCarregando(null);
     }
@@ -186,13 +187,13 @@ export default function ProjetoDetalhePage() {
       // Busca o agente associado ao ambiente do serviço
       const agente = await agentesApi.obterPorAmbiente(organizacao.id, servico.ambiente.id);
       if (!agente?.id) {
-        setErro(`Nenhum agente encontrado para o ambiente "${servico.ambiente.nome}".`);
+        setErroServico(`Nenhum agente encontrado para o ambiente "${servico.ambiente.nome}".`);
         return;
       }
       await servicosPm2Api.salvar(organizacao.id, agente.id);
-      setErro('');
+      setErroServico('');
     } catch (err: any) {
-      setErro(
+      setErroServico(
         err?.response?.data?.message ||
           err?.message ||
           `Erro ao persistir o PM2 do serviço ${servico.nome}.`,
@@ -302,7 +303,7 @@ export default function ProjetoDetalhePage() {
       setNomeEditado(dados.nome);
       setDescricaoEditada(dados.descricao || '');
     } catch (err) {
-      setErro('Erro ao carregar projeto.');
+      setErroProjeto('Erro ao carregar projeto.');
     } finally {
       setCarregando(false);
     }
@@ -324,7 +325,7 @@ export default function ProjetoDetalhePage() {
       });
       setEditando(false);
     } catch (err) {
-      setErro('Erro ao salvar alterações.');
+      setErroProjeto('Erro ao salvar alterações.');
     } finally {
       setSalvando(false);
     }
@@ -339,7 +340,7 @@ export default function ProjetoDetalhePage() {
       setProjeto(dados);
       setConfirmandoArquivamento(false);
     } catch (err) {
-      setErro('Erro ao arquivar projeto.');
+      setErroProjeto('Erro ao arquivar projeto.');
     } finally {
       setSalvando(false);
     }
@@ -353,7 +354,7 @@ export default function ProjetoDetalhePage() {
       const dados = await projetosApi.reativar(organizacao.id, projeto.id);
       setProjeto(dados);
     } catch (err) {
-      setErro('Erro ao reativar projeto.');
+      setErroProjeto('Erro ao reativar projeto.');
     } finally {
       setSalvando(false);
     }
@@ -367,7 +368,7 @@ export default function ProjetoDetalhePage() {
       setServicos((prev) => prev.filter((s) => s.id !== servicoParaRemover.id));
       setServicoParaRemover(null);
     } catch {
-      setErro('Erro ao remover serviço.');
+      setErroServico('Erro ao remover serviço.');
     } finally {
       setSalvando(false);
     }
@@ -494,11 +495,11 @@ export default function ProjetoDetalhePage() {
         </div>
       </div>
 
-      {/* Erro */}
-      {erro && (
+      {/* Erro do projeto */}
+      {erroProjeto && (
         <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-          <p className="text-sm text-red-400">{erro}</p>
-          <Button variante="fantasma" tamanho="pequeno" onClick={carregarProjeto}>
+          <p className="text-sm text-red-400">{erroProjeto}</p>
+          <Button variante="fantasma" tamanho="pequeno" onClick={() => { setErroProjeto(''); carregarProjeto(); }}>
             Tentar novamente
           </Button>
         </div>
@@ -577,6 +578,13 @@ export default function ProjetoDetalhePage() {
             </Button>
           </Link>
         </div>
+
+        {erroServico && (
+          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-between">
+            <p className="text-sm text-red-400">{erroServico}</p>
+            <button onClick={() => setErroServico('')} className="text-red-400 hover:text-red-300 text-xs">✕</button>
+          </div>
+        )}
 
         {carregandoServicos ? (
           <div className="flex items-center justify-center py-8">
