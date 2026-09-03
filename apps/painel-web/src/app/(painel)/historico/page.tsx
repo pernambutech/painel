@@ -76,7 +76,7 @@ export default function HistoricoPage() {
     <div className="mx-auto max-w-[1400px] space-y-8">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-zinc-100">Histórico</h1>
+          <h1 className="text-2xl font-bold text-zinc-100">Histórico</h1>
           <p className="mt-1 text-sm text-zinc-400">
             Ações executadas nos serviços • Auditoria por usuário
           </p>

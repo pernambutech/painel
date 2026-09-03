@@ -192,7 +192,7 @@ export default function DashboardPage() {
       {/* Cabeçalho */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-zinc-100">
+          <h1 className="text-2xl font-bold text-zinc-100">
             Visão geral
           </h1>
           <p className="mt-1 text-sm text-zinc-400">

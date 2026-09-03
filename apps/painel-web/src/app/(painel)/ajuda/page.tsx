@@ -94,7 +94,7 @@ export default function AjudaPage() {
       <header>
         <div className="flex items-center gap-3 mb-2">
           <BookOpen className="h-6 w-6 text-[#8ca2ff]" />
-          <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-zinc-100">
+          <h1 className="text-2xl font-bold text-zinc-100">
             Guia rápido de uso
           </h1>
         </div>
