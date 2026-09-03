@@ -34,8 +34,8 @@ interface ClienteAgente {
 
 @WebSocketGateway({
   cors: {
-    // Mesmas origens permitidas na API HTTP
-    origin: ['http://localhost:4000', 'http://localhost:4001'],
+    // Permite qualquer origem (rede local)
+    origin: true,
     methods: ['GET', 'POST'],
   },
   namespace: '/agentes',

@@ -12,8 +12,9 @@ async function bootstrap() {
   app.use(helmet());
 
   // Configurações globais - CORS para desenvolvimento
+  // origin: true reflete o Origin do request (permite qualquer IP/local na rede local)
   app.enableCors({
-    origin: ['http://localhost:4000', 'http://localhost:4001'],
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,

@@ -19,7 +19,8 @@ interface ClientePainel {
 
 @WebSocketGateway({
   cors: {
-    origin: ['http://localhost:4000'],
+    // Permite qualquer origem (rede local)
+    origin: true,
     methods: ['GET', 'POST'],
   },
   namespace: '/painel',
