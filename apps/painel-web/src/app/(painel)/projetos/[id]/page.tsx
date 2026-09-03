@@ -42,7 +42,7 @@ import {
 } from 'lucide-react';
 import { CommitsModal } from '@/components/CommitsModal';
 import { EditarServicoModal } from '@/components/EditarServicoModal';
-import type { Projeto, Servico } from '@/types';
+import type { Projeto, Servico, StatusPm2, GitStatus, GitBranchResponse, GitLogEntry, GitArquivo, Log } from '@/types';
 
 /**
  * Formata milissegundos em tempo legível.
@@ -91,19 +91,19 @@ export default function ProjetoDetalhePage() {
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [carregandoServicos, setCarregandoServicos] = useState(true);
   const [servicoParaRemover, setServicoParaRemover] = useState<Servico | null>(null);
-  const [statusPorServico, setStatusPorServico] = useState<Record<string, any>>({});
+  const [statusPorServico, setStatusPorServico] = useState<Record<string, StatusPm2>>({});
   const [controleCarregando, setControleCarregando] = useState<string | null>(null);
   const [servicoExpandidoId, setServicoExpandidoId] = useState<string | null>(null);
   const [logsModalServico, setLogsModalServico] = useState<Servico | null>(null);
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<Log[]>([]);
   const [carregandoLogs, setCarregandoLogs] = useState(false);
   const [tipoLog, setTipoLog] = useState<'todos' | 'stdout' | 'stderr'>('todos');
   const [erroLogs, setErroLogs] = useState('');
 
   // Estado do modal Git
   const [gitModalServico, setGitModalServico] = useState<Servico | null>(null);
-  const [gitStatus, setGitStatus] = useState<any>(null);
-  const [gitBranches, setGitBranches] = useState<any>(null);
+  const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
+  const [gitBranches, setGitBranches] = useState<GitBranchResponse | null>(null);
   const [gitSaida, setGitSaida] = useState('');
   const [carregandoGit, setCarregandoGit] = useState(false);
   const [erroGit, setErroGit] = useState('');
@@ -111,7 +111,7 @@ export default function ProjetoDetalhePage() {
 
   // Estado do modal de Commits
   const [commitsModalServico, setCommitsModalServico] = useState<Servico | null>(null);
-  const [commitsPorServico, setCommitsPorServico] = useState<Record<string, any[]>>({});
+  const [commitsPorServico, setCommitsPorServico] = useState<Record<string, GitLogEntry[]>>({});
 
   // Estado do modal de edição de serviço
   const [servicoEditando, setServicoEditando] = useState<Servico | null>(null);
@@ -786,7 +786,7 @@ export default function ProjetoDetalhePage() {
                           {commitsPorServico[servico.id]?.length > 0 && (
                             <div className="mt-2 space-y-1">
                               <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Últimos commits</p>
-                              {commitsPorServico[servico.id].slice(0, 2).map((c: any) => (
+                              {commitsPorServico[servico.id].slice(0, 2).map((c: GitLogEntry) => (
                                 <div key={c.hash} className="flex items-center gap-2 text-[11px]">
                                   <span className="font-mono text-[#8ca2ff] bg-[#5b7cfa]/10 px-1 py-0.5 rounded">{c.hash.slice(0, 7)}</span>
                                   <span className="text-zinc-500 truncate">{c.mensagem}</span>
@@ -916,7 +916,7 @@ export default function ProjetoDetalhePage() {
             <p className="text-sm text-zinc-500">Nenhum log encontrado.</p>
           ) : (
             <div className="space-y-1 text-xs font-mono">
-              {logs.map((l: any, i: number) => (
+              {logs.map((l: Log, i: number) => (
                 <div key={i} className={l.nivel === 'error' ? 'text-red-300' : 'text-zinc-300'}>
                   <span className="text-zinc-500">
                     {new Date(l.timestamp).toLocaleTimeString('pt-BR')}{' '}
@@ -1020,7 +1020,7 @@ export default function ProjetoDetalhePage() {
                 )}
                 {gitStatus.arquivos?.length > 0 ? (
                   <div className="mt-3 space-y-1">
-                    {gitStatus.arquivos.map((a: any, i: number) => (
+                    {gitStatus.arquivos.map((a: GitArquivo, i: number) => (
                       <div key={i} className="flex gap-2">
                         <span className={`w-6 text-center font-bold ${
                           a.status === 'M' ? 'text-amber-400' :

@@ -188,6 +188,63 @@ export interface Execucao {
 }
 
 // ===========================================
+// STATUS PM2
+// ===========================================
+
+export interface StatusPm2 {
+  status: 'online' | 'stopped' | 'errored' | 'desconhecido';
+  pid: number | null;
+  uptime: number | null;
+  restarts: number | null;
+  cpu: number | null;
+  memoria: number | null;
+}
+
+// ===========================================
+// GIT
+// ===========================================
+
+export interface GitStatus {
+  branch: string;
+  branchInfo?: string;
+  arquivos: GitArquivo[];
+  commitAtual?: string;
+  remote?: string;
+}
+
+export interface GitArquivo {
+  arquivo: string;
+  status: string; // M, A, D, R, C, ?
+  index?: string;
+  worktree?: string;
+}
+
+export interface GitBranchResponse {
+  branches: string[];
+  atual: string;
+}
+
+export interface GitLogEntry {
+  hash: string;
+  hashCurto: string;
+  mensagem: string;
+  autor: string;
+  data: string;
+  branches: string[];
+}
+
+// ===========================================
+// LOG
+// ===========================================
+
+export interface Log {
+  timestamp: string;
+  nivel: 'info' | 'warn' | 'error' | 'debug';
+  mensagem: string;
+  fonte?: string;
+}
+
+// ===========================================
 // RESPOSTA DA API
 // ===========================================
 
