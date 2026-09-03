@@ -90,9 +90,12 @@ export default function DashboardPage() {
     },
   });
 
-  // Polling como fallback: atualizar a cada 15 segundos
+  // Polling como fallback: atualizar a cada 15 segundos (respeita preferência)
   useEffect(() => {
     if (!organizacao) return;
+
+    const autoRefresh = localStorage.getItem('preferencia_atualizacao_automatica') !== 'false';
+    if (!autoRefresh) return;
 
     const intervalo = setInterval(() => {
       carregarDados();
