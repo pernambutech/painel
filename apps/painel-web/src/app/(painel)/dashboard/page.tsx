@@ -18,6 +18,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
+import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useSocket } from '@/lib/hooks/useSocket';
 import { ambientesApi, dashboardApi, execucoesApi } from '@/lib/api';

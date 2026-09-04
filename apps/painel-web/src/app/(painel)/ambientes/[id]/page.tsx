@@ -55,6 +55,9 @@ export default function AmbienteDetalhePage() {
   const [salvandoDiretorios, setSalvandoDiretorios] = useState(false);
   const [mensagemDiretorios, setMensagemDiretorios] = useState('');
 
+  const agente = ambiente?.agente;
+  const agenteOnline = agente?.status === 'online';
+
   useEffect(() => {
     if (organizacao && ambienteId) {
       carregarAmbiente();
@@ -318,9 +321,6 @@ export default function AmbienteDetalhePage() {
       </div>
     );
   }
-
-  const agente = ambiente.agente;
-  const agenteOnline = agente?.status === 'online';
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
