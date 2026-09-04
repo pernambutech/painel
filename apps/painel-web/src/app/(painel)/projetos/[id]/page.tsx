@@ -179,6 +179,49 @@ export default function ProjetoDetalhePage() {
     }
   };
 
+  // Operações em lote: iniciar/parar/reiniciar todos os serviços do projeto
+  const controlarTodosServicos = async (acao: 'iniciar' | 'parar' | 'reiniciar') => {
+    if (!organizacao || servicos.length === 0) return;
+    const acaoLabel = acao === 'iniciar' ? 'Iniciar' : acao === 'parar' ? 'Parar' : 'Reiniciar';
+    try {
+      setControleCarregando(`lote-${acao}`);
+      // Executa todas as ações em paralelo
+      const resultados = await Promise.allSettled(
+        servicos.map(async (s) => {
+          const acaoApi =
+            acao === 'iniciar'
+              ? servicosApi.iniciar
+              : acao === 'parar'
+                ? servicosApi.parar
+                : servicosApi.reiniciar;
+          await acaoApi(organizacao.id, projetoId, s.id);
+          return s.id;
+        }),
+      );
+      // Atualiza status de cada serviço
+      const servicosIds = servicos.map((s) => s.id);
+      for (const servicoId of servicosIds) {
+        servicosApi
+          .obterStatus(organizacao.id, projetoId, servicoId)
+          .then((status) => {
+            setStatusPorServico((prev) => ({ ...prev, [servicoId]: status }));
+          })
+          .catch(() => {});
+      }
+      const sucessos = resultados.filter((r) => r.status === 'fulfilled').length;
+      const falhas = resultados.filter((r) => r.status === 'rejected').length;
+      if (falhas > 0) {
+        setErroServico(`${acaoLabel}: ${sucessos} sucesso(s), ${falhas} falha(s).`);
+      } else {
+        setErroServico('');
+      }
+    } catch (err: any) {
+      setErroServico(err?.response?.data?.message || `Erro ao ${acao} todos os serviços.`);
+    } finally {
+      setControleCarregando(null);
+    }
+  };
+
   const salvarPm2DoServico = async (servico: Servico) => {
     if (!organizacao || !servico.ambiente?.id) return;
 
@@ -569,14 +612,48 @@ export default function ProjetoDetalhePage() {
 
       {/* Seção de serviços */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <h2 className="text-lg font-semibold text-zinc-100">Serviços do projeto</h2>
-          <Link href={`/projetos/${projetoId}/servicos/novo`}>
-            <Button tamanho="pequeno">
-              <Plus className="w-4 h-4" />
-              Adicionar serviço
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Botões de operação em lote */}
+            {servicos.length > 0 && (
+              <div className="flex items-center gap-1.5 mr-2">
+                <Button
+                  variante="fantasma"
+                  tamanho="pequeno"
+                  onClick={() => controlarTodosServicos('iniciar')}
+                  carregando={controleCarregando === 'lote-iniciar'}
+                  title="Iniciar todos os serviços"
+                >
+                  <Play className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  variante="fantasma"
+                  tamanho="pequeno"
+                  onClick={() => controlarTodosServicos('parar')}
+                  carregando={controleCarregando === 'lote-parar'}
+                  title="Parar todos os serviços"
+                >
+                  <Square className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  variante="fantasma"
+                  tamanho="pequeno"
+                  onClick={() => controlarTodosServicos('reiniciar')}
+                  carregando={controleCarregando === 'lote-reiniciar'}
+                  title="Reiniciar todos os serviços"
+                >
+                  <RotateCw className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            )}
+            <Link href={`/projetos/${projetoId}/servicos/novo`}>
+              <Button tamanho="pequeno">
+                <Plus className="w-4 h-4" />
+                Adicionar serviço
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {erroServico && (

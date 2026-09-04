@@ -4,25 +4,31 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { History, Play, Square, RotateCw, Clock, User, Server, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { History, Play, Square, RotateCw, Clock, User, Server, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, GitPullRequest, Settings, FolderPlus } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { BadgeSimples } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { execucoesApi } from '@/lib/api';
+import { ACAO_LABELS } from '@/lib/constantes';
 import type { Execucao } from '@/types';
-
-const acaoLabels: Record<string, string> = {
-  iniciar: 'Iniciar',
-  parar: 'Parar',
-  reiniciar: 'Reiniciar',
-};
 
 const acaoIcones: Record<string, any> = {
   iniciar: Play,
   parar: Square,
   reiniciar: RotateCw,
+  git_pull: GitPullRequest,
+  git_fetch: GitPullRequest,
+  git_checkout: GitPullRequest,
+  git_branch: GitPullRequest,
+  criar_servico: FolderPlus,
+  atualizar_servico: Settings,
+  remover_servico: Settings,
+  criar_projeto: FolderPlus,
+  atualizar_projeto: Settings,
+  salvar_pm2: Settings,
+  executar_comando: Settings,
 };
 
 const ITENS_POR_PAGINA_PADRAO = 20;
@@ -140,7 +146,7 @@ export default function HistoricoPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium text-zinc-100">{acaoLabels[exec.acao] || exec.acao}</span>
+                        <span className="font-medium text-zinc-100">{ACAO_LABELS[exec.acao] || exec.acao}</span>
                         <BadgeSimples variante={obterVarianteStatus(exec.status) as any}>{exec.status}</BadgeSimples>
                         {exec.servico && (
                           <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
