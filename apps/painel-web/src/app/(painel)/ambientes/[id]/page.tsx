@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { ambientesApi, agentesApi } from '@/lib/api';
+import { TIPOS_AMBIENTE } from '@/lib/constantes';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -373,11 +374,9 @@ export default function AmbienteDetalhePage() {
                       onChange={(e) => setTipoEditado(e.target.value)}
                       className="rounded-lg border border-[#2a2a32] bg-[#17171c] px-3 py-1.5 text-sm text-zinc-100 outline-none focus:border-[#5b7cfa]"
                     >
-                      <option value="desenvolvimento">Desenvolvimento</option>
-                      <option value="producao">Produção</option>
-                      <option value="homologacao">Homologação</option>
-                      <option value="teste">Teste</option>
-                      <option value="staging">Staging</option>
+                      {TIPOS_AMBIENTE.map((t) => (
+                        <option key={t.valor} value={t.valor}>{t.label}</option>
+                      ))}
                     </select>
                     <span className="text-xs text-zinc-500">
                       {ambiente.sistemaOperacional}

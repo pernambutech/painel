@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { ambientesApi } from '@/lib/api';
+import { TIPOS_AMBIENTE, SISTEMAS_OPERACIONAIS } from '@/lib/constantes';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -97,10 +98,9 @@ export default function NovoAmbientePage() {
                 focus:outline-none focus:border-[#5b7cfa]
               "
             >
-              <option value="local">Local</option>
-              <option value="desenvolvimento">Desenvolvimento</option>
-              <option value="homologacao">Homologação</option>
-              <option value="producao">Produção</option>
+              {TIPOS_AMBIENTE.map((t) => (
+                <option key={t.valor} value={t.valor}>{t.label}</option>
+              ))}
             </select>
           </div>
 
@@ -116,9 +116,9 @@ export default function NovoAmbientePage() {
                 focus:outline-none focus:border-[#5b7cfa]
               "
             >
-              <option value="linux">Linux</option>
-              <option value="windows">Windows</option>
-              <option value="macos">macOS</option>
+              {SISTEMAS_OPERACIONAIS.map((s) => (
+                <option key={s.valor} value={s.valor}>{s.label}</option>
+              ))}
             </select>
           </div>
 
