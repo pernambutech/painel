@@ -130,7 +130,7 @@ function listarPortasEmUso(): { porta: number; processo: string; pid: number }[]
 
     for (const linha of linhas) {
       if (plataforma === 'win32') {
-        // Formato: TCP    0.0.0.0:3001    0.0.0.0:0    LISTENING    1234
+        // Formato Windows: TCP    0.0.0.0:3001    0.0.0.0:0    LISTENING    1234
         const partes = linha.trim().split(/\s+/);
         if (partes.length >= 5 && partes[0] === 'TCP') {
           const addrPorta = partes[1];
@@ -139,6 +139,29 @@ function listarPortasEmUso(): { porta: number; processo: string; pid: number }[]
           const pidNum = parseInt(ultimo, 10);
           if (portaNum > 0 && !isNaN(pidNum)) {
             portas.push({ porta: portaNum, processo: 'desconhecido', pid: pidNum });
+          }
+        }
+      } else {
+        // Formato ss: LISTEN  0  128  0.0.0.0:3001  0.0.0.0:*  users:(("node",pid=1234,fd=18))
+        // Formato netstat: tcp  0  0 0.0.0.0:3001  0.0.0.0:*  LISTEN  1234/node
+        const ssMatch = linha.match(/:(\d+)\s+.*users:\(\("([^"]+)",pid=(\d+)/);
+        if (ssMatch) {
+          const portaNum = parseInt(ssMatch[1], 10);
+          const processo = ssMatch[2];
+          const pidNum = parseInt(ssMatch[3], 10);
+          if (portaNum > 0 && !isNaN(pidNum)) {
+            portas.push({ porta: portaNum, processo, pid: pidNum });
+          }
+          continue;
+        }
+
+        const netstatMatch = linha.match(/:(\d+)\s+.*\s+(\d+)\/(\S+)\s*$/);
+        if (netstatMatch) {
+          const portaNum = parseInt(netstatMatch[1], 10);
+          const pidNum = parseInt(netstatMatch[2], 10);
+          const processo = netstatMatch[3];
+          if (portaNum > 0 && !isNaN(pidNum)) {
+            portas.push({ porta: portaNum, processo, pid: pidNum });
           }
         }
       }
