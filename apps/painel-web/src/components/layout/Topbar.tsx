@@ -209,6 +209,11 @@ export function Topbar({ aoAbrirSidebar }: TopbarProps) {
                 Guia rápido de uso
               </Link>
 
+              <Link href="/ajuda#guia-completo" onClick={() => setMenuAberto(null)} role="menuitem" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]">
+                <BookOpen className="h-3.5 w-3.5 text-zinc-400" />
+                Guia completo de uso
+              </Link>
+
               <Link href="/configuracoes" onClick={() => setMenuAberto(null)} role="menuitem" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]">
                 <Settings className="h-3.5 w-3.5 text-zinc-400" />
                 Configurações
