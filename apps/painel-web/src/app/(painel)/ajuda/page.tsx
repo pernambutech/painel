@@ -178,6 +178,10 @@ const perguntas = [
     resposta: 'Salva a lista atual de processos do PM2. Isso faz com que os processos sejam automaticamente reiniciados quando a máquina reiniciar. Use depois de iniciar todos os serviços.',
   },
   {
+    pergunta: 'Como iniciar ou parar todos os serviços de uma vez?',
+    resposta: 'Na página do projeto, no cabeçalho da seção "Serviços do projeto", existem 3 botões: Iniciar todos (▶️), Parar todos (⏹️) e Reiniciar todos (🔄). Eles afetam todos os serviços do projeto simultaneamente.',
+  },
+  {
     pergunta: 'Como funciona a segurança?',
     resposta: 'O agente apenas aceita comandos pré-definidos (whitelist). Você pode restringir quais diretórios o agente acessa. Comandos perigosos são bloqueados automaticamente.',
   },
@@ -293,6 +297,10 @@ export default function AjudaPage() {
             <li className="flex items-start gap-2">
               <span className="text-amber-400">•</span>
               Use a página de <strong className="text-zinc-200">serviços</strong> (/servicos) para ver e controlar todos os serviços de uma vez.
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-400">•</span>
+              Na página do projeto, use os botões de <strong className="text-zinc-200">operação em lote</strong> (▶️ ⏹️ 🔄) para iniciar/parar/reiniciar todos os serviços de uma vez.
             </li>
           </ul>
         </Card>

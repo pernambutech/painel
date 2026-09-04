@@ -275,7 +275,8 @@ A página mostra:
 **Serviços do projeto:**
 - Lista de todos os serviços cadastrados
 - Cada serviço mostra: nome, tipo, status, porta
-- Botões de controle: Iniciar, Parar, Reiniciar
+- **Operações em lote**: botões ▶️ ⏹️ 🔄 no cabeçalho para iniciar/parar/reiniciar todos os serviços de uma vez
+- Botões individuais de controle: Iniciar, Parar, Reiniciar
 - Botões de ação: Logs, Git, Commits, PM2, Editar, Excluir
 
 ### Arquivar um projeto
@@ -321,6 +322,18 @@ Na página do projeto ou na página global `/servicos`:
 | ▶ **Iniciar** | Executa o serviço via PM2 | Serviço parado/erro |
 | ⏹ **Parar** | Para o serviço via PM2 | Serviço rodando |
 | 🔄 **Reiniciar** | Reinicia o serviço via PM2 | Serviço rodando |
+
+### Operações em lote
+
+Na página do projeto, no cabeçalho da seção "Serviços do projeto", existem 3 botões que afetam **todos os serviços** do projeto de uma vez:
+
+| Botão | Ação |
+|-------|------|
+| ▶️ **Iniciar todos** | Inicia todos os serviços parados/erro do projeto |
+| ⏹️ **Parar todos** | Para todos os serviços rodando do projeto |
+| 🔄 **Reiniciar todos** | Reinicia todos os serviços do projeto |
+
+As operações são executadas em paralelo. Ao final, uma mensagem mostra quantos serviços tiveram sucesso e quantos falharam.
 
 ### Página global de serviços
 
@@ -679,6 +692,15 @@ Em **Configurações → Preferências**, você pode ativar ou desativar a atual
 1. Verifique se o ambiente possui um agente associado
 2. Gere um token e instale o agente na máquina
 3. Confirme que o agente está online
+
+### Como iniciar/parar todos os serviços de um projeto?
+
+Use os botões de operação em lote no cabeçalho da seção "Serviços do projeto":
+- ▶️ Iniciar todos
+- ⏹️ Parar todos
+- 🔄 Reiniciar todos
+
+As operações são executadas em paralelo e uma mensagem mostra o resultado (sucessos e falhas).
 
 ---
 
