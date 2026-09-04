@@ -3,8 +3,44 @@
 
 import { io, Socket } from 'socket.io-client';
 import * as os from 'os';
+import * as path from 'path';
 import { execSync } from 'child_process';
 import { AdaptadorPm2 } from './processos';
+
+// ===========================================
+// SEGURANÇA — CONSTANTES
+// ===========================================
+
+/**
+ * Comandos de shell que o agente NUNCA deve executar diretamente.
+ * Mesmo que a API envie um tipo de comando válido, estes padrões são
+ * rejeitados como camada extra de proteção.
+ */
+const PADROES_COMANDOS_PROIBIDOS = [
+  /rm\s+-rf/i,
+  /rmdir\s+\/s\s+\/q/i,
+  /format\s+[a-z]:/i,
+  /del\s+\/[sfq]/i,
+  />\s*\//i, // redirecionamento para root
+  /chmod\s+777/i,
+  /curl\s+.*\|\s*sh/i, // pipe para shell
+  /wget\s+.*\|\s*bash/i,
+];
+
+/**
+ * Tipos de comando que exigem validação de diretório.
+ * Se o agente possui diretoriosAutorizados configurados,
+ * o diretório informado deve estar na lista.
+ */
+const COMANDOS_QUE_EXIGEM_DIRETORIO = [
+  'INICIAR_SERVICO',
+  'GIT_STATUS',
+  'GIT_BRANCH',
+  'GIT_PULL',
+  'GIT_LOG',
+  'GIT_CHECKOUT',
+  'GIT_CHECKOUT_BRANCH',
+];
 
 // ===========================================
 // CONFIGURAÇÃO
@@ -19,6 +55,9 @@ const CONFIGURACAO = {
   MAX_ERROS_LOG: 3,
   // Intervalo de heartbeat (30 segundos)
   INTERVALO_HEARTBEAT: 30000,
+  // Diretórios autorizados (JSON array via env ou vazio = todos permitidos)
+  // Exemplo: '["C:\\Projetos","/home/user/projetos"]'
+  DIRETORIOS_AUTORIZADOS: JSON.parse(process.env.AGENT_DIRECTORIES || '[]') as string[],
 };
 
 // ===========================================
@@ -223,6 +262,87 @@ function conectar(): void {
 }
 
 // ===========================================
+// SEGURANÇA — FUNÇÕES DE VALIDAÇÃO
+// ===========================================
+
+/**
+ * Verifica se um diretório está autorizado.
+ * Se a lista de diretórios autorizados estiver vazia, todos são permitidos.
+ * Retorna { valido: true } ou { valido: false, motivo: string }.
+ */
+function validarDiretorio(diretorio: string | undefined): { valido: boolean; motivo?: string } {
+  // Sem restrição configurada — permitir tudo (backward compat)
+  if (CONFIGURACAO.DIRETORIOS_AUTORIZADOS.length === 0) {
+    return { valido: true };
+  }
+
+  if (!diretorio) {
+    return { valido: true }; // Comandos que não exigem diretório
+  }
+
+  // Normalizar o caminho para comparação
+  const dirNormalizado = path.resolve(diretorio);
+
+  const permitido = CONFIGURACAO.DIRETORIOS_AUTORIZADOS.some((autorizado) => {
+    const autorizadoNormalizado = path.resolve(autorizado);
+    return dirNormalizado.startsWith(autorizadoNormalizado);
+  });
+
+  if (!permitido) {
+    return {
+      valido: false,
+      motivo: `Diretório não autorizado: ${diretorio}. Diretórios permitidos: ${CONFIGURACAO.DIRETORIOS_AUTORIZADOS.join(', ')}`,
+    };
+  }
+
+  return { valido: true };
+}
+
+/**
+ * Verifica se um comando contém padrões proibidos (execução arbitrária).
+ * Retorna { valido: true } ou { valido: false, motivo: string }.
+ */
+function validarSegurancaComando(dados: Record<string, unknown> | undefined): { valido: boolean; motivo?: string } {
+  if (!dados) return { valido: true };
+
+  // Verificar campo 'comando' (para INICIAR_SERVICO)
+  if (typeof dados.comando === 'string') {
+    for (const padrao of PADROES_COMANDOS_PROIBIDOS) {
+      if (padrao.test(dados.comando)) {
+        return {
+          valido: false,
+          motivo: `Comando contém padrão proibido: ${dados.comando}`,
+        };
+      }
+    }
+  }
+
+  // Verificar campo 'branch' (para GIT_PULL, GIT_CHECKOUT_BRANCH)
+  if (typeof dados.branch === 'string') {
+    // Branches não devem conter caracteres perigosos
+    if (/[;&|`$(){}!<>]/.test(dados.branch)) {
+      return {
+        valido: false,
+        motivo: `Nome de branch contém caracteres não permitidos: ${dados.branch}`,
+      };
+    }
+  }
+
+  // Verificar campo 'hash' (para GIT_CHECKOUT)
+  if (typeof dados.hash === 'string') {
+    // Hash deve ser hexadecimal
+    if (!/^[0-9a-f]+$/i.test(dados.hash)) {
+      return {
+        valido: false,
+        motivo: `Hash de commit inválido: ${dados.hash}`,
+      };
+    }
+  }
+
+  return { valido: true };
+}
+
+// ===========================================
 // HEARTBEAT
 // ===========================================
 
@@ -286,6 +406,38 @@ async function processarComando(comando: any): Promise<void> {
   const inicio = Date.now();
 
   try {
+    // ===========================================
+    // SEGURANÇA — VALIDAÇÃO ANTES DE EXECUTAR
+    // ===========================================
+
+    // 1. Validar tipo de comando (switch-case já rejeita tipos desconhecidos)
+    // 2. Validar diretório autorizado
+    if (COMANDOS_QUE_EXIGEM_DIRETORIO.includes(comando.tipo)) {
+      const dir = (comando.dados as any)?.diretorio;
+      const validacaoDir = validarDiretorio(dir);
+      if (!validacaoDir.valido) {
+        console.error(`🚫 SEGURANÇA: ${validacaoDir.motivo}`);
+        socket?.emit('resposta_comando', {
+          comandoId: comando.id,
+          status: 'bloqueado',
+          erro: validacaoDir.motivo,
+        });
+        return;
+      }
+    }
+
+    // 3. Validar contra comandos arbitrários/proibidos
+    const validacaoCmd = validarSegurancaComando(comando.dados as Record<string, unknown>);
+    if (!validacaoCmd.valido) {
+      console.error(`🚫 SEGURANÇA: ${validacaoCmd.motivo}`);
+      socket?.emit('resposta_comando', {
+        comandoId: comando.id,
+        status: 'bloqueado',
+        erro: validacaoCmd.motivo,
+      });
+      return;
+    }
+
     let resultado: Record<string, unknown> = {};
 
     switch (comando.tipo) {

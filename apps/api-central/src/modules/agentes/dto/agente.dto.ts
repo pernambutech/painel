@@ -21,6 +21,7 @@ export interface RegistrarAgenteDto {
 export interface AtualizarAgenteDto {
   nome?: string;
   status?: string;
+  diretoriosAutorizados?: string[]; // Lista de paths permitidos
 }
 
 // ===========================================

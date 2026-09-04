@@ -26,6 +26,8 @@ import {
   WifiOff,
   Copy,
   Terminal,
+  Shield,
+  Plus,
 } from 'lucide-react';
 import type { Ambiente } from '@/types';
 
@@ -48,6 +50,10 @@ export default function AmbienteDetalhePage() {
   const [carregandoToken, setCarregandoToken] = useState(false);
   const [tokenCopiado, setTokenCopiado] = useState(false);
   const [comandoCopiado, setComandoCopiado] = useState<string | null>(null);
+  const [diretoriosAutorizados, setDiretoriosAutorizados] = useState<string[]>([]);
+  const [novoDiretorio, setNovoDiretorio] = useState('');
+  const [salvandoDiretorios, setSalvandoDiretorios] = useState(false);
+  const [mensagemDiretorios, setMensagemDiretorios] = useState('');
 
   useEffect(() => {
     if (organizacao && ambienteId) {
@@ -128,6 +134,51 @@ export default function AmbienteDetalhePage() {
       setErro(err?.response?.data?.message || err?.message || 'Erro ao persistir processos PM2.');
     } finally {
       setSalvando(false);
+    }
+  };
+
+  // ===========================================
+  // DIRETÓRIOS AUTORIZADOS
+  // ===========================================
+
+  const carregarDiretoriosAutorizados = async () => {
+    if (!organizacao || !agente) return;
+    try {
+      const dirs = await agentesApi.obterDiretoriosAutorizados(organizacao.id, agente.id);
+      setDiretoriosAutorizados(dirs || []);
+    } catch {
+      // Se falhar, mantém vazio (backward compat)
+    }
+  };
+
+  useEffect(() => {
+    if (agente) carregarDiretoriosAutorizados();
+  }, [agente]);
+
+  const adicionarDiretorio = () => {
+    if (!novoDiretorio.trim()) return;
+    // Normalizar: usar / no Linux/Mac, \ no Windows (detectar pelo path)
+    const dir = novoDiretorio.trim();
+    if (diretoriosAutorizados.includes(dir)) return;
+    setDiretoriosAutorizados([...diretoriosAutorizados, dir]);
+    setNovoDiretorio('');
+  };
+
+  const removerDiretorio = (dir: string) => {
+    setDiretoriosAutorizados(diretoriosAutorizados.filter((d) => d !== dir));
+  };
+
+  const salvarDiretorios = async () => {
+    if (!organizacao || !agente) return;
+    try {
+      setSalvandoDiretorios(true);
+      await agentesApi.atualizarDiretoriosAutorizados(organizacao.id, agente.id, diretoriosAutorizados);
+      setMensagemDiretorios('Diretórios salvos com sucesso.');
+      setTimeout(() => setMensagemDiretorios(''), 3000);
+    } catch (err: any) {
+      setErro(err?.response?.data?.message || 'Erro ao salvar diretórios.');
+    } finally {
+      setSalvandoDiretorios(false);
     }
   };
 
@@ -586,6 +637,69 @@ export default function AmbienteDetalhePage() {
           </p>
         </div>
       </Card>
+
+      {/* Seção 4 - Segurança: Diretórios Autorizados */}
+      {agente && (
+        <Card>
+          <div className="mb-4 flex items-center gap-2">
+            <Shield className="h-5 w-5 text-[#8ca2ff]" />
+            <h2 className="text-lg font-semibold text-zinc-100">Segurança — Diretórios Autorizados</h2>
+          </div>
+          <p className="text-sm text-zinc-400 mb-4">
+            Restringe quais diretórios o agente pode acessar. Se vazio, todos os diretórios são permitidos (modo legado).
+          </p>
+
+          {mensagemDiretorios && (
+            <div className="mb-3 rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-300">
+              {mensagemDiretorios}
+            </div>
+          )}
+
+          {/* Lista de diretórios */}
+          <div className="space-y-2 mb-4">
+            {diretoriosAutorizados.length === 0 ? (
+              <p className="text-xs text-zinc-500 italic">Nenhum diretório restrito — todos os caminhos são permitidos.</p>
+            ) : (
+              diretoriosAutorizados.map((dir) => (
+                <div key={dir} className="flex items-center justify-between rounded-lg border border-[#2a2a32] bg-[#1e1e24] px-3 py-2">
+                  <code className="text-xs font-mono text-zinc-300 break-all">{dir}</code>
+                  <button
+                    onClick={() => removerDiretorio(dir)}
+                    className="ml-3 shrink-0 text-zinc-500 hover:text-red-400 transition-colors"
+                    title="Remover"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Adicionar novo diretório */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={novoDiretorio}
+              onChange={(e) => setNovoDiretorio(e.target.value)}
+              placeholder="Ex: C:\Projetos ou /home/user/projetos"
+              className="flex-1 rounded-lg border border-[#2a2a32] bg-[#1e1e24] px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-[#5b7cfa] focus:outline-none"
+              onKeyDown={(e) => { if (e.key === 'Enter') adicionarDiretorio(); }}
+            />
+            <Button tamanho="pequeno" onClick={adicionarDiretorio}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="mt-4 flex items-center gap-3">
+            <Button tamanho="pequeno" onClick={salvarDiretorios} carregando={salvandoDiretorios}>
+              Salvar diretórios
+            </Button>
+            <p className="text-[11px] text-zinc-600">
+              O agente rejeitará comandos de diretórios fora desta lista.
+            </p>
+          </div>
+        </Card>
+      )}
 
       {/* Modal de confirmação de exclusão */}
       <Modal

@@ -226,6 +226,20 @@ export const agentesApi = {
     const resposta = await api.post(`/organizacoes/${organizacaoId}/agentes/${id}/pm2/save`);
     return resposta.data;
   },
+
+  // Obter diretórios autorizados do agente
+  obterDiretoriosAutorizados: async (organizacaoId: string, id: string) => {
+    const resposta = await api.get(`/organizacoes/${organizacaoId}/agentes/${id}/diretorios`);
+    return resposta.data as string[];
+  },
+
+  // Atualizar diretórios autorizados do agente
+  atualizarDiretoriosAutorizados: async (organizacaoId: string, id: string, diretorios: string[]) => {
+    const resposta = await api.post(`/organizacoes/${organizacaoId}/agentes/${id}/diretorios`, {
+      diretorios,
+    });
+    return resposta.data;
+  },
 };
 
 export const servicosPm2Api = {

@@ -182,4 +182,36 @@ export class AgentesController {
 
     return comando;
   }
+
+  // ===========================================
+  // DIRETÓRIOS AUTORIZADOS
+  // ===========================================
+
+  @Get(':id/diretorios')
+  async obterDiretoriosAutorizados(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('id') agenteId: string,
+    @Request() req,
+  ) {
+    return this.agentesServico.obterDiretoriosAutorizados(
+      agenteId,
+      organizacaoId,
+      req.user.id,
+    );
+  }
+
+  @Post(':id/diretorios')
+  async atualizarDiretoriosAutorizados(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('id') agenteId: string,
+    @Body() dados: { diretorios: string[] },
+    @Request() req,
+  ) {
+    return this.agentesServico.atualizarDiretoriosAutorizados(
+      agenteId,
+      organizacaoId,
+      req.user.id,
+      dados.diretorios || [],
+    );
+  }
 }

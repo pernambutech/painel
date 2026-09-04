@@ -9,6 +9,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import * as path from 'path';
 import { PrismaServico } from '../database/prisma.servico';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -265,6 +266,66 @@ export class AgentesServico {
       where: { id },
       data: { ativo: false, status: 'offline' },
     });
+  }
+
+  // ===========================================
+  // ATUALIZAR DIRETÓRIOS AUTORIZADOS
+  // ===========================================
+
+  async atualizarDiretoriosAutorizados(
+    id: string,
+    organizacaoId: string,
+    usuarioId: string,
+    diretorios: string[],
+  ): Promise<{ mensagem: string; diretoriosAutorizados: string[] }> {
+    await this.verificarMembro(organizacaoId, usuarioId);
+
+    const agente = await this.prisma.agente.findFirst({
+      where: { id, organizacaoId },
+    });
+
+    if (!agente) {
+      throw new NotFoundException('Agente não encontrado');
+    }
+
+    // Validar: cada diretório deve ser um path absoluto
+    for (const dir of diretorios) {
+      if (!path.isAbsolute(dir)) {
+        throw new Error(`Caminho deve ser absoluto: ${dir}`);
+      }
+    }
+
+    await this.prisma.agente.update({
+      where: { id },
+      data: { diretoriosAutorizados: diretorios },
+    });
+
+    return {
+      mensagem: 'Diretórios autorizados atualizados com sucesso',
+      diretoriosAutorizados: diretorios,
+    };
+  }
+
+  // ===========================================
+  // OBTER DIRETÓRIOS AUTORIZADOS
+  // ===========================================
+
+  async obterDiretoriosAutorizados(
+    id: string,
+    organizacaoId: string,
+    usuarioId: string,
+  ): Promise<string[]> {
+    await this.verificarMembro(organizacaoId, usuarioId);
+
+    const agente = await this.prisma.agente.findFirst({
+      where: { id, organizacaoId },
+    });
+
+    if (!agente) {
+      throw new NotFoundException('Agente não encontrado');
+    }
+
+    return (agente.diretoriosAutorizados as string[]) || [];
   }
 
   // ===========================================

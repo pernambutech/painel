@@ -99,26 +99,27 @@ model Ambiente {
 // ===========================================
 
 model Agente {
-  id                 String    @id @default(uuid()) @db.Uuid
-  nome               String
-  token              String    @unique
-  status             String    @default("offline") // online, offline, manutencao
-  ultimoHeartbeat    DateTime? @map("ultimo_heartbeat")
-  versao             String?
-  sistemaOperacional String?   @default("linux") @map("sistema_operacional")
-  cpuUso             Float?    @map("cpu_uso")
-  memoriaUso         Float?    @map("memoria_uso")
-  memoriaTotal       Float?    @map("memoria_total")
-  uptime             Int?
-  processosTotal     Int?      @default(0) @map("processos_total")
-  processosOnline    Int?      @default(0) @map("processos_online")
-  processosParados   Int?      @default(0) @map("processos_parados")
-  processosErro      Int?      @default(0) @map("processos_erro")
-  ambienteId         String    @map("ambiente_id") @db.Uuid
-  organizacaoId      String    @map("organizacao_id") @db.Uuid
-  ativo              Boolean   @default(true)
-  criadoEm           DateTime  @default(now()) @map("criado_em")
-  atualizadoEm       DateTime  @updatedAt @map("atualizado_em")
+  id                   String    @id @default(uuid()) @db.Uuid
+  nome                 String
+  token                String    @unique
+  status               String    @default("offline") // online, offline, manutencao
+  ultimoHeartbeat      DateTime? @map("ultimo_heartbeat")
+  versao               String?
+  sistemaOperacional   String?   @default("linux") @map("sistema_operacional")
+  cpuUso               Float?    @map("cpu_uso")
+  memoriaUso           Float?    @map("memoria_uso")
+  memoriaTotal         Float?    @map("memoria_total")
+  uptime               Int?
+  processosTotal       Int?      @default(0) @map("processos_total")
+  processosOnline      Int?      @default(0) @map("processos_online")
+  processosParados     Int?      @default(0) @map("processos_parados")
+  processosErro        Int?      @default(0) @map("processos_erro")
+  diretoriosAutorizados Json?     @default("[]") @map("diretorios_autorizados") // JSON array de paths permitidos
+  ambienteId           String    @map("ambiente_id") @db.Uuid
+  organizacaoId        String    @map("organizacao_id") @db.Uuid
+  ativo                Boolean   @default(true)
+  criadoEm             DateTime  @default(now()) @map("criado_em")
+  atualizadoEm         DateTime  @updatedAt @map("atualizado_em")
 
   // Relacionamentos
   ambiente    Ambiente    @relation(fields: [ambienteId], references: [id], onDelete: Cascade)
