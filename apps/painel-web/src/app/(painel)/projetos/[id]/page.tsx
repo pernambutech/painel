@@ -137,7 +137,7 @@ export default function ProjetoDetalhePage() {
             setStatusPorServico((prev) => ({ ...prev, [s.id]: status }));
           })
           .catch(() => {
-            setStatusPorServico((prev) => ({ ...prev, [s.id]: { status: 'desconhecido', pid: null, uptime: null, restarts: null, cpu: null, memoria: null } }));
+            setStatusPorServico((prev) => ({ ...prev, [s.id]: { status: 'desconhecido', pid: null, uptimeMs: null, reinicios: null, usoCpu: null, usoMemoria: null } }));
           });
         // Buscar últimos 2 commits se o serviço tem diretório Git
         if (s.diretorio) {
@@ -710,8 +710,8 @@ export default function ProjetoDetalhePage() {
                         {status?.pid && (
                           <span className="text-xs text-zinc-500">PID {status.pid}</span>
                         )}
-{status?.restarts != null && status.restarts > 0 && (
-                           <span className="text-xs text-amber-400">{status.restarts} reinícios</span>
+{status?.reinicios != null && status.reinicios > 0 && (
+                           <span className="text-xs text-amber-400">{status.reinicios} reinícios</span>
                         )}
                       </div>
                       <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-zinc-500">
@@ -731,9 +731,9 @@ export default function ProjetoDetalhePage() {
                           </span>
                         )}
                         {servico.ambiente && <span>Ambiente: {servico.ambiente.nome}</span>}
-{status?.uptime != null && (
+{status?.uptimeMs != null && (
                            <span className="flex items-center gap-1">
-                             <Activity className="w-3 h-3" /> {formatarUptime(status.uptime)}
+                             <Activity className="w-3 h-3" /> {formatarUptime(status.uptimeMs)}
                           </span>
                         )}
                       </div>
@@ -799,11 +799,11 @@ export default function ProjetoDetalhePage() {
                           <div className="space-y-1 text-zinc-400">
                             <div><span className="text-zinc-600">Estado:</span> {estado}</div>
                             {status?.pid && <div><span className="text-zinc-600">PID:</span> {status.pid}</div>}
-                            {status?.uptime != null && (
-                              <div><span className="text-zinc-600">Uptime:</span> {formatarUptime(status.uptime)}</div>
+                            {status?.uptimeMs != null && (
+                              <div><span className="text-zinc-600">Uptime:</span> {formatarUptime(status.uptimeMs)}</div>
                             )}
-                            {status?.restarts != null && (
-                              <div><span className="text-zinc-600">Reinícios:</span> {status.restarts}</div>
+                            {status?.reinicios != null && (
+                              <div><span className="text-zinc-600">Reinícios:</span> {status.reinicios}</div>
                             )}
                           </div>
                           <div className="flex items-center gap-1.5 pt-1">

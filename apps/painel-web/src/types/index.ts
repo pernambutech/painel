@@ -194,10 +194,10 @@ export interface Execucao {
 export interface StatusPm2 {
   status: 'online' | 'stopped' | 'errored' | 'desconhecido';
   pid: number | null;
-  uptime: number | null;
-  restarts: number | null;
-  cpu: number | null;
-  memoria: number | null;
+  uptimeMs: number | null;
+  reinicios: number | null;
+  usoCpu: number | null;
+  usoMemoria: number | null;
 }
 
 // ===========================================
