@@ -20,10 +20,12 @@ import {
   CircleX,
   HelpCircle,
   Activity,
+  ExternalLink,
   Play,
   Square,
   RotateCw,
 } from 'lucide-react';
+import { gerarUrlServico } from '@/lib/constantes';
 
 // ===========================================
 // TIPOS
@@ -315,6 +317,18 @@ export default function ServicosPage() {
                     <div className="flex items-center gap-1.5">
                       <Network className="h-3 w-3 shrink-0" />
                       <span>Porta {servico.porta}</span>
+                      {servico.statusPm2 === 'online' && (
+                        <a
+                          href={gerarUrlServico(servico.porta) || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-1 text-[#8ca2ff] hover:text-[#a8b8ff] transition-colors inline-flex items-center gap-0.5"
+                          title="Abrir serviço"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
                     </div>
                   )}
                 </div>

@@ -94,3 +94,25 @@ export const ITENS_POR_PAGINA_OPCOES = [
   { valor: '50', label: '50' },
   { valor: '100', label: '100' },
 ] as const;
+
+// ===========================================
+// URL DE ACESSO AO SERVIÇO
+// ===========================================
+
+/**
+ * Gera a URL de acesso a um serviço com base no hostname atual do navegador.
+ *
+ * - Se o usuário estiver acessando via localhost → localhost:porta
+ * - Se estiver acessando via IP → ip:porta
+ *
+ * @param porta - Porta do serviço
+ * @returns URL completa do serviço (ex: http://192.168.1.66:3000)
+ */
+export function gerarUrlServico(porta: number): string | null {
+  if (typeof window === 'undefined' || !porta) return null;
+
+  const protocolo = window.location.protocol; // http: ou https:
+  const hostname = window.location.hostname; // localhost, 192.168.1.66, etc.
+
+  return `${protocolo}//${hostname}:${porta}`;
+}

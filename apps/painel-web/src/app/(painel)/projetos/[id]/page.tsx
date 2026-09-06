@@ -24,6 +24,7 @@ import {
   ChevronDown,
   ChevronUp,
   Edit3,
+  ExternalLink,
   FileText,
   FolderKanban,
   GitBranch,
@@ -42,6 +43,7 @@ import {
 } from 'lucide-react';
 import { CommitsModal } from '@/components/CommitsModal';
 import { EditarServicoModal } from '@/components/EditarServicoModal';
+import { gerarUrlServico } from '@/lib/constantes';
 import type { Projeto, Servico, StatusPm2, GitStatus, GitBranchResponse, GitLogEntry, GitArquivo, Log } from '@/types';
 
 /**
@@ -739,6 +741,19 @@ export default function ProjetoDetalhePage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5">
+                      {servico.porta && estado === 'online' && (
+                        <a
+                          href={gerarUrlServico(servico.porta) || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 rounded-lg bg-[#5b7cfa]/15 border border-[#5b7cfa]/30 px-2.5 py-1.5 text-xs font-medium text-[#8ca2ff] hover:bg-[#5b7cfa]/25 hover:text-[#a8b8ff] transition-colors"
+                          title={`Abrir ${gerarUrlServico(servico.porta)}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          Abrir
+                        </a>
+                      )}
                       <Button
                         variante="fantasma"
                         tamanho="pequeno"
@@ -789,7 +804,21 @@ export default function ProjetoDetalhePage() {
                             <div><span className="text-zinc-600">ID:</span> <span className="font-mono text-zinc-500">{servico.id.slice(0, 8)}...</span></div>
                             {servico.diretorio && <div><span className="text-zinc-600">Diretório:</span> {servico.diretorio}</div>}
                             {servico.comando && <div><span className="text-zinc-600">Comando:</span> {servico.comando}</div>}
-                            {servico.porta && <div><span className="text-zinc-600">Porta:</span> {servico.porta}</div>}
+                            {servico.porta && (
+                              <div>
+                                <span className="text-zinc-600">Porta:</span> {servico.porta}
+                                {estado === 'online' && (
+                                  <a
+                                    href={gerarUrlServico(servico.porta) || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="ml-2 text-[#8ca2ff] hover:text-[#a8b8ff] transition-colors inline-flex items-center gap-1"
+                                  >
+                                    Abrir <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                )}
+                              </div>
+                            )}
                             {servico.ambiente && <div><span className="text-zinc-600">Ambiente:</span> {servico.ambiente.nome}</div>}
                           </div>
                         </div>
