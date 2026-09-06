@@ -1,43 +1,119 @@
+/**
+ * Script de registro do Painel
+ * 
+ * Registra o próprio painel no banco de dados, criando:
+ * - Usuário administrador inicial
+ * - Organização padrão
+ * - Ambiente local (detectado automaticamente)
+ * - Projeto Painel Central com seus serviços
+ * 
+ * Uso:
+ *   node scripts/registrar-painel.js
+ * 
+ * Variáveis de ambiente (opcionais):
+ *   PAINEL_ADMIN_EMAIL=email@exemplo.com
+ *   PAINEL_ADMIN_SENHA=senha
+ *   PAINEL_ADMIN_NOME=Nome do Admin
+ *   PAINEL_ORG_NOME=Nome da Organização
+ */
+
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
 
+// Configurações (podem ser sobrescritas por variáveis de ambiente)
+const CONFIG = {
+  // Usuário admin
+  email: process.env.PAINEL_ADMIN_EMAIL || 'admin@painel.local',
+  senha: process.env.PAINEL_ADMIN_SENHA || 'admin123',
+  nome: process.env.PAINEL_ADMIN_NOME || 'Administrador',
+  
+  // Organização
+  orgNome: process.env.PAINEL_ORG_NOME || 'Minha Organização',
+  orgSlug: process.env.PAINEL_ORG_SLUG || 'minha-organizacao',
+};
+
 const prisma = new PrismaClient();
 const raiz = path.resolve(__dirname, '..');
-const email = 'william.brito@pernambutech.com';
-const senha = '123456';
+
+/**
+ * Detecta o sistema operacional atual
+ */
+function detectarSistemaOperacional() {
+  const plataforma = process.platform;
+  
+  switch (plataforma) {
+    case 'win32':
+      return 'windows';
+    case 'darwin':
+      return 'macos';
+    case 'linux':
+      return 'linux';
+    default:
+      return 'linux'; // Padrão para outros Unix-like
+  }
+}
 
 async function executar() {
-  const senhaHash = await bcrypt.hash(senha, 10);
+  console.log('🔧 Iniciando registro do Painel...\n');
+  
+  // Detectar SO
+  const sistemaOperacional = detectarSistemaOperacional();
+  console.log(`📟 Sistema operacional detectado: ${sistemaOperacional}`);
+  
+  // Criar/atualizar usuário admin
+  console.log(`\n👤 Criando usuário administrador...`);
+  console.log(`   Email: ${CONFIG.email}`);
+  
+  const senhaHash = await bcrypt.hash(CONFIG.senha, 10);
   const usuario = await prisma.usuario.upsert({
-    where: { email },
-    update: { nome: 'William Brito', senha: senhaHash, ativo: true },
-    create: { nome: 'William Brito', email, senha: senhaHash },
+    where: { email: CONFIG.email },
+    update: { nome: CONFIG.nome, senha: senhaHash, ativo: true },
+    create: { nome: CONFIG.nome, email: CONFIG.email, senha: senhaHash },
   });
+  console.log(`   ID: ${usuario.id}`);
 
+  // Criar/atualizar organização
+  console.log(`\n🏢 Criando organização: ${CONFIG.orgNome}`);
   const organizacao = await prisma.organizacao.upsert({
-    where: { slug: 'pernambutech' },
-    update: { nome: 'Pernambutech', ativo: true },
-    create: { nome: 'Pernambutech', slug: 'pernambutech' },
+    where: { slug: CONFIG.orgSlug },
+    update: { nome: CONFIG.orgNome, ativo: true },
+    create: { nome: CONFIG.orgNome, slug: CONFIG.orgSlug },
   });
+  console.log(`   ID: ${organizacao.id}`);
 
+  // Associar usuário à organização como proprietário
+  console.log(`\n🔗 Vinculando usuário à organização como proprietário...`);
   await prisma.membroOrganizacao.upsert({
     where: { usuarioId_organizacaoId: { usuarioId: usuario.id, organizacaoId: organizacao.id } },
     update: { papel: 'proprietario' },
     create: { usuarioId: usuario.id, organizacaoId: organizacao.id, papel: 'proprietario' },
   });
 
+  // Criar/atualizar ambiente local
+  const nomeAmbiente = sistemaOperacional === 'windows' 
+    ? 'Windows Local' 
+    : sistemaOperacional === 'macos' 
+      ? 'macOS Local' 
+      : 'Linux Local';
+      
+  console.log(`\n🖥️  Criando ambiente: ${nomeAmbiente}`);
   const ambiente = await prisma.ambiente.upsert({
     where: { id: '00000000-0000-0000-0000-000000000001' },
-    update: { nome: 'Desenvolvimento local', tipo: 'desenvolvimento', sistemaOperacional: 'windows' },
+    update: { 
+      nome: nomeAmbiente, 
+      tipo: 'desenvolvimento', 
+      sistemaOperacional: sistemaOperacional,
+    },
     create: {
       id: '00000000-0000-0000-0000-000000000001',
-      nome: 'Desenvolvimento local',
+      nome: nomeAmbiente,
       tipo: 'desenvolvimento',
-      sistemaOperacional: 'windows',
+      sistemaOperacional: sistemaOperacional,
       organizacaoId: organizacao.id,
     },
   });
+  console.log(`   ID: ${ambiente.id}`);
 
   const projeto = await prisma.projeto.upsert({
     where: { id: '00000000-0000-0000-0000-000000000002' },
