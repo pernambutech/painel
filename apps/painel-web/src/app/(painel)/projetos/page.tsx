@@ -2,15 +2,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { projetosApi } from '@/lib/api';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { BadgeSimples } from '@/components/ui/Badge';
+import { StatusBadgeTabela } from '@/components/ui/StatusBadgeTabela';
 import { Spinner } from '@/components/ui/Spinner';
-import { FolderKanban, Plus, Archive, FileText, CalendarDays } from 'lucide-react';
+import { FolderKanban } from 'lucide-react';
 import type { Projeto } from '@/types';
 
 export default function ProjetosPage() {
@@ -19,6 +17,7 @@ export default function ProjetosPage() {
   const [mostrarArquivados, setMostrarArquivados] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [busca, setBusca] = useState('');
 
   useEffect(() => {
     carregarProjetos();
@@ -31,7 +30,7 @@ export default function ProjetosPage() {
       setCarregando(true);
       const dados = await projetosApi.listar(organizacao.id, mostrarArquivados);
       setProjetos(dados || []);
-    } catch (err) {
+    } catch {
       setErro('Erro ao carregar projetos.');
     } finally {
       setCarregando(false);
@@ -46,136 +45,145 @@ export default function ProjetosPage() {
     });
   };
 
+  const projetosFiltrados = useMemo(() => {
+    if (!busca.trim()) return projetos;
+    const termo = busca.toLowerCase();
+    return projetos.filter((p) =>
+      p.nome.toLowerCase().includes(termo) ||
+      (p.descricao && p.descricao.toLowerCase().includes(termo))
+    );
+  }, [projetos, busca]);
+
   if (carregando) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
           <Spinner tamanho="grande" />
-          <p className="text-sm text-zinc-500">Carregando projetos...</p>
+          <p className="text-sm" style={{ color: '#6e6e7a' }}>Carregando projetos...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Cabeçalho */}
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Projetos</h1>
         <p className="text-sm mt-1" style={{ color: '#a8a8b3' }}>Gerencie todos os seus projetos e serviços.</p>
       </div>
 
-      {/* Ações */}
+      {/* Erro */}
+      {erro && (
+        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20" style={{ marginBottom: '16px' }}>
+          <p className="text-sm text-red-400">{erro}</p>
+        </div>
+      )}
+
+      {/* Barra de busca + botão novo */}
       <div className="flex items-center gap-3" style={{ marginBottom: '20px' }}>
-        <Link href="/projetos/novo" className="rounded-full bg-[#5b7cfa] px-6 py-2 text-sm font-medium text-white hover:bg-[#6f8cff] transition-colors">
+        <input
+          type="text"
+          placeholder="Buscar projeto..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          className="flex-1 rounded-full border border-[#2a2a32] bg-[#16161a] px-5 py-2 text-sm text-zinc-100 outline-none transition-colors focus:border-[#5b7cfa]"
+          style={{ minWidth: '180px' }}
+        />
+        <Link
+          href="/projetos/novo"
+          className="shrink-0 rounded-full bg-[#5b7cfa] px-6 py-2 text-sm font-medium text-white hover:bg-[#6f8cff] transition-colors"
+        >
           + Novo Projeto
         </Link>
       </div>
 
-      {/* Filtro de arquivados */}
-      <div className="flex items-center gap-2">
+      {/* Toggle arquivados */}
+      <div className="flex items-center gap-2" style={{ marginBottom: '20px' }}>
         <button
           type="button"
           onClick={() => setMostrarArquivados((v) => !v)}
-          className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-            mostrarArquivados
-              ? 'border-[#5b7cfa] bg-[#5b7cfa]/10 text-[#8ca2ff]'
-              : 'border-[#2a2a32] text-zinc-400 hover:text-zinc-200'
-          }`}
+          className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
+          style={{
+            borderColor: mostrarArquivados ? '#5b7cfa' : '#2a2a32',
+            background: mostrarArquivados ? 'rgba(91,124,250,0.1)' : 'transparent',
+            color: mostrarArquivados ? '#8ca2ff' : '#6e6e7a',
+          }}
         >
-          <Archive className="w-3.5 h-3.5" />
           {mostrarArquivados ? 'Ocultando arquivados' : 'Mostrar arquivados'}
         </button>
       </div>
 
-      {/* Erro */}
-      {erro && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-          <p className="text-sm text-red-400">{erro}</p>
-          <Button variante="fantasma" tamanho="pequeno" onClick={carregarProjetos}>
-            Tentar novamente
-          </Button>
-        </div>
-      )}
-
-      {/* Estado vazio */}
-      {!carregando && projetos.length === 0 && (
-        <Card>
-          <div className="text-center py-12">
-            <FolderKanban className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-zinc-300 mb-2">
-              {mostrarArquivados ? 'Nenhum projeto arquivado' : 'Nenhum projeto cadastrado'}
-            </h3>
-            <p className="text-sm text-zinc-500 max-w-md mx-auto">
-              {mostrarArquivados
-                ? 'Projetos arquivados aparecerão aqui.'
-                : 'Crie seu primeiro projeto para começar a organizar seus serviços.'}
-            </p>
-            {!mostrarArquivados && (
-              <Link href="/projetos/novo" className="inline-flex mt-4">
-                <Button>
-                  <Plus className="w-4 h-4" />
-                  Adicionar projeto
-                </Button>
-              </Link>
-            )}
-          </div>
-        </Card>
-      )}
-
-      {/* Lista de projetos */}
-      {projetos.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {projetos.map((projeto) => (
-            <Link key={projeto.id} href={`/projetos/${projeto.id}`}>
-              <Card
-                className={`group h-full cursor-pointer transition-colors hover:border-zinc-600 ${
-                  !projeto.ativo ? 'opacity-70' : ''
-                }`}
-              >
-                <div className="flex flex-col h-full">
-                  {/* Cabeçalho do card */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1e1e24]">
-                        <FolderKanban className="w-5 h-5 text-[#8ca2ff]" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-zinc-100 group-hover:text-white">
-                          {projeto.nome}
-                        </h3>
-                        <p className="text-xs text-zinc-500">Projeto</p>
-                      </div>
-                    </div>
-                    {!projeto.ativo && (
-                      <BadgeSimples variante="neutro">Arquivado</BadgeSimples>
-                    )}
-                  </div>
-
-                  {/* Descrição */}
-                  {projeto.descricao && (
-                    <p className="mb-4 text-sm text-zinc-400 line-clamp-2">{projeto.descricao}</p>
-                  )}
-
-                  {/* Informações */}
-                  <div className="mt-auto pt-4 border-t border-[#2a2a32]">
-                    <div className="flex items-center gap-4 text-xs text-zinc-500">
-                      <div className="flex items-center gap-1">
-                        <FileText className="w-3 h-3" />
-                        <span>{projeto.totalServicos ?? 0} {(projeto.totalServicos ?? 0) === 1 ? 'serviço' : 'serviços'}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <CalendarDays className="w-3 h-3" />
-                        <span>{formatarData(projeto.criadoEm)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+      {/* Tabela de projetos */}
+      <div className="rounded-xl border border-[#2a2a32] bg-[#16161a] overflow-x-auto">
+        {projetos.length === 0 && !erro ? (
+          <div className="flex min-h-52 flex-col items-center justify-center px-5 text-center">
+            <FolderKanban className="mb-3 h-8 w-8" style={{ color: '#3a3a44' }} />
+            <p className="text-sm" style={{ color: '#a8a8b3' }}>Nenhum projeto cadastrado.</p>
+            <Link href="/projetos/novo" className="mt-2 text-xs font-medium" style={{ color: '#5b7cfa' }}>
+              Criar projeto
             </Link>
-          ))}
-        </div>
-      )}
+          </div>
+        ) : (
+          <table className="w-full min-w-[700px] border-collapse text-left" style={{ fontSize: '13px' }}>
+            <thead>
+              <tr style={{ background: '#1e1e24', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px', color: '#6e6e7a' }}>
+                <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Projeto</th>
+                <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Descrição</th>
+                <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Serviços</th>
+                <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Ambiente</th>
+                <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Status</th>
+                <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Última atividade</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projetosFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center" style={{ padding: '40px 18px', color: '#6e6e7a' }}>
+                    Nenhum projeto encontrado.
+                  </td>
+                </tr>
+              ) : (
+                projetosFiltrados.map((projeto) => (
+                  <tr
+                    key={projeto.id}
+                    className="border-b border-[#2a2a32] transition-colors"
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#28282f'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ''; }}
+                  >
+                    <td style={{ padding: '14px 18px', borderBottom: '1px solid #2a2a32' }}>
+                      <Link
+                        href={`/projetos/${projeto.id}`}
+                        className="font-medium transition-colors"
+                        style={{ color: '#ececf0' }}
+                      >
+                        {projeto.nome}
+                      </Link>
+                    </td>
+                    <td style={{ padding: '14px 18px', color: '#a8a8b3', borderBottom: '1px solid #2a2a32' }}>
+                      {projeto.descricao || '—'}
+                    </td>
+                    <td style={{ padding: '14px 18px', color: '#a8a8b3', borderBottom: '1px solid #2a2a32' }}>
+                      {projeto.totalServicos ?? 0}
+                    </td>
+                    <td style={{ padding: '14px 18px', color: '#a8a8b3', borderBottom: '1px solid #2a2a32' }}>
+                      —
+                    </td>
+                    <td style={{ padding: '14px 18px', borderBottom: '1px solid #2a2a32' }}>
+                      <StatusBadgeTabela variante={projeto.ativo ? 'online' : 'atencao'}>
+                        {projeto.ativo ? 'Ativo' : 'Arquivado'}
+                      </StatusBadgeTabela>
+                    </td>
+                    <td style={{ padding: '14px 18px', color: '#6e6e7a', borderBottom: '1px solid #2a2a32' }}>
+                      {formatarData(projeto.criadoEm)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }

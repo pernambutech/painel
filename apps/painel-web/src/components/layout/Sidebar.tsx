@@ -15,8 +15,9 @@ import {
   Settings,
   History,
   X,
-  LogOut,
   User,
+  Play,
+  Box,
 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { dashboardApi, ambientesApi } from '@/lib/api';
@@ -55,6 +56,11 @@ const itensNavegacao: ItemNavegacao[] = [
     href: '/ambientes',
     icone: Monitor,
     chaveContador: 'ambientes',
+  },
+  {
+    nome: 'Execuções',
+    href: '/execucoes',
+    icone: Play,
   },
   {
     nome: 'Logs',
@@ -96,7 +102,7 @@ interface SidebarProps {
 
 export function Sidebar({ aberta, aoFechar }: SidebarProps) {
   const pathname = usePathname();
-  const { logout, organizacao } = useAuth();
+  const { organizacao } = useAuth();
   const [contadores, setContadores] = useState<Record<string, number>>({});
 
   // Buscar contadores para os badges
@@ -164,9 +170,7 @@ export function Sidebar({ aberta, aoFechar }: SidebarProps) {
 
         {/* Logo */}
         <div className="flex items-center gap-2.5 border-b border-[#2a2a32] pb-7" style={{ marginBottom: '24px' }}>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#5b7cfa]/15">
-            <span className="text-lg" style={{ color: '#5b7cfa' }}>⬡</span>
-          </div>
+          <Box className="h-6 w-6" style={{ color: '#5b7cfa' }} />
           <h1 className="text-[18px] font-bold tracking-tight text-zinc-100">DevManager</h1>
         </div>
 
@@ -240,21 +244,6 @@ export function Sidebar({ aberta, aoFechar }: SidebarProps) {
               </Link>
             );
           })}
-
-          {/* Logout */}
-          <button
-            onClick={logout}
-            className="
-              flex w-full items-center gap-3 rounded-md text-[13px] transition-colors duration-150
-              text-zinc-400 hover:bg-[#28282f] hover:text-zinc-100
-            "
-            style={{ padding: '10px 14px', marginTop: '8px' }}
-            title="Sair"
-            aria-label="Sair da conta"
-          >
-            <LogOut className="h-4 w-4 shrink-0" />
-            <span>Sair</span>
-          </button>
         </div>
       </aside>
     </>

@@ -136,30 +136,32 @@ export function Topbar({ aoAbrirSidebar }: TopbarProps) {
         )}
       </div>
 
-      <div className="ml-auto flex items-center gap-4">
-        <div className="hidden items-center gap-3 text-xs text-zinc-400 md:flex">
-          <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-emerald-300" />{ambientesOnline} ambientes online</span>
-          <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-red-300" />{ambientesOffline} offline</span>
-        </div>
+      {/* Status dos ambientes — empurrado para direita com margin-left auto */}
+      <div className="hidden items-center gap-3 text-xs text-zinc-400 md:flex" style={{ marginLeft: 'auto' }}>
+        <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-emerald-300" />{ambientesOnline} ambientes online</span>
+        <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-red-300" />{ambientesOffline} offline</span>
+      </div>
 
-        {/* ===== SININHO — Notificações reais ===== */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => alternarMenu('notificacoes')}
-            className="relative rounded-md p-1 text-zinc-400 transition-colors hover:bg-[#28282f] hover:text-zinc-100"
-            aria-label={`Notificações${temNotificacoes ? ` (${notificacoes.length} não lidas)` : ''}`}
-            aria-expanded={menuAberto === 'notificacoes'}
-            aria-haspopup="true"
-            title="Notificações"
-          >
-            <Bell className="h-[18px] w-[18px]" />
-            {temNotificacoes && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white">
-                {notificacoes.length}
-              </span>
-            )}
-          </button>
+      {/* Ações: sino, ajuda, avatar */}
+      <div className="flex items-center" style={{ gap: '16px' }}>
+          {/* Sininho */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => alternarMenu('notificacoes')}
+              className="relative rounded-md p-1 text-zinc-400 transition-colors hover:bg-[#28282f] hover:text-zinc-100"
+              aria-label={`Notificações${temNotificacoes ? ` (${notificacoes.length} não lidas)` : ''}`}
+              aria-expanded={menuAberto === 'notificacoes'}
+              aria-haspopup="true"
+              title="Notificações"
+            >
+              <Bell className="h-[18px] w-[18px]" />
+              {temNotificacoes && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white">
+                  {notificacoes.length}
+                </span>
+              )}
+            </button>
           {menuAberto === 'notificacoes' && (
             <div role="menu" aria-label="Lista de notificações" className="absolute right-0 top-9 z-50 w-72 rounded-lg border border-[#2a2a32] bg-[#1e1e24] shadow-xl">
               <div className="border-b border-[#2a2a32] px-3 py-2.5">
