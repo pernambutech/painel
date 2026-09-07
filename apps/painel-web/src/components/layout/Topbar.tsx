@@ -136,14 +136,15 @@ export function Topbar({ aoAbrirSidebar }: TopbarProps) {
         )}
       </div>
 
-      {/* Status dos ambientes — empurrado para direita com margin-left auto */}
-      <div className="hidden items-center gap-3 text-xs text-zinc-400 md:flex" style={{ marginLeft: 'auto' }}>
-        <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-emerald-300" />{ambientesOnline} ambientes online</span>
-        <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-red-300" />{ambientesOffline} offline</span>
-      </div>
+      {/* Env-status + Ações — empurrados para direita */}
+      <div className="flex items-center" style={{ marginLeft: 'auto', gap: '20px' }}>
+        <div className="hidden items-center text-xs md:flex" style={{ gap: '12px', color: '#a8a8b3' }}>
+          <span className="flex items-center" style={{ gap: '6px' }}><span className="inline-block rounded-full" style={{ width: '8px', height: '8px', background: '#3dd68c' }} />{ambientesOnline} ambientes online</span>
+          <span className="flex items-center" style={{ gap: '6px' }}><span className="inline-block rounded-full" style={{ width: '8px', height: '8px', background: '#f87171' }} />{ambientesOffline} offline</span>
+        </div>
 
-      {/* Ações: sino, ajuda, avatar */}
-      <div className="flex items-center" style={{ gap: '16px' }}>
+        {/* Ações: sino, ajuda, avatar */}
+        <div className="flex items-center" style={{ gap: '16px' }}>
           {/* Sininho */}
           <div className="relative">
             <button
@@ -282,6 +283,7 @@ export function Topbar({ aoAbrirSidebar }: TopbarProps) {
             </div>
           )}
         </div>
+      </div>
       </div>
     </header>
   );

@@ -202,7 +202,7 @@ export default function ServicosPage() {
   // ===========================================
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Cabeçalho */}
       <header style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">
@@ -215,14 +215,14 @@ export default function ServicosPage() {
 
       {/* Erro */}
       {erro && (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4">
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4" style={{ marginBottom: '16px' }}>
           <p className="text-sm text-red-400">{erro}</p>
         </div>
       )}
 
       {/* Cards de contagem */}
       {servicos.length > 0 && (
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4" style={{ marginBottom: '24px' }}>
           {filtros.map(({ chave, rotulo, icone: Icone }) => {
             const valor =
               chave === 'todos' ? contadores.total :

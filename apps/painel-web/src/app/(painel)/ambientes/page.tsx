@@ -105,7 +105,7 @@ export default function AmbientesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       {/* Cabeçalho */}
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Ambientes</h1>
@@ -121,7 +121,7 @@ export default function AmbientesPage() {
 
       {/* Erro */}
       {erro && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20" style={{ marginBottom: '16px' }}>
           <p className="text-sm text-red-400">{erro}</p>
           <Button variante="fantasma" tamanho="pequeno" onClick={carregarAmbientes}>
             Tentar novamente
@@ -150,7 +150,7 @@ export default function AmbientesPage() {
 
       {/* Lista de ambientes */}
       {ambientes.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" style={{ marginTop: '24px' }}>
           {ambientes.map((ambiente) => (
             <Link key={ambiente.id} href={`/ambientes/${ambiente.id}`}>
               <Card className="group h-full cursor-pointer transition-colors hover:border-zinc-600">

@@ -88,7 +88,7 @@ export default function HistoricoPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div>
       <header style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Histórico</h1>
         <p className="mt-1 text-sm" style={{ color: '#a8a8b3' }}>

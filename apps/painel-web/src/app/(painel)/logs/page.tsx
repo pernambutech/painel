@@ -100,14 +100,14 @@ export default function LogsPage() {
   }
 
   return (
-    <div className="space-y-7">
+    <div>
       <header style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Logs</h1>
         <p className="mt-1 text-sm" style={{ color: '#a8a8b3' }}>Visualize logs dos serviços.</p>
       </header>
 
       {erro && (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400" style={{ marginBottom: '16px' }}>
           {erro}
         </div>
       )}
