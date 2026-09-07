@@ -1,10 +1,10 @@
 // Hook para gerenciar aparência visual do painel
 // Sincroniza preferências entre localStorage e API (banco de dados)
-// localStorage serve como cache; API é a fonte de verdade
+// Fluxo: editar → preview em tempo real → confirmar ou cancelar
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { organizacoesApi } from '@/lib/api';
 import { useAuth } from './useAuth';
 
@@ -75,21 +75,43 @@ function aplicarCSS(prefs: PreferenciasAparencia) {
   root.style.setProperty('--accent-hover', `${prefs.corDestaque}33`);
 }
 
+function saoIguais(a: PreferenciasAparencia, b: PreferenciasAparencia): boolean {
+  return (
+    a.nomeAplicacao === b.nomeAplicacao &&
+    a.corDestaque === b.corDestaque &&
+    a.corFundo === b.corFundo &&
+    a.corFundoSuperior === b.corFundoSuperior &&
+    a.corTexto === b.corTexto &&
+    a.corBorda === b.corBorda
+  );
+}
+
 // ===========================================
 // HOOK
 // ===========================================
 
 export function useAparencia() {
   const { organizacao } = useAuth();
-  const [prefs, setPrefs] = useState<PreferenciasAparencia>(DEFAULTS);
+
+  // Estado salvo (fonte de verdade após confirmar)
+  const [salvo, setSalvo] = useState<PreferenciasAparencia>(DEFAULTS);
+
+  // Rascunho (o que o usuário está editando)
+  const [rascunho, setRascunho] = useState<PreferenciasAparencia>(DEFAULTS);
+
   const [pronto, setPronto] = useState(false);
   const [sincronizando, setSincronizando] = useState(false);
+  const [salvandoPreferencias, setSalvandoPreferencias] = useState(false);
 
-  // Carrega preferências: localStorage primeiro (rápido), depois API (fonte de verdade)
+  // Flag para evitar aplicar CSS no primeiro render
+  const inicializado = useRef(false);
+
+  // Carrega preferências: localStorage primeiro, depois API
   useEffect(() => {
     // 1. Aplica do localStorage imediatamente (evita flash)
     const local = carregarLocal();
-    setPrefs(local);
+    setSalvo(local);
+    setRascunho(local);
     aplicarCSS(local);
     setPronto(true);
 
@@ -98,48 +120,79 @@ export function useAparencia() {
       setSincronizando(true);
       organizacoesApi.obterPreferencias(organizacao.id)
         .then((res) => {
-          // API retorna objeto com as preferências ou {}
           if (res && Object.keys(res).length > 0) {
             const apiPrefs: PreferenciasAparencia = { ...DEFAULTS, ...res };
-            setPrefs(apiPrefs);
+            setSalvo(apiPrefs);
+            setRascunho(apiPrefs);
             aplicarCSS(apiPrefs);
-            salvarLocal(apiPrefs); // Atualiza cache local
+            salvarLocal(apiPrefs);
           }
         })
-        .catch(() => {
-          // Se API falhar, mantém o que veio do localStorage
-        })
+        .catch(() => { /* mantém localStorage */ })
         .finally(() => setSincronizando(false));
     }
+
+    inicializado.current = true;
   }, [organizacao?.id]);
 
-  // Atualiza em memória + localStorage + API
-  const atualizar = useCallback((parciais: Partial<PreferenciasAparencia>) => {
-    setPrefs((anteriores) => {
-      const novas = { ...anteriores, ...parciais };
-      // Salva local (rápido)
-      salvarLocal(novas);
-      aplicarCSS(novas);
-      // Salva na API (async, sem bloquear UI)
-      if (organizacao?.id) {
-        organizacoesApi.atualizarPreferencias(organizacao.id, novas).catch(() => {
-          // Se falhar, local já está atualizado
-        });
-      }
-      return novas;
+  // Atualiza rascunho (apenas form + preview, NÃO salva)
+  const atualizarRascunho = useCallback((parciais: Partial<PreferenciasAparencia>) => {
+    setRascunho((anterior) => {
+      const novo = { ...anterior, ...parciais };
+      // Aplica CSS em tempo real para preview
+      aplicarCSS(novo);
+      return novo;
     });
-  }, [organizacao?.id]);
+  }, []);
 
-  // Redefine para padrão: limpa tudo
-  const redefinir = useCallback(() => {
-    setPrefs(DEFAULTS);
+  // Confirmar: salva rascunho (localStorage + API)
+  const confirmar = useCallback(async () => {
+    setSalvandoPreferencias(true);
+    try {
+      salvarLocal(rascunho);
+      aplicarCSS(rascunho);
+      setSalvo(rascunho);
+
+      if (organizacao?.id) {
+        await organizacoesApi.atualizarPreferencias(organizacao.id, rascunho as unknown as Record<string, unknown>);
+      }
+    } catch {
+      // Se API falhar, local já está atualizado
+    } finally {
+      setSalvandoPreferencias(false);
+    }
+  }, [rascunho, organizacao?.id]);
+
+  // Cancelar: descarta rascunho, volta ao último estado salvo
+  const cancelar = useCallback(() => {
+    setRascunho(salvo);
+    aplicarCSS(salvo);
+  }, [salvo]);
+
+  // Redefinir para padrão
+  const redefinir = useCallback(async () => {
+    setSalvo(DEFAULTS);
+    setRascunho(DEFAULTS);
     removerLocal();
     aplicarCSS(DEFAULTS);
-    // Limpa também na API
+
     if (organizacao?.id) {
       organizacoesApi.atualizarPreferencias(organizacao.id, {}).catch(() => {});
     }
   }, [organizacao?.id]);
 
-  return { prefs, pronto, sincronizando, atualizar, redefinir };
+  const temAlteracoesPendentes = !saoIguais(rascunho, salvo);
+
+  return {
+    prefs: rascunho,        // Rascunho (form edita aqui)
+    salvo,                  // Último estado confirmado
+    pronto,
+    sincronizando,
+    salvandoPreferencias,
+    temAlteracoesPendentes,
+    atualizarRascunho,      // Atualiza form + preview (não salva)
+    confirmar,              // Salva rascunho
+    cancelar,               // Descarta rascunho
+    redefinir,              // Volta ao padrão
+  };
 }

@@ -45,7 +45,7 @@ const coresPreDefinidas = [
 
 export default function ConfiguracoesPage() {
   const { usuario, organizacao, recarregarOrganizacao } = useAuth();
-  const { prefs, atualizar, redefinir } = useAparencia();
+  const { prefs, temAlteracoesPendentes, salvandoPreferencias, atualizarRascunho, confirmar, cancelar, redefinir } = useAparencia();
   const [abaAtiva, setAbaAtiva] = useState<AbaChave>('conta');
 
   // ── Estado da conta ──
@@ -362,7 +362,7 @@ export default function ConfiguracoesPage() {
               <label className="block text-sm font-medium text-zinc-300">Nome do sistema</label>
               <Input
                 value={prefs.nomeAplicacao}
-                onChange={(e) => atualizar({ nomeAplicacao: e.target.value })}
+                onChange={(e) => atualizarRascunho({ nomeAplicacao: e.target.value })}
                 dica="Exibido no topo da sidebar"
               />
             </div>
@@ -378,7 +378,7 @@ export default function ConfiguracoesPage() {
                   <button
                     key={cor.valor}
                     type="button"
-                    onClick={() => atualizar({ corDestaque: cor.valor })}
+                    onClick={() => atualizarRascunho({ corDestaque: cor.valor })}
                     className="group relative h-9 w-9 rounded-lg transition-transform hover:scale-110"
                     style={{ background: cor.valor }}
                     title={cor.nome}
@@ -395,12 +395,12 @@ export default function ConfiguracoesPage() {
                 <input
                   type="color"
                   value={prefs.corDestaque}
-                  onChange={(e) => atualizar({ corDestaque: e.target.value })}
+                  onChange={(e) => atualizarRascunho({ corDestaque: e.target.value })}
                   className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
                 />
                 <Input
                   value={prefs.corDestaque}
-                  onChange={(e) => atualizar({ corDestaque: e.target.value })}
+                  onChange={(e) => atualizarRascunho({ corDestaque: e.target.value })}
                   style={{ maxWidth: '140px' }}
                 />
               </div>
@@ -413,12 +413,12 @@ export default function ConfiguracoesPage() {
                 <input
                   type="color"
                   value={prefs.corFundo}
-                  onChange={(e) => atualizar({ corFundo: e.target.value })}
+                  onChange={(e) => atualizarRascunho({ corFundo: e.target.value })}
                   className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
                 />
                 <Input
                   value={prefs.corFundo}
-                  onChange={(e) => atualizar({ corFundo: e.target.value })}
+                  onChange={(e) => atualizarRascunho({ corFundo: e.target.value })}
                   style={{ maxWidth: '140px' }}
                 />
               </div>
@@ -432,12 +432,12 @@ export default function ConfiguracoesPage() {
                 <input
                   type="color"
                   value={prefs.corFundoSuperior}
-                  onChange={(e) => atualizar({ corFundoSuperior: e.target.value })}
+                  onChange={(e) => atualizarRascunho({ corFundoSuperior: e.target.value })}
                   className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
                 />
                 <Input
                   value={prefs.corFundoSuperior}
-                  onChange={(e) => atualizar({ corFundoSuperior: e.target.value })}
+                  onChange={(e) => atualizarRascunho({ corFundoSuperior: e.target.value })}
                   style={{ maxWidth: '140px' }}
                 />
               </div>
@@ -450,12 +450,12 @@ export default function ConfiguracoesPage() {
                 <input
                   type="color"
                   value={prefs.corTexto}
-                  onChange={(e) => atualizar({ corTexto: e.target.value })}
+                  onChange={(e) => atualizarRascunho({ corTexto: e.target.value })}
                   className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
                 />
                 <Input
                   value={prefs.corTexto}
-                  onChange={(e) => atualizar({ corTexto: e.target.value })}
+                  onChange={(e) => atualizarRascunho({ corTexto: e.target.value })}
                   style={{ maxWidth: '140px' }}
                 />
               </div>
@@ -468,12 +468,12 @@ export default function ConfiguracoesPage() {
                 <input
                   type="color"
                   value={prefs.corBorda}
-                  onChange={(e) => atualizar({ corBorda: e.target.value })}
+                  onChange={(e) => atualizarRascunho({ corBorda: e.target.value })}
                   className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
                 />
                 <Input
                   value={prefs.corBorda}
-                  onChange={(e) => atualizar({ corBorda: e.target.value })}
+                  onChange={(e) => atualizarRascunho({ corBorda: e.target.value })}
                   style={{ maxWidth: '140px' }}
                 />
               </div>
@@ -505,6 +505,30 @@ export default function ConfiguracoesPage() {
             >
               Restaurar aparência padrão
             </button>
+
+            {/* Botões de ação */}
+            {temAlteracoesPendentes && (
+              <div className="flex items-center gap-3 rounded-lg p-3" style={{ background: '#1e1e24', border: '1px solid #2a2a32' }}>
+                <span className="text-xs" style={{ color: '#a8a8b3' }}>Alterações não salvas</span>
+                <div className="ml-auto flex gap-2">
+                  <Button
+                    variante="fantasma"
+                    onClick={cancelar}
+                    className="h-8 px-3 text-xs"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={confirmar}
+                    carregando={salvandoPreferencias}
+                    className="h-8 px-3 text-xs"
+                  >
+                    <Save className="h-3 w-3" />
+                    Confirmar
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </Card>
       )}
