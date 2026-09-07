@@ -209,7 +209,7 @@ export default function DashboardPage() {
           badgeTexto: isErro ? 'Erro' : 'Parado',
           botaoSecundario: {
             texto: 'Ver detalhes',
-            href: `/servicos/${s.id}`,
+            href: `/projetos/${s.projetoId}`,
           },
           botaoPrimario: {
             texto: isErro ? 'Reiniciar' : 'Iniciar',

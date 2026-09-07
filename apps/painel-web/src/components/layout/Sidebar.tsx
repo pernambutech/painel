@@ -82,7 +82,7 @@ const itensInferior = [
   },
   {
     nome: 'Perfil',
-    href: '/perfil',
+    href: '/configuracoes',
     icone: User,
   },
 ];
