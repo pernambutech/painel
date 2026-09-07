@@ -240,6 +240,19 @@ export const agentesApi = {
     });
     return resposta.data;
   },
+
+  // Enviar comando estruturado ao agente (ex: OBTER_STATUS para testar conexão)
+  enviarComando: async (
+    organizacaoId: string,
+    id: string,
+    dados: { tipo: string; dados?: Record<string, unknown>; timeoutMs?: number },
+  ) => {
+    const resposta = await api.post(
+      `/organizacoes/${organizacaoId}/agentes/${id}/comandos`,
+      dados,
+    );
+    return resposta.data;
+  },
 };
 
 export const servicosPm2Api = {

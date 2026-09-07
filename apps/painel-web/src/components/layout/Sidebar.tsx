@@ -12,10 +12,10 @@ import {
   Monitor,
   FileText,
   Settings,
-  LogOut,
-  Boxes,
   History,
   X,
+  LogOut,
+  Play,
 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 
@@ -48,6 +48,11 @@ const itensNavegacao = [
     nome: 'Logs',
     href: '/logs',
     icone: FileText,
+  },
+  {
+    nome: 'Execuções',
+    href: '/execucoes',
+    icone: Play,
   },
   {
     nome: 'Histórico',
@@ -123,10 +128,10 @@ export function Sidebar({ aberta, aoFechar }: SidebarProps) {
         <div className="mb-6 border-b border-[#2a2a32] px-1 pb-6">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#5b7cfa]/15 text-[#7f98ff]">
-              <Boxes className="h-[18px] w-[18px]" aria-hidden="true" />
+              <LayoutDashboard className="h-[18px] w-[18px]" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-[18px] font-bold tracking-tight text-zinc-100">Painel</h1>
+              <h1 className="text-[18px] font-bold tracking-tight text-zinc-100">DevManager</h1>
             </div>
           </div>
         </div>

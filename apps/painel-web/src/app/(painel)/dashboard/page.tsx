@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   Activity,
   AlertTriangle,
+  Bot,
   CircleCheck,
   CirclePause,
   CircleX,
@@ -14,14 +15,20 @@ import {
   Plus,
   Server,
   WifiOff,
+  Zap,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
+import { AttentionList } from '@/components/ui/AttentionList';
+import { StatusBadgeTabela } from '@/components/ui/StatusBadgeTabela';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useSocket } from '@/lib/hooks/useSocket';
+import { useExecutarAcao } from '@/lib/hooks/useExecutarAcao';
 import { ambientesApi, dashboardApi, execucoesApi } from '@/lib/api';
+import { agentesApi } from '@/lib/api';
+import { obterLabelServico } from '@/lib/constantes';
 import type { Ambiente, Execucao } from '@/types';
 
 interface DadosDashboard {
@@ -37,6 +44,7 @@ interface DadosDashboard {
     tipo: string;
     porta: number | null;
     projetoId: string;
+    ambienteId: string | null;
     statusPm2: string;
   }[];
 }
@@ -98,6 +106,9 @@ export default function DashboardPage() {
       carregarExecucoes();
     },
   });
+
+  // Hook para ações de serviço (Iniciar/Parar/Reiniciar)
+  const { executar, carregando: carregandoAcao } = useExecutarAcao();
 
   // Polling como fallback: atualizar a cada 15 segundos (respeita preferência)
   useEffect(() => {
@@ -174,6 +185,123 @@ export default function DashboardPage() {
 
   const ambientesAtencao = ambientes.filter((a) => a.agente && a.agente.status !== 'online');
 
+  // Mapeamento de ícones por tipo de serviço
+  const iconesPorTipo: Record<string, typeof Server> = {
+    frontend: Monitor,
+    backend: Server,
+    api: Zap,
+    worker: Server,
+    bot: Bot,
+    custom: Server,
+  };
+
+  // Serviços que precisam de atenção (errored ou stopped)
+  const servicosAtencao = useMemo(() => {
+    if (!dashboard) return [];
+    return dashboard.servicos
+      .filter((s) => s.statusPm2 === 'errored' || s.statusPm2 === 'stopped')
+      .map((s) => {
+        const projeto = dashboard.projetos.find((p) => p.id === s.projetoId);
+        const icone = iconesPorTipo[s.tipo] || Server;
+        const isErro = s.statusPm2 === 'errored';
+        return {
+          icone,
+          titulo: s.nome,
+          subtitulo: `· ${obterLabelServico(s.tipo)} — ${projeto?.nome || '—'}`,
+          badgeVariante: isErro ? ('erro' as const) : ('aviso' as const),
+          badgeTexto: isErro ? 'Erro' : 'Parado',
+          botaoSecundario: {
+            texto: 'Ver detalhes',
+            href: `/servicos/${s.id}`,
+          },
+          botaoPrimario: {
+            texto: isErro ? 'Reiniciar' : 'Iniciar',
+            onClick: () => {
+              if (organizacao) {
+                executar(organizacao.id, s.projetoId, s.id, isErro ? 'reiniciar' : 'iniciar');
+              }
+            },
+            acao: isErro ? ('reiniciar' as const) : ('iniciar' as const),
+          },
+          loading: carregandoAcao,
+        };
+      });
+  }, [dashboard, organizacao, executar, carregandoAcao]);
+
+  // Ambientes que precisam de atenção (agente offline)
+  const ambientesAtencaoLista = useMemo(() => {
+    return ambientesAtencao.map((ambiente) => ({
+      icone: WifiOff,
+      titulo: ambiente.nome,
+      subtitulo: '· Agente desconectado',
+      badgeVariante: 'aviso' as const,
+      badgeTexto: 'Offline',
+      botaoSecundario: {
+        texto: 'Ver detalhes',
+        href: `/ambientes/${ambiente.id}`,
+      },
+      botaoPrimario: {
+        texto: 'Reconectar',
+        onClick: () => {
+          // Enviar comando OBTER_STATUS ao agente via API
+          if (organizacao && ambiente.agente?.id) {
+            agentesApi.enviarComando
+              ? agentesApi.enviarComando(organizacao.id, ambiente.agente.id, { tipo: 'OBTER_STATUS' })
+              : Promise.resolve();
+          }
+        },
+        acao: 'reiniciar' as const,
+      },
+      loading: false,
+    }));
+  }, [ambientesAtencao, organizacao]);
+
+  // Dados agregados para a tabela de projetos (híbrida)
+  const linhasTabelaProjetos = useMemo(() => {
+    if (!dashboard) return [];
+    return dashboard.projetos.map((projeto) => {
+      const servicosProjeto = dashboard.servicos.filter((s) => s.projetoId === projeto.id);
+      const qtdServicos = servicosProjeto.length;
+
+      // Primeiro ambiente associado a um serviço do projeto
+      const ambienteId = servicosProjeto.find((s) => s.ambienteId)?.ambienteId || null;
+      const ambiente = ambienteId
+        ? ambientes.find((a) => a.id === ambienteId)
+        : null;
+
+      // Status derivado do PM2
+      const temErro = servicosProjeto.some((s) => s.statusPm2 === 'errored');
+      const temParado = servicosProjeto.some((s) => s.statusPm2 === 'stopped');
+      const todosOnline = servicosProjeto.length > 0 && servicosProjeto.every((s) => s.statusPm2 === 'online');
+
+      let status: 'online' | 'atencao' | 'erro' = 'online';
+      let statusLabel = 'Online';
+      if (temErro) {
+        status = 'erro';
+        statusLabel = 'Erro';
+      } else if (temParado || !todosOnline) {
+        status = 'atencao';
+        statusLabel = 'Atenção';
+      }
+
+      // Última atividade deste projeto
+      const ultimaExecucao = execucoes.find((e) => e.projetoId === projeto.id);
+      const ultimaAtividade = ultimaExecucao
+        ? new Date(ultimaExecucao.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        : '—';
+
+      return {
+        id: projeto.id,
+        nome: projeto.nome,
+        qtdServicos,
+        ambiente: ambiente?.nome || '—',
+        status,
+        statusLabel,
+        ultimaAtividade,
+      };
+    });
+  }, [dashboard, ambientes, execucoes]);
+
   const nomeAcao = (acao: string) => {
     const mapa: Record<string, string> = {
       INICIAR: 'Iniciou',
@@ -204,7 +332,7 @@ export default function DashboardPage() {
       {/* Cabeçalho */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">
+          <h1 className="text-2xl font-semibold text-zinc-100">
             Visão geral
           </h1>
           <p className="mt-1 text-sm text-zinc-400">
@@ -254,7 +382,7 @@ export default function DashboardPage() {
           if (href) {
             return (
               <Link key={rotulo} href={href}>
-                <Card padding="nenhum" className="p-4 sm:p-[18px] transition-colors hover:border-[#5b7cfa]/40 cursor-pointer">
+                <Card padding="nenhum" className="p-4 sm:p-[18px] transition-colors hover:border-[#3a3a46]/40 cursor-pointer">
                   {Conteudo}
                 </Card>
               </Link>
@@ -262,48 +390,42 @@ export default function DashboardPage() {
           }
 
           return (
-            <Card key={rotulo} padding="nenhum" className="p-4 sm:p-[18px]">
+            <Card
+              key={rotulo}
+              padding="nenhum"
+              className="p-4 sm:p-[18px] transition-colors hover:border-[#3a3a46]/40"
+            >
               {Conteudo}
             </Card>
           );
         })}
       </section>
 
+      {/* Serviços que precisam de atenção */}
+      <AttentionList
+        titulo="Serviços que precisam de atenção"
+        icone={<AlertTriangle className="h-4 w-4 text-amber-300" />}
+        contador={servicosAtencao.length}
+        itens={servicosAtencao}
+        vazia={
+          <div className="flex items-center gap-3 px-5 py-4 text-sm text-zinc-500">
+            <CircleCheck className="h-4 w-4 text-emerald-300" /> Nenhum serviço com problema.
+          </div>
+        }
+      />
+
       {/* Ambientes que precisam de atenção */}
-      <section>
-        <div className="mb-3 flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-amber-300" />
-          <h2 className="text-base font-semibold text-zinc-100">
-            Serviços que precisam de atenção
-          </h2>
-          <span className="text-sm text-zinc-500">({ambientesAtencao.length})</span>
-        </div>
-        <Card padding="nenhum" className="overflow-hidden">
-          {ambientesAtencao.length > 0 ? (
-            ambientesAtencao.map((ambiente) => (
-              <Link
-                key={ambiente.id}
-                href={`/ambientes/${ambiente.id}`}
-                className="flex flex-wrap items-center gap-3 border-b border-[#2a2a32] px-5 py-3.5 last:border-0 hover:bg-[#28282f] sm:gap-5"
-              >
-                <WifiOff className="h-4 w-4 shrink-0 text-red-300" />
-                <div className="min-w-0 flex-1">
-                  <span className="font-medium text-zinc-100">{ambiente.nome}</span>
-                  <span className="ml-2 text-sm text-zinc-500">Agente desconectado</span>
-                </div>
-                <span className="rounded-full border border-[#2a2a32] bg-[#1e1e24] px-3 py-1 text-xs text-zinc-300">
-                  Ver detalhes
-                </span>
-              </Link>
-            ))
-          ) : (
-            <div className="flex items-center gap-3 px-5 py-4 text-sm text-zinc-500">
-              <CircleCheck className="h-4 w-4 text-emerald-300" /> Nenhum ambiente precisa de
-              atenção.
-            </div>
-          )}
-        </Card>
-      </section>
+      <AttentionList
+        titulo="Ambientes que precisam de atenção"
+        icone={<WifiOff className="h-4 w-4 text-red-300" />}
+        contador={ambientesAtencaoLista.length}
+        itens={ambientesAtencaoLista}
+        vazia={
+          <div className="flex items-center gap-3 px-5 py-4 text-sm text-zinc-500">
+            <CircleCheck className="h-4 w-4 text-emerald-300" /> Todos os ambientes estão online.
+          </div>
+        }
+      />
 
       {/* Atividade recente + Resumo dos ambientes */}
       <section className="grid gap-5 lg:grid-cols-2">
@@ -412,9 +534,9 @@ export default function DashboardPage() {
               <tr>
                 <th className="px-5 py-3 font-medium">Projeto</th>
                 <th className="px-5 py-3 font-medium">Serviços</th>
-                <th className="px-5 py-3 font-medium">Online</th>
-                <th className="px-5 py-3 font-medium">Parados</th>
-                <th className="px-5 py-3 font-medium">Criado em</th>
+                <th className="px-5 py-3 font-medium">Ambiente</th>
+                <th className="px-5 py-3 font-medium">Status</th>
+                <th className="px-5 py-3 font-medium">Última atividade</th>
               </tr>
             </thead>
             <tbody>
@@ -424,39 +546,30 @@ export default function DashboardPage() {
                     <Spinner tamanho="pequeno" />
                   </td>
                 </tr>
-              ) : dashboard?.projetos && dashboard.projetos.length > 0 ? (
-                dashboard.projetos.map((projeto) => {
-                  const servicosProjeto = dashboard.servicos.filter(
-                    (s) => s.projetoId === projeto.id,
-                  );
-                  const online = servicosProjeto.filter((s) => s.statusPm2 === 'online').length;
-                  const parados = servicosProjeto.filter((s) => s.statusPm2 === 'stopped').length;
-                  return (
-                    <tr
-                      key={projeto.id}
-                      className="border-b border-[#2a2a32] hover:bg-[#1e1e24] transition-colors"
-                    >
-                      <td className="px-5 py-3">
-                        <Link
-                          href={`/projetos/${projeto.id}`}
-                          className="font-medium text-zinc-200 hover:text-[#8ca2ff] transition-colors"
-                        >
-                          {projeto.nome}
-                        </Link>
-                      </td>
-                      <td className="px-5 py-3 text-zinc-400">{servicosProjeto.length}</td>
-                      <td className="px-5 py-3">
-                        <span className="text-emerald-300">{online}</span>
-                      </td>
-                      <td className="px-5 py-3">
-                        <span className="text-amber-300">{parados}</span>
-                      </td>
-                      <td className="px-5 py-3 text-zinc-500">
-                        {new Date(projeto.criadoEm).toLocaleDateString('pt-BR')}
-                      </td>
-                    </tr>
-                  );
-                })
+              ) : linhasTabelaProjetos.length > 0 ? (
+                linhasTabelaProjetos.map((linha) => (
+                  <tr
+                    key={linha.id}
+                    className="border-b border-[#2a2a32] hover:bg-[#1e1e24] transition-colors"
+                  >
+                    <td className="px-5 py-3">
+                      <Link
+                        href={`/projetos/${linha.id}`}
+                        className="font-medium text-zinc-200 hover:text-[#8ca2ff] transition-colors"
+                      >
+                        {linha.nome}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3 text-zinc-400">{linha.qtdServicos}</td>
+                    <td className="px-5 py-3 text-zinc-400">{linha.ambiente}</td>
+                    <td className="px-5 py-3">
+                      <StatusBadgeTabela variante={linha.status}>
+                        {linha.statusLabel}
+                      </StatusBadgeTabela>
+                    </td>
+                    <td className="px-5 py-3 text-zinc-500">{linha.ultimaAtividade}</td>
+                  </tr>
+                ))
               ) : (
                 <tr>
                   <td colSpan={5} className="px-5 py-10 text-center text-zinc-500">

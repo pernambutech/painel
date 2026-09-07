@@ -44,6 +44,9 @@
   --cor-aviso: #f59e0b;
   --cor-info: #3b82f6;
 
+  /* Bordas de hover */
+  --cor-borda-hover: #3a3a46;
+
   /* Acento */
   --cor-primaria: #5b7cfa;
   --cor-primaria-hover: #6f8cff;
