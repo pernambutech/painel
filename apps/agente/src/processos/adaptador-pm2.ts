@@ -303,29 +303,49 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
               ['stderr', caminhoErro],
             ];
 
+    // ── Remove códigos ANSI (cores do terminal) ────────────────────
+    // PM2 grava com cores: [32m, [39m, [38;5;3m, etc.
+    const stripAnsi = (str: string): string =>
+      str.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').replace(/\[[\d;]*m/g, '');
+
     // ── Expressões regulares para extrair timestamps reais ──────────
-    // Runner grava:     [2026-09-01 12:30:45] mensagem
-    // PM2 Linux grava:  2026-09-01T12:30:45.123Z › msg
-    // Formato ISO puro: 2026-09-01 12:30:45 msg
+    // Runner grava:        [2026-09-01 12:30:45] mensagem
+    // PM2 Linux grava:     2026-09-01T12:30:45.123Z › msg
+    // PM2 NestJS grava:    28/08/2026, 17:25:54  LOG ...
+    // Formato ISO puro:    2026-09-01 12:30:45 msg
     const regexsTimestamp = [
       /^\[(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[^\]]*)\]\s*(.*)/,
       /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z?)\s*[›|]\s*(.*)/,
       /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(.*)/,
+      // PM2 NestJS: " - 28/08/2026, 17:25:54   LOG  msg"
+      /\d+\s*-\s*(\d{2}\/\d{2}\/\d{4}),?\s+(\d{2}:\d{2}:\d{2})\s+\w+\s+(.*)/,
     ];
 
-    const extrairTimestamp = (linha: string): { timestamp: string; mensagem: string } => {
+    const extrairTimestamp = (linhaLimpa: string): { timestamp: string; mensagem: string } => {
       for (const regex of regexsTimestamp) {
-        const match = regex.exec(linha);
+        const match = regex.exec(linhaLimpa);
         if (match) {
           try {
-            const data = new Date(match[1].replace(' ', 'T'));
-            if (!isNaN(data.getTime())) {
-              return { timestamp: data.toISOString(), mensagem: match[2] };
+            let data: Date;
+            if (match[1].includes('/')) {
+              // Formato DD/MM/YYYY, HH:MM:SS
+              const [dataParte, horaParte] = match[1].includes(',') ? match[1].split(',') : [match[1], match[2]];
+              const [dia, mes, ano] = dataParte.trim().split('/');
+              const hora = horaParte ? horaParte.trim() : (match[2] || '00:00:00');
+              data = new Date(`${ano}-${mes}-${dia}T${hora}`);
+              if (!isNaN(data.getTime())) {
+                return { timestamp: data.toISOString(), mensagem: match[3] || match[2] };
+              }
+            } else {
+              data = new Date(match[1].replace(' ', 'T'));
+              if (!isNaN(data.getTime())) {
+                return { timestamp: data.toISOString(), mensagem: match[2] };
+              }
             }
           } catch { /* tenta próxima regex */ }
         }
       }
-      return { timestamp: '', mensagem: linha };
+      return { timestamp: '', mensagem: linhaLimpa };
     };
 
     // Detecta nível real do log pela mensagem em vez de só pela fonte.
@@ -356,7 +376,9 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
         } catch { /* usa data atual como último recurso */ }
 
         for (const linha of linhasArquivo.slice(-linhas)) {
-          const { timestamp, mensagem } = extrairTimestamp(linha);
+          // Remove códigos ANSI antes de processar
+          const linhaLimpa = stripAnsi(linha);
+          const { timestamp, mensagem } = extrairTimestamp(linhaLimpa);
 
           entradas.push({
             timestamp: timestamp || mtimeIso,
