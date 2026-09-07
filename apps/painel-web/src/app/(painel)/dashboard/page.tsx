@@ -16,10 +16,9 @@ import {
   WifiOff,
   Zap,
 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
-import { AttentionList } from '@/components/ui/AttentionList';
+import { AttentionItem } from '@/components/ui/AttentionItem';
 import { StatusBadgeTabela } from '@/components/ui/StatusBadgeTabela';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useSocket } from '@/lib/hooks/useSocket';
@@ -313,13 +312,13 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
+    <div style={{ padding: '28px 32px 40px' }}>
       {/* Cabeçalho */}
-      <header className="page-header mb-7">
-        <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-zinc-100">
+      <header style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">
           Visão Geral
         </h1>
-        <p className="mt-1 text-sm text-zinc-400">
+        <p className="mt-1 text-sm" style={{ color: '#a8a8b3' }}>
           Todos os seus projetos e serviços em um só lugar.
         </p>
       </header>
@@ -338,76 +337,107 @@ export default function DashboardPage() {
       )}
 
       {/* Cards de estatísticas */}
-      <section aria-label="Resumo operacional" className="stats-grid mb-8 grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
+      <section aria-label="Resumo operacional" className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', marginBottom: '32px' }}>
         {estatisticas.map(({ rotulo, valor, icone: Icone, cor, detalhe, href }) => {
           const Conteudo = (
             <>
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-xs font-medium uppercase tracking-[0.04em] text-zinc-500 flex items-center gap-1.5">
-                  <Icone className={`h-3.5 w-3.5 ${cor}`} />
+              <div className="flex items-center gap-1.5">
+                <Icone className={`h-3.5 w-3.5 ${cor}`} />
+                <p className="text-xs font-medium uppercase" style={{ letterSpacing: '0.4px', color: '#6e6e7a' }}>
                   {rotulo}
                 </p>
               </div>
-              <p className="mt-1.5 text-[28px] font-semibold tracking-[-0.03em] text-zinc-100">
-                {valor}
+              <p className="font-semibold text-zinc-100" style={{ fontSize: '28px', marginTop: '6px', letterSpacing: '-0.3px' }}>
+                {valor} <span className="text-base font-normal" style={{ color: '#6e6e7a', marginLeft: '6px' }}>{detalhe.replace('Projetos cadastrados', 'ativos').replace('Processos ativos no PM2', '').replace('Processos parados', '').replace('Processos com erro', '').replace('cadastrados', '')}</span>
               </p>
-              <p className="mt-1 text-xs text-zinc-500">{detalhe}</p>
             </>
           );
 
           if (href) {
             return (
               <Link key={rotulo} href={href}>
-                <Card padding="nenhum" className="p-4 transition-colors hover:border-[#3a3a46] cursor-pointer">
+                <div className="rounded-xl border border-[#2a2a32] bg-[#16161a] p-4 transition-colors hover:border-[#3a3a46] cursor-pointer">
                   {Conteudo}
-                </Card>
+                </div>
               </Link>
             );
           }
 
           return (
-            <Card
-              key={rotulo}
-              padding="nenhum"
-              className="p-4 transition-colors hover:border-[#3a3a46]"
-            >
+            <div key={rotulo} className="rounded-xl border border-[#2a2a32] bg-[#16161a] p-4 transition-colors hover:border-[#3a3a46]">
               {Conteudo}
-            </Card>
+            </div>
           );
         })}
       </section>
 
       {/* Serviços que precisam de atenção */}
-      <AttentionList
-        titulo="Serviços que precisam de atenção"
-        icone={<AlertTriangle className="h-4 w-4 text-amber-300" />}
-        contador={servicosAtencao.length}
-        itens={servicosAtencao}
-        vazia={
-          <div className="flex items-center gap-3 px-5 py-4 text-sm text-zinc-500">
-            <CircleCheck className="h-4 w-4 text-emerald-300" /> Nenhum serviço com problema.
+      <section style={{ marginBottom: '32px' }}>
+        <h2 className="flex items-center gap-2.5 text-base font-semibold mb-3.5" style={{ color: '#ececf0' }}>
+          <AlertTriangle className="h-4 w-4" style={{ color: '#fbbf24' }} />
+          <span>Serviços que precisam de atenção</span>
+          <span className="text-sm font-normal" style={{ color: '#6e6e7a' }}>({servicosAtencao.length})</span>
+        </h2>
+        {servicosAtencao.length > 0 ? (
+          <div className="flex flex-col" style={{ gap: '10px' }}>
+            {servicosAtencao.map((item, index) => (
+              <AttentionItem
+                key={index}
+                icone={item.icone}
+                titulo={item.titulo}
+                subtitulo={item.subtitulo}
+                badgeVariante={item.badgeVariante}
+                badgeTexto={item.badgeTexto}
+                botaoSecundario={item.botaoSecundario}
+                botaoPrimario={item.botaoPrimario}
+                loading={item.loading}
+              />
+            ))}
           </div>
-        }
-      />
+        ) : (
+          <div className="rounded-xl border border-[#2a2a32] bg-[#16161a] flex items-center gap-3" style={{ padding: '14px 18px', fontSize: '13px' }}>
+            <CircleCheck className="h-4 w-4 shrink-0" style={{ color: '#3dd68c' }} />
+            <span style={{ color: '#6e6e7a' }}>Nenhum serviço com problema.</span>
+          </div>
+        )}
+      </section>
 
       {/* Ambientes que precisam de atenção */}
-      <AttentionList
-        titulo="Ambientes que precisam de atenção"
-        icone={<WifiOff className="h-4 w-4 text-red-300" />}
-        contador={ambientesAtencaoLista.length}
-        itens={ambientesAtencaoLista}
-        vazia={
-          <div className="flex items-center gap-3 px-5 py-4 text-sm text-zinc-500">
-            <CircleCheck className="h-4 w-4 text-emerald-300" /> Todos os ambientes estão online.
+      <section style={{ marginBottom: '32px' }}>
+        <h2 className="flex items-center gap-2.5 text-base font-semibold mb-3.5" style={{ color: '#ececf0' }}>
+          <WifiOff className="h-4 w-4" style={{ color: '#f87171' }} />
+          <span>Ambientes que precisam de atenção</span>
+          <span className="text-sm font-normal" style={{ color: '#6e6e7a' }}>({ambientesAtencaoLista.length})</span>
+        </h2>
+        {ambientesAtencaoLista.length > 0 ? (
+          <div className="flex flex-col" style={{ gap: '10px' }}>
+            {ambientesAtencaoLista.map((item, index) => (
+              <AttentionItem
+                key={index}
+                icone={item.icone}
+                titulo={item.titulo}
+                subtitulo={item.subtitulo}
+                badgeVariante={item.badgeVariante}
+                badgeTexto={item.badgeTexto}
+                botaoSecundario={item.botaoSecundario}
+                botaoPrimario={item.botaoPrimario}
+                loading={item.loading}
+              />
+            ))}
           </div>
-        }
-      />
+        ) : (
+          <div className="rounded-xl border border-[#2a2a32] bg-[#16161a] flex items-center gap-3" style={{ padding: '14px 18px', fontSize: '13px' }}>
+            <CircleCheck className="h-4 w-4 shrink-0" style={{ color: '#3dd68c' }} />
+            <span style={{ color: '#6e6e7a' }}>Todos os ambientes estão online.</span>
+          </div>
+        )}
+      </section>
 
       {/* Atividade recente + Resumo dos ambientes */}
-      <section className="grid gap-6 mb-8" style={{ gridTemplateColumns: '1fr 1fr' }}>
+      <section className="grid gap-6" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: '32px' }}>
         {/* Atividade recente */}
-        <Card padding="nenhum" className="overflow-hidden p-[16px_18px]">
-          <div className="font-semibold text-zinc-100 mb-1.5">🕒 Atividade recente</div>
+        <div className="rounded-xl border border-[#2a2a32] bg-[#16161a]" style={{ padding: '16px 18px' }}>
+          <div className="font-semibold text-sm mb-3" style={{ color: '#ececf0' }}>🕒 Atividade recente</div>
           {carregandoExecucoes ? (
             <div className="flex min-h-52 items-center justify-center">
               <Spinner tamanho="medio" />
@@ -417,49 +447,51 @@ export default function DashboardPage() {
               {execucoes.map((exec) => (
                 <div
                   key={exec.id}
-                  className="flex items-center gap-3 border-b border-[#2a2a32] py-2 last:border-0 text-[13px]"
+                  className="flex items-center gap-3 border-b border-[#2a2a32] last:border-0"
+                  style={{ padding: '8px 0', fontSize: '13px' }}
                 >
-                  <span className="text-zinc-500 text-xs w-14 shrink-0">
+                  <span className="shrink-0" style={{ color: '#6e6e7a', fontSize: '12px', width: '56px' }}>
                     {new Date(exec.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                  <span className="text-zinc-400">
-                    <strong className="font-medium text-zinc-100">{exec.usuario?.nome || 'Sistema'}</strong>
+                  <span style={{ color: '#a8a8b3' }}>
+                    <strong className="font-medium" style={{ color: '#ececf0' }}>{exec.usuario?.nome || 'Sistema'}</strong>
                     {' '}{nomeAcao(exec.acao)}
                     {exec.servico?.nome && (
-                      <> <strong className="font-medium text-zinc-100">{exec.servico.nome}</strong></>
+                      <> <strong className="font-medium" style={{ color: '#ececf0' }}>{exec.servico.nome}</strong></>
                     )}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex min-h-52 flex-col items-center justify-center px-5 text-center">
-              <Activity className="mb-3 h-8 w-8 text-zinc-700" />
-              <p className="text-sm text-zinc-400">Nenhuma atividade registrada.</p>
-              <p className="mt-1 text-xs text-zinc-600">
+            <div className="flex min-h-52 flex-col items-center justify-center text-center">
+              <Activity className="mb-3 h-8 w-8" style={{ color: '#3a3a44' }} />
+              <p className="text-sm" style={{ color: '#a8a8b3' }}>Nenhuma atividade registrada.</p>
+              <p className="mt-1 text-xs" style={{ color: '#6e6e7a' }}>
                 O histórico será alimentado pelas execuções dos serviços.
               </p>
             </div>
           )}
-        </Card>
+        </div>
 
         {/* Resumo dos ambientes */}
-        <Card padding="nenhum" className="overflow-hidden p-[16px_18px]">
-          <div className="font-semibold text-zinc-100 mb-1.5">🌐 Resumo dos ambientes</div>
+        <div className="rounded-xl border border-[#2a2a32] bg-[#16161a]" style={{ padding: '16px 18px' }}>
+          <div className="font-semibold text-sm mb-3" style={{ color: '#ececf0' }}>🌐 Resumo dos ambientes</div>
           {ambientes.length > 0 ? (
             ambientes.slice(0, 5).map((ambiente) => {
               const conectado = ambiente.agente?.status === 'online';
               return (
                 <div
                   key={ambiente.id}
-                  className="flex items-center gap-3 border-b border-[#2a2a32] py-2 last:border-0 text-[13px]"
+                  className="flex items-center gap-3 border-b border-[#2a2a32] last:border-0"
+                  style={{ padding: '8px 0', fontSize: '13px' }}
                 >
-                  <span className="font-medium text-zinc-100 flex-1">
+                  <span className="font-medium flex-1" style={{ color: '#ececf0' }}>
                     {ambiente.nome}
                   </span>
                   <span className="flex items-center gap-2 text-xs font-medium">
-                    <span className={`inline-block h-2 w-2 rounded-full ${conectado ? 'bg-[#3dd68c]' : 'bg-[#f87171]'}`} />
-                    <span className={conectado ? 'text-[#3dd68c]' : 'text-[#f87171]'}>
+                    <span className="inline-block h-2 w-2 rounded-full" style={{ background: conectado ? '#3dd68c' : '#f87171' }} />
+                    <span style={{ color: conectado ? '#3dd68c' : '#f87171' }}>
                       {conectado ? 'ONLINE' : 'OFFLINE'}
                     </span>
                   </span>
@@ -467,23 +499,24 @@ export default function DashboardPage() {
               );
             })
           ) : (
-            <div className="flex min-h-52 flex-col items-center justify-center px-5 text-center">
-              <Monitor className="mb-3 h-8 w-8 text-zinc-700" />
-              <p className="text-sm text-zinc-400">Nenhum ambiente cadastrado.</p>
-              <Link href="/ambientes/novo" className="mt-2 text-xs font-medium text-[#8ca2ff]">
+            <div className="flex min-h-52 flex-col items-center justify-center text-center">
+              <Monitor className="mb-3 h-8 w-8" style={{ color: '#3a3a44' }} />
+              <p className="text-sm" style={{ color: '#a8a8b3' }}>Nenhum ambiente cadastrado.</p>
+              <Link href="/ambientes/novo" className="mt-2 text-xs font-medium" style={{ color: '#5b7cfa' }}>
                 Adicionar ambiente
               </Link>
             </div>
           )}
-        </Card>
+        </div>
       </section>
 
-      {/* Tabela de projetos com serviços */}
+      {/* Projetos recentes */}
       <section>
-        <Card padding="nenhum" className="overflow-x-auto">
-          <table className="w-full min-w-[680px] border-collapse text-left text-[13px]">
+        <div className="font-semibold text-sm mb-3" style={{ color: '#ececf0' }}>📁 Projetos recentes</div>
+        <div className="rounded-xl border border-[#2a2a32] bg-[#16161a] overflow-x-auto">
+          <table className="w-full min-w-[680px] border-collapse text-left" style={{ fontSize: '13px' }}>
             <thead>
-              <tr className="bg-[#1e1e24] text-[12px] uppercase tracking-[0.04em] text-zinc-500">
+              <tr style={{ background: '#1e1e24', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px', color: '#6e6e7a' }}>
                 <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Projeto</th>
                 <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Serviços</th>
                 <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Ambiente</th>
@@ -494,7 +527,7 @@ export default function DashboardPage() {
             <tbody>
               {carregando ? (
                 <tr>
-                  <td colSpan={5} className="text-center text-zinc-500" style={{ padding: '40px 18px' }}>
+                  <td colSpan={5} className="text-center" style={{ padding: '40px 18px', color: '#6e6e7a' }}>
                     <Spinner tamanho="pequeno" />
                   </td>
                 </tr>
@@ -502,35 +535,40 @@ export default function DashboardPage() {
                 linhasTabelaProjetos.map((linha) => (
                   <tr
                     key={linha.id}
-                    className="border-b border-[#2a2a32] hover:bg-[#28282f] transition-colors"
+                    className="border-b border-[#2a2a32] transition-colors"
+                    style={{ '--hover-bg': '#28282f' } as React.CSSProperties}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#28282f'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ''; }}
                   >
-                    <td style={{ padding: '14px 18px' }}>
+                    <td style={{ padding: '14px 18px', borderBottom: '1px solid #2a2a32' }}>
                       <Link
                         href={`/projetos/${linha.id}`}
-                        className="font-medium text-zinc-100 hover:text-[#8ca2ff] transition-colors"
+                        className="font-medium transition-colors"
+                        style={{ color: '#ececf0' }}
                       >
                         {linha.nome}
                       </Link>
                     </td>
-                    <td className="text-zinc-400" style={{ padding: '14px 18px' }}>{linha.qtdServicos}</td>
-                    <td className="text-zinc-400" style={{ padding: '14px 18px' }}>{linha.ambiente}</td>
-                    <td style={{ padding: '14px 18px' }}>
+                    <td style={{ padding: '14px 18px', color: '#a8a8b3', borderBottom: '1px solid #2a2a32' }}>{linha.qtdServicos}</td>
+                    <td style={{ padding: '14px 18px', color: '#a8a8b3', borderBottom: '1px solid #2a2a32' }}>{linha.ambiente}</td>
+                    <td style={{ padding: '14px 18px', borderBottom: '1px solid #2a2a32' }}>
                       <StatusBadgeTabela variante={linha.status}>
                         {linha.statusLabel}
                       </StatusBadgeTabela>
                     </td>
-                    <td className="text-zinc-500" style={{ padding: '14px 18px' }}>{linha.ultimaAtividade}</td>
+                    <td style={{ padding: '14px 18px', color: '#6e6e7a', borderBottom: '1px solid #2a2a32' }}>{linha.ultimaAtividade}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="text-center text-zinc-500" style={{ padding: '40px 18px' }}>
-                    <Server className="mx-auto mb-2 h-6 w-6 text-zinc-700" />
+                  <td colSpan={5} className="text-center" style={{ padding: '40px 18px', color: '#6e6e7a' }}>
+                    <Server className="mx-auto mb-2 h-6 w-6" style={{ color: '#3a3a44' }} />
                     Nenhum projeto cadastrado.
                     <br />
                     <Link
                       href="/projetos/novo"
-                      className="mt-2 inline-block text-xs font-medium text-[#8ca2ff]"
+                      className="mt-2 inline-block text-xs font-medium"
+                      style={{ color: '#5b7cfa' }}
                     >
                       Criar projeto
                     </Link>
@@ -539,7 +577,7 @@ export default function DashboardPage() {
               )}
             </tbody>
           </table>
-        </Card>
+        </div>
       </section>
     </div>
   );

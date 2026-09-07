@@ -55,7 +55,7 @@ export function AttentionItem({
     >
       {/* Informações do item */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <Icone className="h-4 w-4 shrink-0 text-[#8ca2ff]" />
+        <Icone className="h-4 w-4 shrink-0" style={{ color: '#a8a8b3' }} />
         <span className="text-sm font-medium text-zinc-100">{titulo}</span>
         <span className="hidden sm:inline text-sm text-zinc-500">{subtitulo}</span>
         <span className="sm:hidden text-xs text-zinc-500">{subtitulo}</span>
