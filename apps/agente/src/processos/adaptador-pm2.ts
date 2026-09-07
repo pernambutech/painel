@@ -93,16 +93,16 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
 
       const comandoCompleto = [configuracao.comando, ...(configuracao.argumentos || [])].join(' ');
 
-      const script = ehWindows ? 'node' : 'sh';
-      const argumentos = ehWindows
-        ? [
-            // Runner Node que executa o comando com stdout/stderr nos arquivos.
-            path.join(__dirname, 'runner-comando.js'),
-            caminhoOut,
-            caminhoErro,
-            comandoCompleto,
-          ]
-        : ['-lc', comandoCompleto];
+      // Em TODAS as plataformas, usa o runner Node que adiciona timestamps
+      // reais ([YYYY-MM-DD HH:mm:ss]) em cada linha de log. No Linux o PM2
+      // sozinha grava logs sem formato parseável, causando timestamp "agora".
+      const script = 'node';
+      const argumentos = [
+        path.join(__dirname, 'runner-comando.js'),
+        caminhoOut,
+        caminhoErro,
+        comandoCompleto,
+      ];
       // Injetar a porta indicada no painel como variável de ambiente
       // Cobre tanto convenção em inglês (PORT) quanto em português (PORTA)
       // ex: Pernambutech usa process.env.PORTA, Next.js/Nest padrão usa PORT
@@ -303,23 +303,43 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
               ['stderr', caminhoErro],
             ];
 
-    // Regex para extrair timestamp real das linhas gravadas pelo runner:
-    // Formato: [2026-09-01 12:30:45] mensagem
-    const regexTimestamp = /^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s*(.*)/;
+    // ── Expressões regulares para extrair timestamps reais ──────────
+    // O runner do Windows grava:  [2026-09-01 12:30:45] mensagem
+    // O PM2 no Linux grava:      2026-09-01T12:30:45.123Z › msg
+    //                           2026-09-01 12:30:45 msg
+    const regexsTimestamp = [
+      /^\[(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[^\]]*)\]\s*(.*)/,   // [2026-09-01 12:30:45] msg
+      /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z?)\s*[›|]\s*(.*)/,  // 2026-09-01T12:30:45.123Z › msg
+      /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(.*)/,               // 2026-09-01 12:30:45 msg
+    ];
+
+    const extrairTimestamp = (linha: string): { timestamp: string; mensagem: string } => {
+      for (const regex of regexsTimestamp) {
+        const match = regex.exec(linha);
+        if (match) {
+          try {
+            const data = new Date(match[1].replace(' ', 'T'));
+            if (!isNaN(data.getTime())) {
+              return { timestamp: data.toISOString(), mensagem: match[2] };
+            }
+          } catch {
+            // Regex casou mas data é inválida — tenta próxima.
+          }
+        }
+      }
+      // Fallback: usa a data de modificação real da linha (arquivo)
+      return { timestamp: '', mensagem: linha };
+    };
 
     for (const [fonte, caminho] of arquivos) {
       if (!caminho) continue;
       try {
         const conteudo = await fs.readFile(caminho, 'utf8');
         for (const linha of conteudo.split(/\r?\n/).filter(Boolean).slice(-linhas)) {
-          const correspondencia = regexTimestamp.exec(linha);
-          const timestamp = correspondencia
-            ? new Date(correspondencia[1].replace(' ', 'T')).toISOString()
-            : new Date().toISOString();
-          const mensagem = correspondencia ? correspondencia[2] : linha;
+          const { timestamp, mensagem } = extrairTimestamp(linha);
 
           entradas.push({
-            timestamp,
+            timestamp: timestamp || new Date().toISOString(),
             nivel: fonte === 'stderr' ? 'error' : 'info',
             mensagem,
             fonte: fonte as 'stdout' | 'stderr',

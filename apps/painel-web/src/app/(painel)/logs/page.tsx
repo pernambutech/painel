@@ -1,15 +1,33 @@
 // Página de logs
-// Terminal estilizado como referência: fundo escuro, fonte mono, cores por nível
+// Terminal estilizado como referência com filtros de nível e quantidade de linhas
 
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { Terminal } from 'lucide-react';
+import { Terminal, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { servicosApi } from '@/lib/api';
 import { Spinner } from '@/components/ui/Spinner';
 import type { LogServico, Servico } from '@/types';
+
+// ===========================================
+// CONSTANTES
+// ===========================================
+
+const opcoesNivel = [
+  { chave: 'todos', rotulo: 'Ver tudo' },
+  { chave: 'ok', rotulo: 'Ver OK' },
+  { chave: 'falhas', rotulo: 'Ver falhas' },
+] as const;
+
+const opcoesLinhas = [10, 25, 50, 100, 200, 0] as const; // 0 = todos
+
+type FiltroNivel = (typeof opcoesNivel)[number]['chave'];
+
+// ===========================================
+// COMPONENTE
+// ===========================================
 
 export default function LogsPage() {
   const { organizacao } = useAuth();
@@ -19,9 +37,15 @@ export default function LogsPage() {
   const [carregandoServicos, setCarregandoServicos] = useState(true);
   const [carregandoLogs, setCarregandoLogs] = useState(false);
   const [erro, setErro] = useState('');
+  const [filtroNivel, setFiltroNivel] = useState<FiltroNivel>('todos');
+  const [qtdLinhas, setQtdLinhas] = useState<(typeof opcoesLinhas)[number]>(100);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const servicoSelecionado = servicos.find((s) => s.id === servicoSelecionadoId);
+
+  // ===========================================
+  // CARREGAR DADOS
+  // ===========================================
 
   useEffect(() => {
     const carregarServicos = async () => {
@@ -39,16 +63,18 @@ export default function LogsPage() {
     carregarServicos();
   }, [organizacao]);
 
-  const carregarLogs = async (servico?: Servico) => {
+  const carregarLogs = useCallback(async (servico?: Servico, linhas?: number) => {
     const alvo = servico || servicoSelecionado;
     if (!organizacao || !alvo) return;
+
+    const qtdLinhasRequisicao = linhas !== undefined ? linhas : qtdLinhas === 0 ? 9999 : qtdLinhas;
 
     try {
       setCarregandoLogs(true);
       setErro('');
       const dados = await servicosApi.obterLogs(organizacao.id, alvo.projetoId, alvo.id, {
         tipo: 'todos',
-        linhas: 100,
+        linhas: qtdLinhasRequisicao,
       });
       setLogs((dados.logs || []) as LogServico[]);
     } catch (erroResposta: unknown) {
@@ -61,7 +87,11 @@ export default function LogsPage() {
     } finally {
       setCarregandoLogs(false);
     }
-  };
+  }, [organizacao, servicoSelecionado, qtdLinhas]);
+
+  // ===========================================
+  // AÇÕES
+  // ===========================================
 
   const selecionarServico = (servicoId: string) => {
     const servico = servicos.find((item) => item.id === servicoId);
@@ -71,14 +101,40 @@ export default function LogsPage() {
     if (servico) carregarLogs(servico);
   };
 
-  // Auto-scroll para baixo quando logs chegam
+  const alterarLinhas = (qtd: typeof opcoesLinhas[number]) => {
+    setQtdLinhas(qtd);
+    carregarLogs(servicoSelecionado, qtd === 0 ? 9999 : qtd);
+  };
+
+  const recarregar = () => {
+    carregarLogs();
+  };
+
+  // ===========================================
+  // FILTROS CLIENT-SIDE
+  // ===========================================
+
+  const logsFiltrados = logs.filter((log) => {
+    if (filtroNivel === 'todos') return true;
+    if (filtroNivel === 'ok') return log.nivel === 'info' || log.nivel === 'debug';
+    if (filtroNivel === 'falhas') return log.nivel === 'error' || log.nivel === 'warn';
+    return true;
+  });
+
+  // ===========================================
+  // AUTO-SCROLL
+  // ===========================================
+
   useEffect(() => {
     if (scrollRef.current && logs.length > 0) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [logs]);
 
-  // Formatar timestamp: [HH:MM:SS]
+  // ===========================================
+  // FORMATAÇÃO
+  // ===========================================
+
   const formatarTimestamp = (timestamp: string | null | undefined) => {
     if (!timestamp) return '[--:--:--]';
     try {
@@ -90,7 +146,6 @@ export default function LogsPage() {
     }
   };
 
-  // Cor da linha por nível
   const corNivel = (nivel: string) => {
     switch (nivel) {
       case 'error': return '#f87171';
@@ -109,6 +164,10 @@ export default function LogsPage() {
     }
   };
 
+  // ===========================================
+  // ESTADO DE CARREGAMENTO
+  // ===========================================
+
   if (carregandoServicos) {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center gap-3">
@@ -117,6 +176,10 @@ export default function LogsPage() {
       </div>
     );
   }
+
+  // ===========================================
+  // RENDERIZAÇÃO
+  // ===========================================
 
   return (
     <div>
@@ -133,19 +196,17 @@ export default function LogsPage() {
         </div>
       )}
 
-      {/* Seletor de serviço */}
+      {/* Sem serviços */}
       {servicos.length === 0 ? (
         <div className="rounded-xl border border-[#2a2a32] bg-[#16161a] flex min-h-64 flex-col items-center justify-center px-5 text-center">
           <Terminal className="mb-3 h-9 w-9" style={{ color: '#3a3a44' }} />
           <p className="text-sm" style={{ color: '#a8a8b3' }}>Nenhum serviço cadastrado.</p>
-          <p className="mt-1 text-xs" style={{ color: '#6e6e7a' }}>
-            Cadastre um serviço para visualizar seus logs.
-          </p>
+          <p className="mt-1 text-xs" style={{ color: '#6e6e7a' }}>Cadastre um serviço para visualizar seus logs.</p>
         </div>
       ) : (
         <div className="rounded-xl border border-[#2a2a32] bg-[#16161a] overflow-hidden">
-          {/* Barra de seleção */}
-          <div style={{ padding: '12px 18px', borderBottom: '1px solid #2a2a32', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Barra de seleção de serviço */}
+          <div style={{ padding: '12px 18px', borderBottom: '1px solid #2a2a32', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <select
               aria-label="Serviço"
               value={servicoSelecionadoId}
@@ -170,11 +231,76 @@ export default function LogsPage() {
               ))}
             </select>
             {servicoSelecionado && (
-              <span style={{ fontSize: '12px', color: '#6e6e7a' }}>
-                {carregandoLogs ? 'Carregando...' : `${logs.length} linhas`}
-              </span>
+              <button
+                type="button"
+                onClick={recarregar}
+                disabled={carregandoLogs}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                style={{
+                  background: '#1e1e24',
+                  border: '1px solid #2a2a32',
+                  color: '#a8a8b3',
+                  cursor: carregandoLogs ? 'not-allowed' : 'pointer',
+                  opacity: carregandoLogs ? 0.5 : 1,
+                }}
+              >
+                <RefreshCw className={`h-3 w-3 ${carregandoLogs ? 'animate-spin' : ''}`} />
+                Atualizar
+              </button>
             )}
           </div>
+
+          {/* Filtros */}
+          {servicoSelecionado && (
+            <div style={{ padding: '10px 18px', borderBottom: '1px solid #2a2a32', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              {/* Filtro de nível */}
+              <div className="flex items-center" style={{ gap: '4px' }}>
+                {opcoesNivel.map((opcao) => (
+                  <button
+                    key={opcao.chave}
+                    type="button"
+                    onClick={() => setFiltroNivel(opcao.chave)}
+                    className="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                    style={{
+                      background: filtroNivel === opcao.chave ? '#5b7cfa' : '#1e1e24',
+                      color: filtroNivel === opcao.chave ? '#fff' : '#a8a8b3',
+                      border: `1px solid ${filtroNivel === opcao.chave ? '#5b7cfa' : '#2a2a32'}`,
+                    }}
+                  >
+                    {opcao.rotulo}
+                  </button>
+                ))}
+              </div>
+
+              {/* Separador */}
+              <span style={{ width: '1px', height: '20px', background: '#2a2a32' }} />
+
+              {/* Quantidade de linhas */}
+              <div className="flex items-center" style={{ gap: '4px' }}>
+                <span style={{ fontSize: '11px', color: '#6e6e7a', marginRight: '4px' }}>Linhas:</span>
+                {opcoesLinhas.map((qtd) => (
+                  <button
+                    key={qtd}
+                    type="button"
+                    onClick={() => alterarLinhas(qtd)}
+                    className="rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors"
+                    style={{
+                      background: qtdLinhas === qtd ? '#5b7cfa' : '#1e1e24',
+                      color: qtdLinhas === qtd ? '#fff' : '#a8a8b3',
+                      border: `1px solid ${qtdLinhas === qtd ? '#5b7cfa' : '#2a2a32'}`,
+                    }}
+                  >
+                    {qtd === 0 ? 'Todos' : qtd}
+                  </button>
+                ))}
+              </div>
+
+              {/* Contador */}
+              <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#6e6e7a' }}>
+                {carregandoLogs ? 'Carregando...' : `${logsFiltrados.length} de ${logs.length} linhas`}
+              </span>
+            </div>
+          )}
 
           {/* Terminal de logs */}
           <div
@@ -199,15 +325,17 @@ export default function LogsPage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px' }}>
                 <Spinner tamanho="pequeno" />
               </div>
-            ) : logs.length === 0 ? (
+            ) : logsFiltrados.length === 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', textAlign: 'center' }}>
-                <p style={{ color: '#6e6e7a' }}>Nenhum log encontrado.</p>
+                <p style={{ color: '#6e6e7a' }}>
+                  {logs.length === 0 ? 'Nenhum log encontrado.' : 'Nenhum log para o filtro selecionado.'}
+                </p>
                 <p style={{ color: '#6e6e7a', fontSize: '12px', marginTop: '4px' }}>
-                  Inicie o serviço para gerar novas entradas.
+                  {logs.length === 0 ? 'Inicie o serviço para gerar novas entradas.' : 'Tente alterar os filtros.'}
                 </p>
               </div>
             ) : (
-              logs.map((log, indice) => (
+              logsFiltrados.map((log, indice) => (
                 <div key={`${log.timestamp}-${indice}`} style={{ lineHeight: '1.8' }}>
                   <span style={{ color: '#6e6e7a' }}>{formatarTimestamp(log.timestamp)}</span>{' '}
                   <span style={{ color: corNivel(log.nivel), fontWeight: 500 }}>{labelNivel(log.nivel)}</span>{' '}
