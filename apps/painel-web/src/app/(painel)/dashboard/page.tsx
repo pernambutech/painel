@@ -12,13 +12,11 @@ import {
   Cloud,
   FolderOpen,
   Monitor,
-  Plus,
   Server,
   WifiOff,
   Zap,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { AttentionList } from '@/components/ui/AttentionList';
@@ -50,7 +48,7 @@ interface DadosDashboard {
 }
 
 export default function DashboardPage() {
-  const { usuario, organizacao } = useAuth();
+  const { organizacao } = useAuth();
   const [ambientes, setAmbientes] = useState<Ambiente[]>([]);
   const [dashboard, setDashboard] = useState<DadosDashboard | null>(null);
   const [execucoes, setExecucoes] = useState<Execucao[]>([]);
@@ -314,38 +312,16 @@ export default function DashboardPage() {
     return mapa[acao] || acao;
   };
 
-  const statusBadge = (status: string) => {
-    switch (status) {
-      case 'sucesso':
-        return <Badge variante="online">Sucesso</Badge>;
-      case 'falhou':
-        return <Badge variante="erro">Falhou</Badge>;
-      case 'executando':
-        return <Badge variante="aviso">Executando</Badge>;
-      default:
-        return <Badge variante="neutro">Pendente</Badge>;
-    }
-  };
-
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       {/* Cabeçalho */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-100">
-            Visão geral
-          </h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Olá, {usuario?.nome?.split(' ')[0] || 'usuário'}. Todos os seus projetos e serviços
-            em um só lugar.
-          </p>
-        </div>
-        <Link
-          href="/ambientes/novo"
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#5b7cfa] bg-[#5b7cfa] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#6f8cff]"
-        >
-          <Plus className="h-4 w-4" /> Novo ambiente
-        </Link>
+      <header className="page-header mb-7">
+        <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-zinc-100">
+          Visão Geral
+        </h1>
+        <p className="mt-1 text-sm text-zinc-400">
+          Todos os seus projetos e serviços em um só lugar.
+        </p>
       </header>
 
       {/* Erro de carregamento */}
@@ -362,17 +338,17 @@ export default function DashboardPage() {
       )}
 
       {/* Cards de estatísticas */}
-      <section aria-label="Resumo operacional" className="grid grid-cols-2 gap-4 xl:grid-cols-5">
+      <section aria-label="Resumo operacional" className="stats-grid mb-8 grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
         {estatisticas.map(({ rotulo, valor, icone: Icone, cor, detalhe, href }) => {
           const Conteudo = (
             <>
               <div className="flex items-start justify-between gap-3">
-                <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+                <p className="text-xs font-medium uppercase tracking-[0.04em] text-zinc-500 flex items-center gap-1.5">
+                  <Icone className={`h-3.5 w-3.5 ${cor}`} />
                   {rotulo}
                 </p>
-                <Icone className={`h-4 w-4 ${cor}`} />
               </div>
-              <p className="mt-2 text-[28px] font-semibold tracking-[-0.04em] text-zinc-100">
+              <p className="mt-1.5 text-[28px] font-semibold tracking-[-0.03em] text-zinc-100">
                 {valor}
               </p>
               <p className="mt-1 text-xs text-zinc-500">{detalhe}</p>
@@ -382,7 +358,7 @@ export default function DashboardPage() {
           if (href) {
             return (
               <Link key={rotulo} href={href}>
-                <Card padding="nenhum" className="p-4 sm:p-[18px] transition-colors hover:border-[#3a3a46]/40 cursor-pointer">
+                <Card padding="nenhum" className="p-4 transition-colors hover:border-[#3a3a46] cursor-pointer">
                   {Conteudo}
                 </Card>
               </Link>
@@ -393,7 +369,7 @@ export default function DashboardPage() {
             <Card
               key={rotulo}
               padding="nenhum"
-              className="p-4 sm:p-[18px] transition-colors hover:border-[#3a3a46]/40"
+              className="p-4 transition-colors hover:border-[#3a3a46]"
             >
               {Conteudo}
             </Card>
@@ -428,16 +404,10 @@ export default function DashboardPage() {
       />
 
       {/* Atividade recente + Resumo dos ambientes */}
-      <section className="grid gap-5 lg:grid-cols-2">
+      <section className="grid gap-6 mb-8" style={{ gridTemplateColumns: '1fr 1fr' }}>
         {/* Atividade recente */}
-        <Card padding="nenhum" className="overflow-hidden">
-          <div className="border-b border-[#2a2a32] px-5 py-4">
-            <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-[#8ca2ff]" />
-              <h2 className="text-base font-semibold text-zinc-100">Atividade recente</h2>
-            </div>
-            <p className="mt-1 text-xs text-zinc-500">Últimas ações executadas na plataforma.</p>
-          </div>
+        <Card padding="nenhum" className="overflow-hidden p-[16px_18px]">
+          <div className="font-semibold text-zinc-100 mb-1.5">🕒 Atividade recente</div>
           {carregandoExecucoes ? (
             <div className="flex min-h-52 items-center justify-center">
               <Spinner tamanho="medio" />
@@ -447,21 +417,18 @@ export default function DashboardPage() {
               {execucoes.map((exec) => (
                 <div
                   key={exec.id}
-                  className="flex items-center gap-3 border-b border-[#2a2a32] px-5 py-3 last:border-0"
+                  className="flex items-center gap-3 border-b border-[#2a2a32] py-2 last:border-0 text-[13px]"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-zinc-200">
-                      <span className="font-medium">{nomeAcao(exec.acao)}</span>
-                      {exec.servico?.nome && (
-                        <span className="text-zinc-400"> {exec.servico.nome}</span>
-                      )}
-                    </p>
-                    <p className="mt-0.5 text-xs text-zinc-500">
-                      {exec.usuario?.nome || 'Sistema'} •{' '}
-                      {new Date(exec.criadoEm).toLocaleString('pt-BR')}
-                    </p>
-                  </div>
-                  {statusBadge(exec.status)}
+                  <span className="text-zinc-500 text-xs w-14 shrink-0">
+                    {new Date(exec.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className="text-zinc-400">
+                    <strong className="font-medium text-zinc-100">{exec.usuario?.nome || 'Sistema'}</strong>
+                    {' '}{nomeAcao(exec.acao)}
+                    {exec.servico?.nome && (
+                      <> <strong className="font-medium text-zinc-100">{exec.servico.nome}</strong></>
+                    )}
+                  </span>
                 </div>
               ))}
             </div>
@@ -477,37 +444,26 @@ export default function DashboardPage() {
         </Card>
 
         {/* Resumo dos ambientes */}
-        <Card padding="nenhum" className="overflow-hidden">
-          <div className="flex items-center justify-between border-b border-[#2a2a32] px-5 py-4">
-            <div>
-              <h2 className="text-base font-semibold text-zinc-100">Resumo dos ambientes</h2>
-              <p className="mt-1 text-xs text-zinc-500">Máquinas e servidores conectados</p>
-            </div>
-            <Link href="/ambientes" className="text-xs font-medium text-[#8ca2ff] hover:text-white">
-              Ver todos
-            </Link>
-          </div>
+        <Card padding="nenhum" className="overflow-hidden p-[16px_18px]">
+          <div className="font-semibold text-zinc-100 mb-1.5">🌐 Resumo dos ambientes</div>
           {ambientes.length > 0 ? (
             ambientes.slice(0, 5).map((ambiente) => {
               const conectado = ambiente.agente?.status === 'online';
               return (
-                <Link
+                <div
                   key={ambiente.id}
-                  href={`/ambientes/${ambiente.id}`}
-                  className="flex items-center gap-3 border-b border-[#2a2a32] px-5 py-3.5 last:border-0 hover:bg-[#28282f]"
+                  className="flex items-center gap-3 border-b border-[#2a2a32] py-2 last:border-0 text-[13px]"
                 >
-                  <span
-                    className={`h-2 w-2 rounded-full ${conectado ? 'bg-emerald-300' : 'bg-red-300'}`}
-                  />
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-200">
+                  <span className="font-medium text-zinc-100 flex-1">
                     {ambiente.nome}
                   </span>
-                  <span
-                    className={`text-xs font-medium ${conectado ? 'text-emerald-300' : 'text-red-300'}`}
-                  >
-                    {conectado ? 'ONLINE' : 'OFFLINE'}
+                  <span className="flex items-center gap-2 text-xs font-medium">
+                    <span className={`inline-block h-2 w-2 rounded-full ${conectado ? 'bg-[#3dd68c]' : 'bg-[#f87171]'}`} />
+                    <span className={conectado ? 'text-[#3dd68c]' : 'text-[#f87171]'}>
+                      {conectado ? 'ONLINE' : 'OFFLINE'}
+                    </span>
                   </span>
-                </Link>
+                </div>
               );
             })
           ) : (
@@ -524,25 +480,21 @@ export default function DashboardPage() {
 
       {/* Tabela de projetos com serviços */}
       <section>
-        <div className="mb-3 flex items-center gap-2">
-          <FolderOpen className="h-4 w-4 text-[#8ca2ff]" />
-          <h2 className="text-base font-semibold text-zinc-100">Projetos</h2>
-        </div>
         <Card padding="nenhum" className="overflow-x-auto">
           <table className="w-full min-w-[680px] border-collapse text-left text-[13px]">
-            <thead className="bg-[#1e1e24] text-[11px] uppercase tracking-[0.08em] text-zinc-500">
-              <tr>
-                <th className="px-5 py-3 font-medium">Projeto</th>
-                <th className="px-5 py-3 font-medium">Serviços</th>
-                <th className="px-5 py-3 font-medium">Ambiente</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                <th className="px-5 py-3 font-medium">Última atividade</th>
+            <thead>
+              <tr className="bg-[#1e1e24] text-[12px] uppercase tracking-[0.04em] text-zinc-500">
+                <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Projeto</th>
+                <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Serviços</th>
+                <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Ambiente</th>
+                <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Status</th>
+                <th className="font-medium border-b border-[#2a2a32]" style={{ padding: '14px 18px' }}>Última atividade</th>
               </tr>
             </thead>
             <tbody>
               {carregando ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-zinc-500">
+                  <td colSpan={5} className="text-center text-zinc-500" style={{ padding: '40px 18px' }}>
                     <Spinner tamanho="pequeno" />
                   </td>
                 </tr>
@@ -550,29 +502,29 @@ export default function DashboardPage() {
                 linhasTabelaProjetos.map((linha) => (
                   <tr
                     key={linha.id}
-                    className="border-b border-[#2a2a32] hover:bg-[#1e1e24] transition-colors"
+                    className="border-b border-[#2a2a32] hover:bg-[#28282f] transition-colors"
                   >
-                    <td className="px-5 py-3">
+                    <td style={{ padding: '14px 18px' }}>
                       <Link
                         href={`/projetos/${linha.id}`}
-                        className="font-medium text-zinc-200 hover:text-[#8ca2ff] transition-colors"
+                        className="font-medium text-zinc-100 hover:text-[#8ca2ff] transition-colors"
                       >
                         {linha.nome}
                       </Link>
                     </td>
-                    <td className="px-5 py-3 text-zinc-400">{linha.qtdServicos}</td>
-                    <td className="px-5 py-3 text-zinc-400">{linha.ambiente}</td>
-                    <td className="px-5 py-3">
+                    <td className="text-zinc-400" style={{ padding: '14px 18px' }}>{linha.qtdServicos}</td>
+                    <td className="text-zinc-400" style={{ padding: '14px 18px' }}>{linha.ambiente}</td>
+                    <td style={{ padding: '14px 18px' }}>
                       <StatusBadgeTabela variante={linha.status}>
                         {linha.statusLabel}
                       </StatusBadgeTabela>
                     </td>
-                    <td className="px-5 py-3 text-zinc-500">{linha.ultimaAtividade}</td>
+                    <td className="text-zinc-500" style={{ padding: '14px 18px' }}>{linha.ultimaAtividade}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-zinc-500">
+                  <td colSpan={5} className="text-center text-zinc-500" style={{ padding: '40px 18px' }}>
                     <Server className="mx-auto mb-2 h-6 w-6 text-zinc-700" />
                     Nenhum projeto cadastrado.
                     <br />

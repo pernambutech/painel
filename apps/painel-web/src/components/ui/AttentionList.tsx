@@ -40,14 +40,14 @@ export function AttentionList({
   vazia,
 }: AttentionListProps) {
   return (
-    <section>
-      <div className="mb-3 flex items-center gap-2">
+    <section className="mb-8">
+      <h2 className="mb-3.5 flex items-center gap-2.5 text-base font-semibold text-zinc-100">
         {icone}
-        <h2 className="text-base font-semibold text-zinc-100">{titulo}</h2>
-        <span className="text-sm text-zinc-500">({contador})</span>
-      </div>
+        <span>⚠️ {titulo}</span>
+        <span className="text-[13px] font-normal text-zinc-500">({contador})</span>
+      </h2>
 
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col" style={{ gap: '10px' }}>
         {itens.length > 0 ? (
           itens.map((item, index) => (
             <AttentionItem

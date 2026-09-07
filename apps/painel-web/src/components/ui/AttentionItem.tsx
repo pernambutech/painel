@@ -47,11 +47,11 @@ export function AttentionItem({
     <div
       className="
         flex flex-col gap-3 rounded-lg border border-[#2a2a32] bg-[#16161a]
-        p-4 sm:p-[14px_18px]
         transition-colors duration-150
-        hover:border-[#3a3a46]/60
+        hover:border-[#3a3a4a]
         sm:flex-row sm:items-center sm:justify-between
       "
+      style={{ padding: '14px 18px', gap: '12px 20px' }}
     >
       {/* Informações do item */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
