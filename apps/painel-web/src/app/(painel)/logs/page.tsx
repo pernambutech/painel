@@ -1,14 +1,15 @@
 // Página de logs
-// Terminal estilizado como referência com filtros de nível e quantidade de linhas
+// Terminal estilizado com filtros de nível e quantidade de linhas
 
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { Terminal, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { servicosApi } from '@/lib/api';
 import { Spinner } from '@/components/ui/Spinner';
+import { TerminalLog } from '@/components/ui/TerminalLog';
 import type { LogServico, Servico } from '@/types';
 
 // ===========================================
@@ -39,7 +40,6 @@ export default function LogsPage() {
   const [erro, setErro] = useState('');
   const [filtroNivel, setFiltroNivel] = useState<FiltroNivel>('todos');
   const [qtdLinhas, setQtdLinhas] = useState<(typeof opcoesLinhas)[number]>(100);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const servicoSelecionado = servicos.find((s) => s.id === servicoSelecionadoId);
 
@@ -120,49 +120,6 @@ export default function LogsPage() {
     if (filtroNivel === 'falhas') return log.nivel === 'error' || log.nivel === 'warn';
     return true;
   });
-
-  // ===========================================
-  // AUTO-SCROLL
-  // ===========================================
-
-  useEffect(() => {
-    if (scrollRef.current && logs.length > 0) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [logs]);
-
-  // ===========================================
-  // FORMATAÇÃO
-  // ===========================================
-
-  const formatarTimestamp = (timestamp: string | null | undefined) => {
-    if (!timestamp) return '[--:--:--]';
-    try {
-      const data = new Date(timestamp);
-      if (isNaN(data.getTime())) return '[--:--:--]';
-      return `[${data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}]`;
-    } catch {
-      return '[--:--:--]';
-    }
-  };
-
-  const corNivel = (nivel: string) => {
-    switch (nivel) {
-      case 'error': return '#f87171';
-      case 'warn': return '#fbbf24';
-      case 'debug': return '#60a5fa';
-      default: return '#3dd68c';
-    }
-  };
-
-  const labelNivel = (nivel: string) => {
-    switch (nivel) {
-      case 'error': return 'ERROR';
-      case 'warn': return 'WARN';
-      case 'debug': return 'DEBUG';
-      default: return 'INFO';
-    }
-  };
 
   // ===========================================
   // ESTADO DE CARREGAMENTO
@@ -302,48 +259,8 @@ export default function LogsPage() {
             </div>
           )}
 
-          {/* Terminal de logs */}
-          <div
-            ref={scrollRef}
-            style={{
-              background: '#0a0a0e',
-              padding: '20px',
-              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-              fontSize: '13px',
-              color: '#b0b0c0',
-              overflow: 'auto',
-              maxHeight: '400px',
-              minHeight: '200px',
-            }}
-          >
-            {!servicoSelecionado ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', textAlign: 'center' }}>
-                <Terminal className="mb-3 h-9 w-9" style={{ color: '#3a3a44' }} />
-                <p style={{ color: '#6e6e7a' }}>Selecione um serviço para visualizar os logs.</p>
-              </div>
-            ) : carregandoLogs ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px' }}>
-                <Spinner tamanho="pequeno" />
-              </div>
-            ) : logsFiltrados.length === 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', textAlign: 'center' }}>
-                <p style={{ color: '#6e6e7a' }}>
-                  {logs.length === 0 ? 'Nenhum log encontrado.' : 'Nenhum log para o filtro selecionado.'}
-                </p>
-                <p style={{ color: '#6e6e7a', fontSize: '12px', marginTop: '4px' }}>
-                  {logs.length === 0 ? 'Inicie o serviço para gerar novas entradas.' : 'Tente alterar os filtros.'}
-                </p>
-              </div>
-            ) : (
-              logsFiltrados.map((log, indice) => (
-                <div key={`${log.timestamp}-${indice}`} style={{ lineHeight: '1.8' }}>
-                  <span style={{ color: '#6e6e7a' }}>{formatarTimestamp(log.timestamp)}</span>{' '}
-                  <span style={{ color: corNivel(log.nivel), fontWeight: 500 }}>{labelNivel(log.nivel)}</span>{' '}
-                  <span style={{ color: '#b0b0c0' }}>{log.mensagem}</span>
-                </div>
-              ))
-            )}
-          </div>
+          {/* Terminal */}
+          <TerminalLog logs={logsFiltrados} carregando={carregandoLogs} />
         </div>
       )}
     </div>

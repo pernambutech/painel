@@ -43,8 +43,9 @@ import {
 } from 'lucide-react';
 import { CommitsModal } from '@/components/CommitsModal';
 import { EditarServicoModal } from '@/components/EditarServicoModal';
+import { TerminalLog } from '@/components/ui/TerminalLog';
 import { gerarUrlServico } from '@/lib/constantes';
-import type { Projeto, Servico, StatusPm2, GitStatus, GitBranchResponse, GitLogEntry, GitArquivo, Log } from '@/types';
+import type { Projeto, Servico, StatusPm2, GitStatus, GitBranchResponse, GitLogEntry, GitArquivo, LogServico } from '@/types';
 
 /**
  * Formata milissegundos em tempo legível.
@@ -97,7 +98,7 @@ export default function ProjetoDetalhePage() {
   const [controleCarregando, setControleCarregando] = useState<string | null>(null);
   const [servicoExpandidoId, setServicoExpandidoId] = useState<string | null>(null);
   const [logsModalServico, setLogsModalServico] = useState<Servico | null>(null);
-  const [logs, setLogs] = useState<Log[]>([]);
+  const [logs, setLogs] = useState<LogServico[]>([]);
   const [carregandoLogs, setCarregandoLogs] = useState(false);
   const [tipoLog, setTipoLog] = useState<'todos' | 'stdout' | 'stderr'>('todos');
   const [erroLogs, setErroLogs] = useState('');
@@ -1013,28 +1014,7 @@ export default function ProjetoDetalhePage() {
             {erroLogs}
           </div>
         )}
-        <div className="flex-1 overflow-auto rounded-lg border border-[#2a2a32] bg-[#0d0d0f] p-4 max-h-[50vh]">
-          {carregandoLogs ? (
-            <div className="flex items-center justify-center py-8">
-              <Spinner />
-            </div>
-          ) : logs.length === 0 ? (
-            <p className="text-sm text-zinc-500">Nenhum log encontrado.</p>
-          ) : (
-            <div className="space-y-1 text-xs font-mono">
-              {logs.map((l: Log, i: number) => (
-                <div key={i} className={l.nivel === 'error' ? 'text-red-300' : 'text-zinc-300'}>
-                  <span className="text-zinc-500">
-                    {new Date(l.timestamp).toLocaleTimeString('pt-BR')}{' '}
-                  </span>
-                  <span className={l.fonte === 'stderr' ? 'text-red-400' : ''}>
-                    {l.mensagem}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <TerminalLog logs={logs} carregando={carregandoLogs} maxHeight="50vh" />
       </Modal>
 
       {/* Modal de Git */}

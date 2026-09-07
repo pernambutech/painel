@@ -304,13 +304,13 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
             ];
 
     // ── Expressões regulares para extrair timestamps reais ──────────
-    // O runner do Windows grava:  [2026-09-01 12:30:45] mensagem
-    // O PM2 no Linux grava:      2026-09-01T12:30:45.123Z › msg
-    //                           2026-09-01 12:30:45 msg
+    // Runner grava:     [2026-09-01 12:30:45] mensagem
+    // PM2 Linux grava:  2026-09-01T12:30:45.123Z › msg
+    // Formato ISO puro: 2026-09-01 12:30:45 msg
     const regexsTimestamp = [
-      /^\[(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[^\]]*)\]\s*(.*)/,   // [2026-09-01 12:30:45] msg
-      /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z?)\s*[›|]\s*(.*)/,  // 2026-09-01T12:30:45.123Z › msg
-      /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(.*)/,               // 2026-09-01 12:30:45 msg
+      /^\[(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[^\]]*)\]\s*(.*)/,
+      /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z?)\s*[›|]\s*(.*)/,
+      /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(.*)/,
     ];
 
     const extrairTimestamp = (linha: string): { timestamp: string; mensagem: string } => {
@@ -322,34 +322,56 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
             if (!isNaN(data.getTime())) {
               return { timestamp: data.toISOString(), mensagem: match[2] };
             }
-          } catch {
-            // Regex casou mas data é inválida — tenta próxima.
-          }
+          } catch { /* tenta próxima regex */ }
         }
       }
-      // Fallback: usa a data de modificação real da linha (arquivo)
       return { timestamp: '', mensagem: linha };
     };
 
+    // Detecta nível real do log pela mensagem em vez de só pela fonte.
+    // Muitos processos Node.js (Next.js, Webpack) escrevem tudo no stderr,
+    // mas nem tudo é erro — é saída normal do dev server.
+    const detectarNivel = (mensagem: string, fonte: string): LogProcesso['nivel'] => {
+      const msg = mensagem.toLowerCase();
+      if (/\b(error|err|fatal|crash|exception|fail(ed)?)\b/.test(msg)) return 'error';
+      if (/\b(warn(ing)?|alerta)\b/.test(msg)) return 'warn';
+      if (/\b(debug|trace|verbose)\b/.test(msg)) return 'debug';
+      // Se a mensagem parece saída normal (info), usa info mesmo vindo de stderr
+      if (/\b(info|started|listening|ready|connected|iniciado|rodando|servidor)\b/.test(msg)) return 'info';
+      // Último recurso: confia na fonte
+      return fonte === 'stderr' ? 'error' : 'info';
+    };
+
     for (const [fonte, caminho] of arquivos) {
-      if (!caminho) continue;
+      if (!fonte || !caminho) continue;
       try {
         const conteudo = await fs.readFile(caminho, 'utf8');
-        for (const linha of conteudo.split(/\r?\n/).filter(Boolean).slice(-linhas)) {
+        const linhasArquivo = conteudo.split(/\r?\n/).filter(Boolean);
+
+        // Usa mtime do arquivo como referência temporal para fallback
+        let mtimeIso = new Date().toISOString();
+        try {
+          const stat = await fs.stat(caminho);
+          mtimeIso = stat.mtime.toISOString();
+        } catch { /* usa data atual como último recurso */ }
+
+        for (const linha of linhasArquivo.slice(-linhas)) {
           const { timestamp, mensagem } = extrairTimestamp(linha);
 
           entradas.push({
-            timestamp: timestamp || new Date().toISOString(),
-            nivel: fonte === 'stderr' ? 'error' : 'info',
+            timestamp: timestamp || mtimeIso,
+            nivel: detectarNivel(mensagem, fonte),
             mensagem,
             fonte: fonte as 'stdout' | 'stderr',
           });
         }
       } catch {
-        // O arquivo pode ainda não existir para um processo recém-iniciado.
+        // Arquivo pode não existir para processo recém-iniciado.
       }
     }
 
+    // Ordena por timestamp crescente antes de limitar
+    entradas.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
     return entradas.slice(-linhas);
   }
 
