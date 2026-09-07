@@ -119,12 +119,39 @@ export class OrganizacoesServico {
       where: {
         usuarioId_organizacaoId: {
           usuarioId,
-          organizacaoId,
+          organizacaoId: organizacaoId,
         },
       },
     });
 
     return !!membro;
+  }
+
+  // ===========================================
+  // PREFERÊNCIAS (APARÊNCIA)
+  // ===========================================
+
+  async obterPreferencias(organizacaoId: string, usuarioId: string): Promise<Record<string, unknown>> {
+    await this.verificarMembroOuThrow(organizacaoId, usuarioId);
+    const org = await this.prisma.organizacao.findUnique({ where: { id: organizacaoId }, select: { preferencias: true } });
+    return (org?.preferencias as Record<string, unknown>) || {};
+  }
+
+  async atualizarPreferencias(organizacaoId: string, preferencias: Record<string, unknown>, usuarioId: string): Promise<Record<string, unknown>> {
+    await this.verificarMembroOuThrow(organizacaoId, usuarioId);
+    const org = await this.prisma.organizacao.update({
+      where: { id: organizacaoId },
+      data: { preferencias },
+      select: { preferencias: true },
+    });
+    return (org.preferencias as Record<string, unknown>) || {};
+  }
+
+  private async verificarMembroOuThrow(organizacaoId: string, usuarioId: string) {
+    const membro = await this.prisma.membroOrganizacao.findUnique({
+      where: { usuarioId_organizacaoId: { usuarioId, organizacaoId } },
+    });
+    if (!membro) throw new ForbiddenException('Você não é membro desta organização');
   }
 
   // ===========================================

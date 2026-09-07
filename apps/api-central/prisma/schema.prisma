@@ -38,6 +38,7 @@ model Organizacao {
   id           String   @id @default(uuid()) @db.Uuid
   nome         String
   slug         String   @unique
+  preferencias Json?    // Aparência, configurações customizadas
   ativo        Boolean  @default(true)
   criadoEm     DateTime @default(now()) @map("criado_em")
   atualizadoEm DateTime @updatedAt @map("atualizado_em")

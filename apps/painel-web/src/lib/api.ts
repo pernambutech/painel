@@ -139,6 +139,17 @@ export const organizacoesApi = {
     const resposta = await api.post('/organizacoes', dados);
     return resposta.data;
   },
+
+  // Preferências (aparência)
+  obterPreferencias: async (id: string) => {
+    const resposta = await api.get(`/organizacoes/${id}/preferencias`);
+    return resposta.data;
+  },
+
+  atualizarPreferencias: async (id: string, preferencias: Record<string, unknown>) => {
+    const resposta = await api.patch(`/organizacoes/${id}/preferencias`, preferencias);
+    return resposta.data;
+  },
 };
 
 // ===========================================

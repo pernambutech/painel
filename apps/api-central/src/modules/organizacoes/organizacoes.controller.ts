@@ -1,7 +1,7 @@
 // Controller de organizações
 // Endpoints para criação e consulta de organizações
 
-import { Controller, Get, Post, Put, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { OrganizacoesServico } from './organizacoes.servico';
 import { AtualizarOrganizacaoDto, CriarOrganizacaoDto } from './dto/organizacao.dto';
 import { JwtAuthGuard } from '../autenticacao/jwt-auth.guard';
@@ -41,5 +41,19 @@ export class OrganizacoesController {
   @Put(':id')
   async atualizar(@Param('id') id: string, @Body() dados: AtualizarOrganizacaoDto, @Request() req) {
     return this.organizacoesServico.atualizar(id, dados, req.user.id);
+  }
+
+  // ===========================================
+  // PREFERÊNCIAS (APARÊNCIA)
+  // ===========================================
+
+  @Get(':id/preferencias')
+  async obterPreferencias(@Param('id') id: string, @Request() req) {
+    return this.organizacoesServico.obterPreferencias(id, req.user.id);
+  }
+
+  @Patch(':id/preferencias')
+  async atualizarPreferencias(@Param('id') id: string, @Body() preferencias: Record<string, unknown>, @Request() req) {
+    return this.organizacoesServico.atualizarPreferencias(id, preferencias, req.user.id);
   }
 }
