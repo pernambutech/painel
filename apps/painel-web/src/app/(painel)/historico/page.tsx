@@ -1,57 +1,27 @@
-// Página de histórico e auditoria
-// Lista execuções de controle de serviços com paginação
+// Página de histórico
+// Lista simples de eventos: hora + descrição
 
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { History, Play, Square, RotateCw, Clock, User, Server, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, GitPullRequest, Settings, FolderPlus } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { BadgeSimples } from '@/components/ui/Badge';
-import { Spinner } from '@/components/ui/Spinner';
-import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { execucoesApi } from '@/lib/api';
+import { Spinner } from '@/components/ui/Spinner';
 import { ACAO_LABELS } from '@/lib/constantes';
 import type { Execucao } from '@/types';
-
-const acaoIcones: Record<string, any> = {
-  iniciar: Play,
-  parar: Square,
-  reiniciar: RotateCw,
-  git_pull: GitPullRequest,
-  git_fetch: GitPullRequest,
-  git_checkout: GitPullRequest,
-  git_branch: GitPullRequest,
-  criar_servico: FolderPlus,
-  atualizar_servico: Settings,
-  remover_servico: Settings,
-  criar_projeto: FolderPlus,
-  atualizar_projeto: Settings,
-  salvar_pm2: Settings,
-  executar_comando: Settings,
-};
-
-const ITENS_POR_PAGINA_PADRAO = 20;
 
 export default function HistoricoPage() {
   const { organizacao } = useAuth();
   const [execucoes, setExecucoes] = useState<Execucao[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
-  const [paginaAtual, setPaginaAtual] = useState(1);
-  const [totalPaginas, setTotalPaginas] = useState(1);
-  const [totalItens, setTotalItens] = useState(0);
 
-  const carregar = useCallback(async (pagina: number) => {
+  const carregar = useCallback(async () => {
     if (!organizacao) return;
     try {
       setCarregando(true);
-      const itensPagina = parseInt(localStorage.getItem('preferencia_itens_pagina') || String(ITENS_POR_PAGINA_PADRAO), 10);
-      const dados = await execucoesApi.listarPorOrganizacao(organizacao.id, itensPagina, pagina);
+      const dados = await execucoesApi.listarPorOrganizacao(organizacao.id, 30);
       setExecucoes(dados.dados || []);
-      setTotalPaginas(dados.paginas || 1);
-      setTotalItens(dados.total || 0);
-      setPaginaAtual(pagina);
     } catch {
       setErro('Erro ao carregar histórico.');
     } finally {
@@ -60,149 +30,108 @@ export default function HistoricoPage() {
   }, [organizacao]);
 
   useEffect(() => {
-    if (organizacao) carregar(1);
+    if (organizacao) carregar();
   }, [organizacao, carregar]);
 
-  const formatarData = (data: string) => {
-    return new Date(data).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
+  const formatarHora = (data: string) => {
+    return new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const obterVarianteStatus = (status: string) => {
-    switch (status) {
-      case 'sucesso':
-        return 'online';
-      case 'falhou':
-        return 'erro';
-      case 'pendente':
-        return 'aviso';
-      default:
-        return 'neutro';
+  const montarDescricao = (exec: Execucao) => {
+    const nomeUsuario = exec.usuario?.nome || 'Sistema';
+    const nomeServico = exec.servico?.nome;
+    const nomeProjeto = exec.projeto?.nome;
+    const labelAcao = ACAO_LABELS[exec.acao] || exec.acao.toLowerCase().replace(/_/g, ' ');
+
+    let partes: string[] = [];
+
+    if (exec.status === 'sucesso') {
+      if (nomeServico && nomeProjeto) {
+        partes = [labelAcao, nomeServico, `(${nomeProjeto})`];
+      } else if (nomeServico) {
+        partes = [labelAcao, nomeServico];
+      } else if (nomeProjeto) {
+        partes = [labelAcao, nomeProjeto];
+      } else {
+        partes = [labelAcao];
+      }
+    } else if (exec.status === 'falhou') {
+      if (nomeServico && nomeProjeto) {
+        partes = [nomeServico, 'apresentou erro', `(${nomeProjeto})`];
+      } else {
+        partes = [labelAcao, 'falhou'];
+      }
+    } else {
+      partes = [labelAcao];
     }
+
+    return { nomeUsuario, partes };
   };
 
   return (
     <div>
-      <header style={{ marginBottom: '28px' }}>
+      {/* Cabeçalho */}
+      <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Histórico</h1>
-        <p className="mt-1 text-sm" style={{ color: '#a8a8b3' }}>
-          Linha do tempo de eventos.
-        </p>
-      </header>
+        <p className="text-sm mt-1" style={{ color: '#a8a8b3' }}>Linha do tempo de eventos.</p>
+      </div>
 
-      <Card padding="nenhum" className="overflow-hidden">
-        <div className="border-b border-[#2a2a32] px-5 py-4">
-          <div className="flex items-center gap-2">
-            <History className="h-4 w-4 text-[#8ca2ff]" />
-            <h2 className="text-base font-semibold text-zinc-100">Linha do tempo</h2>
-            <span className="text-xs text-zinc-500">({totalItens} execuções)</span>
-          </div>
+      {/* Erro */}
+      {erro && (
+        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20" style={{ marginBottom: '16px' }}>
+          <p className="text-sm text-red-400">{erro}</p>
         </div>
+      )}
 
+      {/* Lista */}
+      <div className="rounded-xl border border-[#2a2a32] bg-[#16161a]" style={{ padding: '16px' }}>
         {carregando ? (
           <div className="flex items-center justify-center py-16">
-            <div className="flex flex-col items-center gap-3">
-              <Spinner tamanho="grande" />
-              <p className="text-sm text-zinc-500">Carregando histórico...</p>
-            </div>
-          </div>
-        ) : erro ? (
-          <div className="p-6 text-center">
-            <p className="text-sm text-red-400">{erro}</p>
-            <Button variante="fantasma" tamanho="pequeno" onClick={() => carregar(paginaAtual)} className="mt-3">
-              Tentar novamente
-            </Button>
+            <Spinner tamanho="medio" />
           </div>
         ) : execucoes.length === 0 ? (
           <div className="flex min-h-52 flex-col items-center justify-center px-5 text-center">
-            <History className="mb-3 h-8 w-8 text-zinc-700" />
-            <p className="text-sm text-zinc-400">Ainda não há execuções registradas.</p>
-            <p className="mt-1 text-xs text-zinc-600">
-              Ações como Iniciar, Parar e Reiniciar aparecerão aqui com usuário e resultado.
-            </p>
+            <p className="text-sm" style={{ color: '#a8a8b3' }}>Nenhum evento registrado.</p>
           </div>
         ) : (
-          <>
-            <div className="divide-y divide-[#2a2a32]">
-              {execucoes.map((exec) => {
-                const IconeAcao = acaoIcones[exec.acao] || History;
-                const StatusIcon = exec.status === 'sucesso' ? CheckCircle2 : exec.status === 'falhou' ? AlertCircle : Clock;
-                return (
-                  <div key={exec.id} className="flex gap-4 px-5 py-4 hover:bg-[#1e1e24] transition-colors">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#1e1e24] border border-[#2a2a32]">
-                      <IconeAcao className="h-4 w-4 text-[#8ca2ff]" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium text-zinc-100">{ACAO_LABELS[exec.acao] || exec.acao}</span>
-                        <BadgeSimples variante={obterVarianteStatus(exec.status) as any}>{exec.status}</BadgeSimples>
-                        {exec.servico && (
-                          <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
-                            <Server className="h-3 w-3" /> {exec.servico.nome}
-                          </span>
-                        )}
-                        {exec.projeto && (
-                          <span className="text-xs text-zinc-500">• {exec.projeto.nome}</span>
-                        )}
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-                        <span className="inline-flex items-center gap-1">
-                          <User className="h-3 w-3" /> {exec.usuario?.nome || '—'}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {formatarData(exec.criadoEm)}
-                        </span>
-                        {exec.ambiente && <span>Ambiente: {exec.ambiente.nome}</span>}
-                      </div>
-                      {exec.erro && (
-                        <p className="mt-2 rounded bg-red-500/10 px-2 py-1 text-xs text-red-300">{exec.erro}</p>
-                      )}
-                    </div>
-                    <StatusIcon
-                      className={`h-4 w-4 shrink-0 ${exec.status === 'sucesso' ? 'text-emerald-400' : exec.status === 'falhou' ? 'text-red-400' : 'text-amber-400'}`}
-                    />
-                  </div>
-                );
-              })}
-            </div>
+          <div>
+            {execucoes.map((exec, index) => {
+              const { nomeUsuario, partes } = montarDescricao(exec);
+              const ehUltimo = index === execucoes.length - 1;
 
-            {/* Paginação */}
-            {totalPaginas > 1 && (
-              <div className="flex items-center justify-between border-t border-[#2a2a32] px-5 py-3">
-                <p className="text-xs text-zinc-500">
-                  Página {paginaAtual} de {totalPaginas}
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variante="fantasma"
-                    tamanho="pequeno"
-                    onClick={() => carregar(paginaAtual - 1)}
-                    disabled={paginaAtual <= 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Anterior
-                  </Button>
-                  <Button
-                    variante="fantasma"
-                    tamanho="pequeno"
-                    onClick={() => carregar(paginaAtual + 1)}
-                    disabled={paginaAtual >= totalPaginas}
-                  >
-                    Próxima
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+              return (
+                <div
+                  key={exec.id}
+                  className="flex items-center"
+                  style={{
+                    gap: '12px',
+                    padding: '8px 0',
+                    borderBottom: ehUltimo ? 'none' : '1px solid #2a2a32',
+                    fontSize: '13px',
+                  }}
+                >
+                  <span style={{ color: '#6e6e7a', fontSize: '12px', width: '56px', flexShrink: 0 }}>
+                    {formatarHora(exec.criadoEm)}
+                  </span>
+                  <span style={{ color: '#a8a8b3' }}>
+                    <strong style={{ color: '#ececf0', fontWeight: 500 }}>{nomeUsuario}</strong>
+                    {' '}
+                    {partes.map((parte, i) => {
+                      // Partes que são nomes (serviço, projeto) ficam em bold
+                      const ehNome = i === 1 && partes.length > 1 && !parte.startsWith('(') && !parte.startsWith('apresentou') && !parte.startsWith('falhou');
+                      const ehProjeto = parte.startsWith('(');
+                      if (ehNome || (i === 2 && ehProjeto)) {
+                        return <strong key={i} style={{ color: '#ececf0', fontWeight: 500 }}>{parte} </strong>;
+                      }
+                      return <span key={i}>{parte} </span>;
+                    })}
+                  </span>
                 </div>
-              </div>
-            )}
-          </>
+              );
+            })}
+          </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }
