@@ -1,14 +1,15 @@
 // Página de Configurações
-// Abas: Conta, Organização, Preferências, Segurança
+// Abas: Conta, Organização, Preferências, Aparência, Segurança
 
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Building2, Check, KeyRound, LockKeyhole, Save, Settings, Shield, UserRound } from 'lucide-react';
+import { Building2, Check, KeyRound, LockKeyhole, Palette, Save, Settings, Shield, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useAparencia } from '@/lib/hooks/useAparencia';
 import { autenticacaoApi, organizacoesApi } from '@/lib/api';
 import { ITENS_POR_PAGINA_OPCOES } from '@/lib/constantes';
 
@@ -20,10 +21,23 @@ const abas = [
   { chave: 'conta', rotulo: 'Conta', icone: UserRound },
   { chave: 'organizacao', rotulo: 'Organização', icone: Building2 },
   { chave: 'preferencias', rotulo: 'Preferências', icone: Settings },
+  { chave: 'aparencia', rotulo: 'Aparência', icone: Palette },
   { chave: 'seguranca', rotulo: 'Segurança', icone: Shield },
 ] as const;
 
 type AbaChave = (typeof abas)[number]['chave'];
+
+// Cores predefinidas para escolha rápida
+const coresPreDefinidas = [
+  { nome: 'Azul', valor: '#5b7cfa' },
+  { nome: 'Roxo', valor: '#8b5cf6' },
+  { nome: 'Verde', valor: '#3dd68c' },
+  { nome: 'Laranja', valor: '#f97316' },
+  { nome: 'Rosa', valor: '#ec4899' },
+  { nome: 'Ciano', valor: '#06b6d4' },
+  { nome: 'Amarelo', valor: '#eab308' },
+  { nome: 'Vermelho', valor: '#ef4444' },
+];
 
 // ===========================================
 // COMPONENTE
@@ -31,6 +45,7 @@ type AbaChave = (typeof abas)[number]['chave'];
 
 export default function ConfiguracoesPage() {
   const { usuario, organizacao, recarregarOrganizacao } = useAuth();
+  const { prefs, atualizar, redefinir } = useAparencia();
   const [abaAtiva, setAbaAtiva] = useState<AbaChave>('conta');
 
   // ── Estado da conta ──
@@ -328,6 +343,169 @@ export default function ConfiguracoesPage() {
             <Save className="h-4 w-4" />
             Salvar preferências
           </Button>
+        </Card>
+      )}
+
+      {/* ========================================= */}
+      {/* ABA: APARÊNCIA */}
+      {/* ========================================= */}
+      {abaAtiva === 'aparencia' && (
+        <Card>
+          <div className="mb-5 flex items-center gap-2">
+            <Palette className="h-4 w-4 text-[#8ca2ff]" />
+            <h2 className="font-semibold text-zinc-100">Aparência</h2>
+          </div>
+
+          <div className="space-y-6">
+            {/* Nome do sistema */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-zinc-300">Nome do sistema</label>
+              <Input
+                value={prefs.nomeAplicacao}
+                onChange={(e) => atualizar({ nomeAplicacao: e.target.value })}
+                dica="Exibido no topo da sidebar"
+              />
+            </div>
+
+            {/* Cor de destaque */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-300">Cor de destaque</label>
+              <p className="text-xs" style={{ color: '#6e6e7a' }}>Usada no logo, botões ativos e links.</p>
+
+              {/* Cores predefinidas */}
+              <div className="flex flex-wrap gap-2">
+                {coresPreDefinidas.map((cor) => (
+                  <button
+                    key={cor.valor}
+                    type="button"
+                    onClick={() => atualizar({ corDestaque: cor.valor })}
+                    className="group relative h-9 w-9 rounded-lg transition-transform hover:scale-110"
+                    style={{ background: cor.valor }}
+                    title={cor.nome}
+                  >
+                    {prefs.corDestaque === cor.valor && (
+                      <Check className="absolute inset-0 m-auto h-4 w-4 text-white" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Input manual */}
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={prefs.corDestaque}
+                  onChange={(e) => atualizar({ corDestaque: e.target.value })}
+                  className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
+                />
+                <Input
+                  value={prefs.corDestaque}
+                  onChange={(e) => atualizar({ corDestaque: e.target.value })}
+                  style={{ maxWidth: '140px' }}
+                />
+              </div>
+            </div>
+
+            {/* Cor de fundo */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-300">Cor de fundo</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={prefs.corFundo}
+                  onChange={(e) => atualizar({ corFundo: e.target.value })}
+                  className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
+                />
+                <Input
+                  value={prefs.corFundo}
+                  onChange={(e) => atualizar({ corFundo: e.target.value })}
+                  style={{ maxWidth: '140px' }}
+                />
+              </div>
+            </div>
+
+            {/* Cor de superfície */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-300">Cor de superfície</label>
+              <p className="text-xs" style={{ color: '#6e6e7a' }}>Cards, sidebar e elementos elevados.</p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={prefs.corFundoSuperior}
+                  onChange={(e) => atualizar({ corFundoSuperior: e.target.value })}
+                  className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
+                />
+                <Input
+                  value={prefs.corFundoSuperior}
+                  onChange={(e) => atualizar({ corFundoSuperior: e.target.value })}
+                  style={{ maxWidth: '140px' }}
+                />
+              </div>
+            </div>
+
+            {/* Cor do texto */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-300">Cor do texto</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={prefs.corTexto}
+                  onChange={(e) => atualizar({ corTexto: e.target.value })}
+                  className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
+                />
+                <Input
+                  value={prefs.corTexto}
+                  onChange={(e) => atualizar({ corTexto: e.target.value })}
+                  style={{ maxWidth: '140px' }}
+                />
+              </div>
+            </div>
+
+            {/* Cor da borda */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-300">Cor das bordas</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={prefs.corBorda}
+                  onChange={(e) => atualizar({ corBorda: e.target.value })}
+                  className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
+                />
+                <Input
+                  value={prefs.corBorda}
+                  onChange={(e) => atualizar({ corBorda: e.target.value })}
+                  style={{ maxWidth: '140px' }}
+                />
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="rounded-lg p-4" style={{ background: '#1e1e24', border: '1px solid #2a2a32' }}>
+              <p className="mb-3 text-xs font-medium" style={{ color: '#6e6e7a' }}>PRÉ-VISUALIZAÇÃO</p>
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-lg font-bold text-white"
+                  style={{ background: prefs.corDestaque }}
+                >
+                  {prefs.nomeAplicacao.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: prefs.corTexto }}>{prefs.nomeAplicacao}</p>
+                  <p className="text-xs" style={{ color: '#6e6e7a' }}>Cor de destaque aplicada</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Redefinir */}
+            <button
+              type="button"
+              onClick={redefinir}
+              className="text-xs font-medium transition-colors hover:underline"
+              style={{ color: '#6e6e7a' }}
+            >
+              Restaurar aparência padrão
+            </button>
+          </div>
         </Card>
       )}
 

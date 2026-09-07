@@ -20,6 +20,7 @@ import {
   Box,
 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useAparencia } from '@/lib/hooks/useAparencia';
 import { dashboardApi, ambientesApi } from '@/lib/api';
 
 // ===========================================
@@ -103,6 +104,7 @@ interface SidebarProps {
 export function Sidebar({ aberta, aoFechar }: SidebarProps) {
   const pathname = usePathname();
   const { organizacao } = useAuth();
+  const { prefs } = useAparencia();
   const [contadores, setContadores] = useState<Record<string, number>>({});
 
   // Buscar contadores para os badges
@@ -170,8 +172,8 @@ export function Sidebar({ aberta, aoFechar }: SidebarProps) {
 
         {/* Logo */}
         <div className="flex items-center gap-2.5 border-b border-[#2a2a32] pb-7" style={{ marginBottom: '24px' }}>
-          <Box className="h-6 w-6" style={{ color: '#5b7cfa' }} />
-          <h1 className="text-[18px] font-bold tracking-tight text-zinc-100">DevManager</h1>
+          <Box className="h-6 w-6" style={{ color: prefs.corDestaque }} />
+          <h1 className="text-[18px] font-bold tracking-tight text-zinc-100">{prefs.nomeAplicacao}</h1>
         </div>
 
         {/* Navegação principal */}
