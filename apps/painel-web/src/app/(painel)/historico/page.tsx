@@ -88,18 +88,12 @@ export default function HistoricoPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Histórico</h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Ações executadas nos serviços • Auditoria por usuário
-          </p>
-        </div>
-        <Button variante="fantasma" tamanho="pequeno" onClick={() => carregar(paginaAtual)}>
-          <History className="w-4 h-4" />
-          Atualizar
-        </Button>
+    <div className="space-y-8">
+      <header style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Histórico</h1>
+        <p className="mt-1 text-sm" style={{ color: '#a8a8b3' }}>
+          Linha do tempo de eventos.
+        </p>
       </header>
 
       <Card padding="nenhum" className="overflow-hidden">

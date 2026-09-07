@@ -312,7 +312,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div style={{ padding: '28px 32px 40px' }}>
+    <div>
       {/* Cabeçalho */}
       <header style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">

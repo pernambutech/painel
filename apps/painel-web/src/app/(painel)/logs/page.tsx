@@ -100,10 +100,10 @@ export default function LogsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-7">
-      <header>
-        <h1 className="text-2xl font-bold text-zinc-100">Logs</h1>
-        <p className="mt-1 text-sm text-zinc-400">Visualize os logs básicos de cada serviço.</p>
+    <div className="space-y-7">
+      <header style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Logs</h1>
+        <p className="mt-1 text-sm" style={{ color: '#a8a8b3' }}>Visualize logs dos serviços.</p>
       </header>
 
       {erro && (

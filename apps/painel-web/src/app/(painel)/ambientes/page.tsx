@@ -107,16 +107,15 @@ export default function AmbientesPage() {
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Ambientes</h1>
-          <p className="text-sm text-zinc-500 mt-1">Gerencie suas máquinas e servidores</p>
-        </div>
-        <Link href="/ambientes/novo">
-          <Button>
-            <Plus className="w-4 h-4" />
-            Novo Ambiente
-          </Button>
+      <div style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Ambientes</h1>
+        <p className="text-sm mt-1" style={{ color: '#a8a8b3' }}>Máquinas, servidores e agentes.</p>
+      </div>
+
+      {/* Ações */}
+      <div className="flex items-center gap-3" style={{ marginBottom: '20px' }}>
+        <Link href="/ambientes/novo" className="rounded-full bg-[#5b7cfa] px-6 py-2 text-sm font-medium text-white hover:bg-[#6f8cff] transition-colors">
+          + Novo Ambiente
         </Link>
       </div>
 

@@ -22,7 +22,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
       <div className="main-layout-content flex h-dvh min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar aoAbrirSidebar={() => setSidebarAberta(true)} />
-        <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-8 sm:py-7">{children}</main>
+        <main className="flex-1 overflow-y-auto" style={{ padding: '28px 32px 40px' }}>{children}</main>
       </div>
     </div>
   );

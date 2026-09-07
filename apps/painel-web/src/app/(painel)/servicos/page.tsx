@@ -202,17 +202,15 @@ export default function ServicosPage() {
   // ===========================================
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="space-y-6">
       {/* Cabeçalho */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-100">
-            Serviços
-          </h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Todos os serviços cadastrados nos seus projetos
-          </p>
-        </div>
+      <header style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">
+          Serviços
+        </h1>
+        <p className="mt-1 text-sm" style={{ color: '#a8a8b3' }}>
+          Visão geral de todos os serviços.
+        </p>
       </header>
 
       {/* Erro */}

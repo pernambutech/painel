@@ -5,6 +5,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   FolderOpen,
@@ -18,12 +19,20 @@ import {
   User,
 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { dashboardApi, ambientesApi } from '@/lib/api';
 
 // ===========================================
 // ITENS DE NAVEGAÇÃO
 // ===========================================
 
-const itensNavegacao = [
+interface ItemNavegacao {
+  nome: string;
+  href: string;
+  icone: typeof LayoutDashboard;
+  chaveContador?: string;
+}
+
+const itensNavegacao: ItemNavegacao[] = [
   {
     nome: 'Visão Geral',
     href: '/dashboard',
@@ -33,16 +42,19 @@ const itensNavegacao = [
     nome: 'Projetos',
     href: '/projetos',
     icone: FolderOpen,
+    chaveContador: 'projetos',
   },
   {
     nome: 'Serviços',
     href: '/servicos',
     icone: Server,
+    chaveContador: 'servicos',
   },
   {
     nome: 'Ambientes',
     href: '/ambientes',
     icone: Monitor,
+    chaveContador: 'ambientes',
   },
   {
     nome: 'Logs',
@@ -84,7 +96,32 @@ interface SidebarProps {
 
 export function Sidebar({ aberta, aoFechar }: SidebarProps) {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { logout, organizacao } = useAuth();
+  const [contadores, setContadores] = useState<Record<string, number>>({});
+
+  // Buscar contadores para os badges
+  useEffect(() => {
+    if (!organizacao) return;
+
+    const carregarContadores = async () => {
+      try {
+        const [dashboardDados, ambientesDados] = await Promise.all([
+          dashboardApi.obterDados(organizacao.id),
+          ambientesApi.listar(organizacao.id),
+        ]);
+
+        setContadores({
+          projetos: dashboardDados?.totalProjetos ?? 0,
+          servicos: dashboardDados?.totalServicos ?? 0,
+          ambientes: (ambientesDados || []).length,
+        });
+      } catch {
+        // Erro silencioso — badges ficam vazios
+      }
+    };
+
+    carregarContadores();
+  }, [organizacao]);
 
   // Fecha o drawer ao navegar (mobile)
   const handleNavegacao = () => {
@@ -144,6 +181,7 @@ export function Sidebar({ aberta, aoFechar }: SidebarProps) {
           {itensNavegacao.map((item) => {
             const Icone = item.icone;
             const ativo = pathname === item.href || (item.href === '/dashboard' && pathname === '/');
+            const contador = item.chaveContador ? contadores[item.chaveContador] : undefined;
 
             return (
               <Link
@@ -163,6 +201,14 @@ export function Sidebar({ aberta, aoFechar }: SidebarProps) {
               >
                 <Icone className="h-4 w-4 shrink-0" />
                 <span>{item.nome}</span>
+                {item.chaveContador && contador !== undefined && (
+                  <span
+                    className="ml-auto rounded-full px-2 py-0.5 text-[11px] font-medium"
+                    style={{ background: '#24242b', color: '#6e6e7a' }}
+                  >
+                    {contador}
+                  </span>
+                )}
               </Link>
             );
           })}
