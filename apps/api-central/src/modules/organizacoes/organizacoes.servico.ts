@@ -3,7 +3,7 @@
 
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaServico } from '../database/prisma.servico';
-import { AtualizarOrganizacaoDto, CriarOrganizacaoDto, RespostaOrganizacao } from './dto/organizacao.dto';
+import { AtualizarOrganizacaoDto, CriarOrganizacaoDto, PreferenciasAparenciaDto, RespostaOrganizacao } from './dto/organizacao.dto';
 
 @Injectable()
 export class OrganizacoesServico {
@@ -137,11 +137,12 @@ export class OrganizacoesServico {
     return (org?.preferencias as Record<string, unknown>) || {};
   }
 
-  async atualizarPreferencias(organizacaoId: string, preferencias: Record<string, unknown>, usuarioId: string): Promise<Record<string, unknown>> {
+  async atualizarPreferencias(organizacaoId: string, preferencias: PreferenciasAparenciaDto, usuarioId: string): Promise<Record<string, unknown>> {
     await this.verificarMembroOuThrow(organizacaoId, usuarioId);
     const org = await this.prisma.organizacao.update({
       where: { id: organizacaoId },
-      data: { preferencias },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { preferencias: preferencias as any },
       select: { preferencias: true },
     });
     return (org.preferencias as Record<string, unknown>) || {};

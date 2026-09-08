@@ -23,6 +23,36 @@ export class AtualizarOrganizacaoDto {
 }
 
 // ===========================================
+// DTO DE PREFERÊNCIAS (APARÊNCIA)
+// ===========================================
+
+export class PreferenciasAparenciaDto {
+  @IsOptional()
+  @IsString()
+  nomeAplicacao?: string;
+
+  @IsOptional()
+  @IsString()
+  corDestaque?: string;
+
+  @IsOptional()
+  @IsString()
+  corFundo?: string;
+
+  @IsOptional()
+  @IsString()
+  corFundoSuperior?: string;
+
+  @IsOptional()
+  @IsString()
+  corTexto?: string;
+
+  @IsOptional()
+  @IsString()
+  corBorda?: string;
+}
+
+// ===========================================
 // RESPOSTA DE ORGANIZAÇÃO
 // ===========================================
 
