@@ -154,7 +154,7 @@ export function Sidebar({ aberta, aoFechar }: SidebarProps) {
         className={`
           dashboard-sidebar
           fixed inset-y-0 left-0 z-50 flex h-dvh w-[240px] flex-col overflow-y-auto
-          border-r border-[#2a2a32] bg-[#16161a]
+          border-r border-[#2a2a32] cor-superficie
           transition-transform duration-200 ease-in-out
           lg:static lg:translate-x-0
           ${aberta ? 'translate-x-0' : '-translate-x-full'}

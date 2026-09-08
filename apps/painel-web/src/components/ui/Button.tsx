@@ -24,7 +24,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const estilosVariante: Record<Variante, string> = {
   primario: 'bg-[#5b7cfa] hover:bg-[#6f8cff] text-white border border-[#5b7cfa]',
-  secundario: 'bg-[#1e1e24] hover:bg-[#28282f] text-zinc-100 border border-[#2a2a32]',
+  secundario: 'bg-[#1e1e24] hover:bg-[#28282f] text-zinc-100 border cor-borda',
   perigo: 'bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-400/25',
   fantasma: 'bg-transparent hover:bg-[#28282f] text-zinc-300',
 };

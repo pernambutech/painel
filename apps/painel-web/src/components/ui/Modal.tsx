@@ -135,7 +135,7 @@ export function Modal({
       <div
         ref={modalRef}
         tabIndex={-1}
-        className={`w-full ${larguraMaxima} rounded-xl border border-[#2a2a32] bg-[#16161a] p-6 shadow-2xl outline-none`}
+        className={`w-full ${larguraMaxima} rounded-xl cor-borda cor-superficie p-6 shadow-2xl outline-none`}
       >
         {children}
       </div>

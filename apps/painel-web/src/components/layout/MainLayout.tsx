@@ -16,7 +16,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarAberta, setSidebarAberta] = useState(false);
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-[#0d0d0f]">
+    <div className="flex h-dvh overflow-hidden cor-fundo">
       {/* Sidebar — sempre visível no desktop, drawer no mobile */}
       <Sidebar aberta={sidebarAberta} aoFechar={() => setSidebarAberta(false)} />
 

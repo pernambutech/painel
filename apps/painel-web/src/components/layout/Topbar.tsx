@@ -92,7 +92,7 @@ export function Topbar({ aoAbrirSidebar }: TopbarProps) {
   const temNotificacoes = notificacoes.length > 0;
 
   return (
-    <header ref={menuRef} className="sticky top-0 z-30 flex min-h-[48px] flex-wrap items-center gap-5 border-b border-[#2a2a32] bg-[#16161a]" style={{ padding: '12px 32px' }}>
+    <header ref={menuRef} className="sticky top-0 z-30 flex min-h-[48px] flex-wrap items-center gap-5 border-b border-[#2a2a32] cor-superficie" style={{ padding: '12px 32px' }}>
       {/* Hamburger — apenas no mobile */}
       {aoAbrirSidebar && (
         <button
