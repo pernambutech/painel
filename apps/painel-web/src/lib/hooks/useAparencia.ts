@@ -19,6 +19,7 @@ export interface PreferenciasAparencia {
   corFundoSuperior: string;
   corTexto: string;
   corBorda: string;
+  iconeLogo: string; // nome do ícone Lucide (vazio = usar letra)
 }
 
 // ===========================================
@@ -32,6 +33,7 @@ const DEFAULTS: PreferenciasAparencia = {
   corFundoSuperior: '#16161a',
   corTexto: '#ececf0',
   corBorda: '#2a2a32',
+  iconeLogo: '',
 };
 
 const CHAVE_STORAGE = 'preferencias_aparencia';
@@ -87,7 +89,8 @@ function saoIguais(a: PreferenciasAparencia, b: PreferenciasAparencia): boolean 
     a.corFundo === b.corFundo &&
     a.corFundoSuperior === b.corFundoSuperior &&
     a.corTexto === b.corTexto &&
-    a.corBorda === b.corBorda
+    a.corBorda === b.corBorda &&
+    a.iconeLogo === b.iconeLogo
   );
 }
 

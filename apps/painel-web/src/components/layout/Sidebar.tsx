@@ -18,10 +18,28 @@ import {
   User,
   Play,
   Box,
+  Code2,
+  Cpu,
+  Database,
+  Globe,
+  Hammer,
+  Layers,
+  Rocket,
+  ShieldCheck,
+  Terminal,
+  Wrench,
+  Zap,
+  LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useAparencia } from '@/lib/hooks/useAparencia';
 import { dashboardApi, ambientesApi } from '@/lib/api';
+
+// Mapeamento de nomes de ícones para componentes
+const ICONES_MAP: Record<string, LucideIcon> = {
+  Box, Code2, Cpu, Database, Globe, Hammer, Layers,
+  Monitor, Rocket, Server, ShieldCheck, Terminal, Wrench, Zap,
+};
 
 // ===========================================
 // ITENS DE NAVEGAÇÃO
@@ -172,7 +190,19 @@ export function Sidebar({ aberta, aoFechar }: SidebarProps) {
 
         {/* Logo */}
         <div className="flex items-center gap-2.5 border-b border-[#2a2a32] pb-7" style={{ marginBottom: '24px' }}>
-          <Box className="h-6 w-6" style={{ color: prefs.corDestaque }} />
+          {prefs.iconeLogo && ICONES_MAP[prefs.iconeLogo] ? (
+            (() => {
+              const IconeLogo = ICONES_MAP[prefs.iconeLogo];
+              return <IconeLogo className="h-6 w-6" style={{ color: prefs.corDestaque }} />;
+            })()
+          ) : (
+            <div
+              className="flex h-6 w-6 items-center justify-center rounded text-xs font-bold text-white"
+              style={{ background: prefs.corDestaque }}
+            >
+              {prefs.nomeAplicacao.charAt(0).toUpperCase()}
+            </div>
+          )}
           <h1 className="text-[18px] font-bold tracking-tight text-zinc-100">{prefs.nomeAplicacao}</h1>
         </div>
 
