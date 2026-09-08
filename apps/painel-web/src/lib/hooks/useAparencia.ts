@@ -1,10 +1,10 @@
 // Hook para gerenciar aparência visual do painel
 // Sincroniza preferências entre localStorage e API (banco de dados)
-// Fluxo: editar → preview em tempo real → confirmar ou cancelar
+// Fluxo: editar → preview em tempo real (injetando CSS) → confirmar ou cancelar
 
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { organizacoesApi } from '@/lib/api';
 import { useAuth } from './useAuth';
 
@@ -35,6 +35,7 @@ const DEFAULTS: PreferenciasAparencia = {
 };
 
 const CHAVE_STORAGE = 'preferencias_aparencia';
+const STYLE_ID = 'aparencia-dinamico';
 
 // ===========================================
 // FUNÇÕES AUXILIARES
@@ -61,18 +62,71 @@ function removerLocal() {
   } catch { /* ignora */ }
 }
 
+/**
+ * Aplica as cores da aparência de duas formas:
+ * 1. Variáveis CSS no :root (body e elementos que usam var(--cor-*))
+ * 2. Tag <style> dinâmica que sobrescreve classes Tailwind hardcoded
+ *    (bg-[#16161a], text-[#ececf0], border-[#2a2a32], etc.)
+ *
+ * Isso garante preview visual real em toda a página.
+ */
 function aplicarCSS(prefs: PreferenciasAparencia) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  root.style.setProperty('--accent', prefs.corDestaque);
-  root.style.setProperty('--bg-base', prefs.corFundo);
-  root.style.setProperty('--bg-surface', prefs.corFundoSuperior);
-  root.style.setProperty('--text-primary', prefs.corTexto);
-  root.style.setProperty('--border-subtle', prefs.corBorda);
 
-  // Cores derivadas do destaque (com opacidade)
-  root.style.setProperty('--accent-light', `${prefs.corDestaque}22`);
-  root.style.setProperty('--accent-hover', `${prefs.corDestaque}33`);
+  // 1. Variáveis CSS do :root (coincidem com globals.css)
+  root.style.setProperty('--cor-fundo', prefs.corFundo);
+  root.style.setProperty('--cor-superficie', prefs.corFundoSuperior);
+  root.style.setProperty('--cor-texto', prefs.corTexto);
+  root.style.setProperty('--cor-borda', prefs.corBorda);
+  root.style.setProperty('--cor-primaria', prefs.corDestaque);
+  root.style.setProperty('--cor-primaria-hover', prefs.corDestaque + 'dd');
+
+  // 2. Injeta <style> que sobrescreve classes Tailwind hardcoded
+  let styleEl = document.getElementById(STYLE_ID);
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = STYLE_ID;
+    document.head.appendChild(styleEl);
+  }
+
+  styleEl.textContent = `
+    /* === SOBRESCRITA DE CORES PARA PREVIEW EM TEMPO REAL === */
+
+    /* Body */
+    body {
+      background-color: ${prefs.corFundo} !important;
+      color: ${prefs.corTexto} !important;
+    }
+
+    /* Sidebar - fundo e borda */
+    nav, aside, [class*="bg-[#0d0d0f]"], [class*="bg-[#16161a]"] {
+      background-color: ${prefs.corFundoSuperior} !important;
+    }
+
+    /* Bordas gerais */
+    [class*="border-[#2a2a32"] {
+      border-color: ${prefs.corBorda} !important;
+    }
+
+    /* Cards e superfícies elevadas */
+    [class*="bg-[#1e1e24]"] {
+      background-color: ${prefs.corFundoSuperior} !important;
+    }
+
+    /* Texto primário */
+    [class*="text-zinc-100"], [class*="text-zinc-200"], [class*="text-zinc-300"] {
+      color: ${prefs.corTexto} !important;
+    }
+
+    /* Cor de destaque - botões e links */
+    [class*="bg-[#5b7cfa]"], [class*="text-[#5b7cfa]"], [class*="border-[#5b7cfa]"],
+    [class*="bg-[#8ca2ff]"], [class*="text-[#8ca2ff]"] {
+      background-color: ${prefs.corDestaque} !important;
+      color: ${prefs.corDestaque} !important;
+      border-color: ${prefs.corDestaque} !important;
+    }
+  `;
 }
 
 function saoIguais(a: PreferenciasAparencia, b: PreferenciasAparencia): boolean {
@@ -103,9 +157,6 @@ export function useAparencia() {
   const [sincronizando, setSincronizando] = useState(false);
   const [salvandoPreferencias, setSalvandoPreferencias] = useState(false);
 
-  // Flag para evitar aplicar CSS no primeiro render
-  const inicializado = useRef(false);
-
   // Carrega preferências: localStorage primeiro, depois API
   useEffect(() => {
     // 1. Aplica do localStorage imediatamente (evita flash)
@@ -131,8 +182,6 @@ export function useAparencia() {
         .catch(() => { /* mantém localStorage */ })
         .finally(() => setSincronizando(false));
     }
-
-    inicializado.current = true;
   }, [organizacao?.id]);
 
   // Atualiza rascunho (apenas form + preview, NÃO salva)
@@ -184,15 +233,15 @@ export function useAparencia() {
   const temAlteracoesPendentes = !saoIguais(rascunho, salvo);
 
   return {
-    prefs: rascunho,        // Rascunho (form edita aqui)
-    salvo,                  // Último estado confirmado
+    prefs: rascunho,
+    salvo,
     pronto,
     sincronizando,
     salvandoPreferencias,
     temAlteracoesPendentes,
-    atualizarRascunho,      // Atualiza form + preview (não salva)
-    confirmar,              // Salva rascunho
-    cancelar,               // Descarta rascunho
-    redefinir,              // Volta ao padrão
+    atualizarRascunho,
+    confirmar,
+    cancelar,
+    redefinir,
   };
 }

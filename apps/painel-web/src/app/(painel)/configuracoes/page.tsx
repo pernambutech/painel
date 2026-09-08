@@ -506,11 +506,20 @@ export default function ConfiguracoesPage() {
               Restaurar aparência padrão
             </button>
 
-            {/* Botões de ação */}
-            {temAlteracoesPendentes && (
-              <div className="flex items-center gap-3 rounded-lg p-3" style={{ background: '#1e1e24', border: '1px solid #2a2a32' }}>
-                <span className="text-xs" style={{ color: '#a8a8b3' }}>Alterações não salvas</span>
-                <div className="ml-auto flex gap-2">
+            {/* Barra de ações - sempre visível */}
+            <div
+              className="flex items-center gap-3 rounded-lg p-3"
+              style={{
+                background: temAlteracoesPendentes ? '#1a1520' : '#1e1e24',
+                border: `1px solid ${temAlteracoesPendentes ? prefs.corDestaque + '44' : '#2a2a32'}`,
+                transition: 'all 0.2s',
+              }}
+            >
+              <span className="text-xs" style={{ color: temAlteracoesPendentes ? '#d4d4d8' : '#6e6e7a' }}>
+                {temAlteracoesPendentes ? 'Alterações não salvas' : 'Nenhuma alteração pendente'}
+              </span>
+              <div className="ml-auto flex gap-2">
+                {temAlteracoesPendentes && (
                   <Button
                     variante="fantasma"
                     onClick={cancelar}
@@ -518,17 +527,18 @@ export default function ConfiguracoesPage() {
                   >
                     Cancelar
                   </Button>
-                  <Button
-                    onClick={confirmar}
-                    carregando={salvandoPreferencias}
-                    className="h-8 px-3 text-xs"
-                  >
-                    <Save className="h-3 w-3" />
-                    Confirmar
-                  </Button>
-                </div>
+                )}
+                <Button
+                  onClick={confirmar}
+                  carregando={salvandoPreferencias}
+                  disabled={!temAlteracoesPendentes}
+                  className="h-8 px-3 text-xs"
+                >
+                  <Save className="h-3 w-3" />
+                  {temAlteracoesPendentes ? 'Confirmar alterações' : 'Nada a salvar'}
+                </Button>
               </div>
-            )}
+            </div>
           </div>
         </Card>
       )}
