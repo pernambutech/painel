@@ -4,7 +4,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Building2, Check, KeyRound, LockKeyhole, Palette, Save, Settings, Shield, UserRound } from 'lucide-react';
+import { Building2, Check, Eye, KeyRound, LockKeyhole, Palette, Save, Settings, Shield, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -37,6 +37,30 @@ const coresPreDefinidas = [
   { nome: 'Ciano', valor: '#06b6d4' },
   { nome: 'Amarelo', valor: '#eab308' },
   { nome: 'Vermelho', valor: '#ef4444' },
+];
+
+// Ícones disponíveis para o logo
+import {
+  Box, Code2, Cpu, Database, Globe, Hammer, Layers, Layout,
+  Monitor, Rocket, Server, ShieldCheck, Terminal, Wrench, Zap
+} from 'lucide-react';
+
+const opcoesIcones = [
+  { nome: 'Box', icone: Box },
+  { nome: 'Code2', icone: Code2 },
+  { nome: 'Cpu', icone: Cpu },
+  { nome: 'Database', icone: Database },
+  { nome: 'Globe', icone: Globe },
+  { nome: 'Hammer', icone: Hammer },
+  { nome: 'Layers', icone: Layers },
+  { nome: 'Layout', icone: Layout },
+  { nome: 'Monitor', icone: Monitor },
+  { nome: 'Rocket', icone: Rocket },
+  { nome: 'Server', icone: Server },
+  { nome: 'ShieldCheck', icone: ShieldCheck },
+  { nome: 'Terminal', icone: Terminal },
+  { nome: 'Wrench', icone: Wrench },
+  { nome: 'Zap', icone: Zap },
 ];
 
 // ===========================================
@@ -367,6 +391,48 @@ export default function ConfiguracoesPage() {
               />
             </div>
 
+            {/* Ícone do logo */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-300">Ícone do logo</label>
+              <p className="text-xs" style={{ color: '#6e6e7a' }}>
+                {prefs.iconeLogo ? 'Ícone selecionado — aparece na sidebar e no topo' : 'Nenhum ícone — usa a primeira letra do nome'}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {opcoesIcones.map((opcao) => {
+                  const Icone = opcao.icone;
+                  const selecionado = prefs.iconeLogo === opcao.nome;
+                  return (
+                    <button
+                      key={opcao.nome}
+                      type="button"
+                      onClick={() => atualizarRascunho({ iconeLogo: selecionado ? '' : opcao.nome })}
+                      className="group relative flex h-10 w-10 items-center justify-center rounded-lg transition-all"
+                      style={{
+                        background: selecionado ? prefs.corDestaque + '22' : '#1e1e24',
+                        border: `1px solid ${selecionado ? prefs.corDestaque : '#2a2a32'}`,
+                      }}
+                      title={opcao.nome}
+                    >
+                      <Icone
+                        className="h-4 w-4"
+                        style={{ color: selecionado ? prefs.corDestaque : '#a8a8b3' }}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+              {prefs.iconeLogo && (
+                <button
+                  type="button"
+                  onClick={() => atualizarRascunho({ iconeLogo: '' })}
+                  className="text-xs font-medium transition-colors hover:underline"
+                  style={{ color: '#6e6e7a' }}
+                >
+                  Remover ícone
+                </button>
+              )}
+            </div>
+
             {/* Cor de destaque */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-zinc-300">Cor de destaque</label>
@@ -479,21 +545,12 @@ export default function ConfiguracoesPage() {
               </div>
             </div>
 
-            {/* Preview */}
-            <div className="rounded-lg p-4" style={{ background: '#1e1e24', border: '1px solid #2a2a32' }}>
-              <p className="mb-3 text-xs font-medium" style={{ color: '#6e6e7a' }}>PRÉ-VISUALIZAÇÃO</p>
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex h-10 w-10 items-center justify-center rounded-lg font-bold text-white"
-                  style={{ background: prefs.corDestaque }}
-                >
-                  {prefs.nomeAplicacao.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: prefs.corTexto }}>{prefs.nomeAplicacao}</p>
-                  <p className="text-xs" style={{ color: '#6e6e7a' }}>Cor de destaque aplicada</p>
-                </div>
-              </div>
+            {/* Aviso: preview é a página inteira */}
+            <div className="flex items-center gap-3 rounded-lg border border-dashed p-3" style={{ borderColor: prefs.corDestaque + '55', background: prefs.corDestaque + '08' }}>
+              <Eye className="h-4 w-4 shrink-0" style={{ color: prefs.corDestaque }} />
+              <p className="text-xs" style={{ color: '#a8a8b3' }}>
+                As alterações são aplicadas em tempo real em toda a página. Sidebar, topbar, cards e fundo refletem imediatamente as cores escolhidas.
+              </p>
             </div>
 
             {/* Redefinir */}
