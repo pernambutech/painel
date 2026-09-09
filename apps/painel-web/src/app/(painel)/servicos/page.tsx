@@ -24,8 +24,10 @@ import {
   Play,
   Square,
   RotateCw,
+  Plus,
 } from 'lucide-react';
 import { gerarUrlServico } from '@/lib/constantes';
+import { CriarServicoModal } from '@/components/CriarServicoModal';
 
 // ===========================================
 // TIPOS
@@ -82,6 +84,7 @@ export default function ServicosPage() {
   const [erro, setErro] = useState('');
   const [filtroAtivo, setFiltroAtivo] = useState<FiltroChave>(filtroInicial);
   const [controleCarregando, setControleCarregando] = useState<string | null>(null);
+  const [modalCriarAberto, setModalCriarAberto] = useState(false);
 
   // Carregar dados do dashboard (já inclui status PM2)
   const carregar = useCallback(async () => {
@@ -204,13 +207,24 @@ export default function ServicosPage() {
   return (
     <div>
       {/* Cabeçalho */}
-      <header style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">
-          Serviços
-        </h1>
-        <p className="mt-1 text-sm" style={{ color: '#a8a8b3' }}>
-          Visão geral de todos os serviços.
-        </p>
+      <header style={{ marginBottom: '28px' }} className="flex items-center justify-between">
+        <div>
+          <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">
+            Serviços
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: '#a8a8b3' }}>
+            Visão geral de todos os serviços.
+          </p>
+        </div>
+        {servicos.length > 0 && (
+          <button
+            onClick={() => setModalCriarAberto(true)}
+            className="flex items-center gap-2 rounded-lg bg-[#5b7cfa] px-4 py-2 text-sm font-medium text-white hover:bg-[#6f8cff] transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Novo Serviço
+          </button>
+        )}
       </header>
 
       {/* Erro */}
@@ -264,12 +278,21 @@ export default function ServicosPage() {
             <p className="mx-auto max-w-md text-sm text-zinc-500">
               Acesse um projeto e adicione serviços para começar a gerenciar suas aplicações.
             </p>
-            <Link
-              href="/projetos"
-              className="mt-4 inline-flex rounded-lg bg-[#5b7cfa] px-4 py-2 text-sm font-medium text-white hover:bg-[#6f8cff]"
-            >
-              Ver projetos
-            </Link>
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <Link
+                href="/projetos"
+                className="inline-flex rounded-lg bg-[#1e1e24] px-4 py-2 text-sm font-medium text-zinc-300 border border-[#2a2a32] hover:bg-[#28282f] transition-colors"
+              >
+                Ver projetos
+              </Link>
+              <button
+                onClick={() => setModalCriarAberto(true)}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#5b7cfa] px-4 py-2 text-sm font-medium text-white hover:bg-[#6f8cff] transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Novo Serviço
+              </button>
+            </div>
           </div>
         </Card>
       ) : servicosFiltrados.length === 0 ? (
@@ -374,6 +397,14 @@ export default function ServicosPage() {
             );
           })}
         </div>
+      )}
+
+      {/* Modal de criação */}
+      {modalCriarAberto && (
+        <CriarServicoModal
+          aoFechar={() => setModalCriarAberto(false)}
+          aoCriar={() => carregar()}
+        />
       )}
     </div>
   );
