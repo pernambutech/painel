@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { ambientesApi } from '@/lib/api';
 import { Spinner } from '@/components/ui/Spinner';
+import { Plus } from 'lucide-react';
 import type { Ambiente } from '@/types';
 
 export default function AmbientesPage() {
@@ -58,9 +59,19 @@ export default function AmbientesPage() {
   return (
     <div>
       {/* Cabeçalho */}
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Ambientes</h1>
-        <p className="text-sm mt-1" style={{ color: '#a8a8b3' }}>Máquinas, servidores e agentes.</p>
+      <div style={{ marginBottom: '28px' }} className="flex items-center justify-between">
+        <div>
+          <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Ambientes</h1>
+          <p className="text-sm mt-1" style={{ color: '#a8a8b3' }}>Máquinas, servidores e agentes.</p>
+        </div>
+        <Link
+          href="/ambientes/novo"
+          className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
+          style={{ backgroundColor: '#5b7cfa' }}
+        >
+          <Plus className="h-4 w-4" />
+          Novo Ambiente
+        </Link>
       </div>
 
       {/* Erro */}
