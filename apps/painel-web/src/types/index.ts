@@ -100,6 +100,7 @@ export interface Projeto {
   descricao: string | null;
   organizacaoId: string;
   ativo: boolean;
+  deletadoEm: string | null;
   criadoEm: string;
   atualizadoEm: string;
   totalServicos?: number;

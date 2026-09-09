@@ -24,6 +24,7 @@ import {
   Globe,
   Hammer,
   Layers,
+  Layout,
   Rocket,
   ShieldCheck,
   Terminal,
@@ -37,7 +38,7 @@ import { dashboardApi, ambientesApi } from '@/lib/api';
 
 // Mapeamento de nomes de ícones para componentes
 const ICONES_MAP: Record<string, LucideIcon> = {
-  Box, Code2, Cpu, Database, Globe, Hammer, Layers,
+  Box, Code2, Cpu, Database, Globe, Hammer, Layers, Layout,
   Monitor, Rocket, Server, ShieldCheck, Terminal, Wrench, Zap,
 };
 
