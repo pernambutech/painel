@@ -175,7 +175,7 @@ export default function ProjetosPage() {
                       </StatusBadgeTabela>
                     </td>
                     <td style={{ padding: '14px 18px', color: '#6e6e7a', borderBottom: '1px solid #2a2a32' }}>
-                      {formatarData(projeto.criadoEm)}
+                      {formatarData(projeto.atualizadoEm || projeto.criadoEm)}
                     </td>
                   </tr>
                 ))
