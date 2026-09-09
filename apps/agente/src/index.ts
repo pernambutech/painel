@@ -40,6 +40,7 @@ const COMANDOS_QUE_EXIGEM_DIRETORIO = [
   'GIT_LOG',
   'GIT_CHECKOUT',
   'GIT_CHECKOUT_BRANCH',
+  'VERIFICAR_DIRETORIO',
 ];
 
 // ===========================================
@@ -342,8 +343,8 @@ function validarSegurancaComando(dados: Record<string, unknown> | undefined): { 
 
   // Verificar campo 'branch' (para GIT_PULL, GIT_CHECKOUT_BRANCH)
   if (typeof dados.branch === 'string') {
-    // Branches não devem conter caracteres perigosos
-    if (/[;&|`$(){}!<>]/.test(dados.branch)) {
+    // Branches não devem conter caracteres perigosos nem newlines
+    if (/[;&|`$(){}!<>]/.test(dados.branch) || /[\r\n\x00]/.test(dados.branch)) {
       return {
         valido: false,
         motivo: `Nome de branch contém caracteres não permitidos: ${dados.branch}`,
@@ -357,7 +358,29 @@ function validarSegurancaComando(dados: Record<string, unknown> | undefined): { 
     if (!/^[0-9a-f]+$/i.test(dados.hash)) {
       return {
         valido: false,
-        motivo: `Hash de commit inválido: ${dados.hash}`,
+        motivo: `Hash contém caracteres não permitidos: ${dados.hash}`,
+      };
+    }
+  }
+
+  // Verificar campo 'remoto' (para GIT_PULL)
+  if (typeof dados.remoto === 'string') {
+    // Remoto deve conter apenas caracteres seguros de git remote
+    if (!/^[a-zA-Z0-9._\-\/]+$/.test(dados.remoto) || /[\r\n\x00]/.test(dados.remoto)) {
+      return {
+        valido: false,
+        motivo: `Nome de remoto contém caracteres não permitidos: ${dados.remoto}`,
+      };
+    }
+  }
+
+  // Verificar campo 'limite' (para GIT_LOG) — deve ser numérico
+  if (dados.limite !== undefined && dados.limite !== null) {
+    const limiteNum = Number(dados.limite);
+    if (isNaN(limiteNum) || limiteNum < 1 || limiteNum > 500) {
+      return {
+        valido: false,
+        motivo: `Limite inválido: ${dados.limite} (deve ser 1-500)`,
       };
     }
   }
@@ -436,7 +459,9 @@ async function processarComando(comando: any): Promise<void> {
     // 1. Validar tipo de comando (switch-case já rejeita tipos desconhecidos)
     // 2. Validar diretório autorizado
     if (COMANDOS_QUE_EXIGEM_DIRETORIO.includes(comando.tipo)) {
-      const dir = (comando.dados as any)?.diretorio;
+      // Extrair diretório de diferentes formatos de payload
+      const dadosAny = (comando.dados as any) || {};
+      const dir = dadosAny.diretorio ?? dadosAny.configuracao?.diretorio ?? dadosAny.caminho;
       const validacaoDir = validarDiretorio(dir);
       if (!validacaoDir.valido) {
         console.error(`🚫 SEGURANÇA: ${validacaoDir.motivo}`);
@@ -636,7 +661,7 @@ async function processarComando(comando: any): Promise<void> {
       case 'GIT_LOG': {
         const dirLog = (comando.dados as any)?.diretorio;
         if (!dirLog) throw new Error('Diretório não informado');
-        const limite = (comando.dados as any)?.limite || 50;
+        const limite = Math.min(Math.max(Number((comando.dados as any)?.limite) || 50, 1), 500);
         // Formato: hash|authorName|date|subject (separado por § para evitar conflito)
         const formato = '%H§%an§%ai§%s';
         const logSaida = execSync(
@@ -701,11 +726,15 @@ async function processarComando(comando: any): Promise<void> {
 
       case 'VERIFICAR_HEALTH_CHECK': {
         const dados = (comando.dados as any) || {};
-        const porta = dados.porta;
+        const porta = Number(dados.porta);
         const healthCheckUrl = dados.healthCheckUrl;
         const servicoId = dados.servicoId;
-        if (!porta) throw new Error('Porta do serviço não informada');
-        if (!healthCheckUrl) throw new Error('URL de health check não informada');
+        if (!porta || isNaN(porta) || porta < 1 || porta > 65535) throw new Error(`Porta inválida: ${dados.porta}`);
+        if (!healthCheckUrl || typeof healthCheckUrl !== 'string') throw new Error('URL de health check não informada');
+        // Sanitizar URL — apenas caracteres seguros
+        if (!/^[a-zA-Z0-9\/._\-?&=%+#~@!]*$/.test(healthCheckUrl)) {
+          throw new Error('URL de health check contém caracteres não permitidos');
+        }
 
         const http = await import('http');
         const urlBase = `http://localhost:${porta}`;
@@ -755,7 +784,10 @@ async function processarComando(comando: any): Promise<void> {
         const net = await import('net');
         const emUso = await new Promise<boolean>((resolve) => {
           const servidor = net.createServer();
-          servidor.once('error', () => resolve(true));
+          servidor.once('error', () => {
+            servidor.close();
+            resolve(true);
+          });
           servidor.once('listening', () => {
             servidor.close();
             resolve(false);
