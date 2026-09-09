@@ -545,6 +545,42 @@ export default function ConfiguracoesPage() {
               </div>
             </div>
 
+            {/* Preview do logo */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-300">Preview</label>
+              <div
+                className="flex items-center gap-3 rounded-lg p-4 border"
+                style={{ backgroundColor: prefs.corFundo, borderColor: prefs.corBorda }}
+              >
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: `${prefs.corDestaque}20` }}
+                >
+                  {prefs.iconeLogo && (() => {
+                    const opcao = opcoesIcones.find(o => o.nome === prefs.iconeLogo);
+                    if (opcao) {
+                      const Icone = opcao.icone;
+                      return <Icone className="h-5 w-5" style={{ color: prefs.corDestaque }} />;
+                    }
+                    return (
+                      <span className="text-sm font-bold" style={{ color: prefs.corDestaque }}>
+                        {prefs.nomeAplicacao.charAt(0).toUpperCase()}
+                      </span>
+                    );
+                  })()}
+                  {!prefs.iconeLogo && (
+                    <span className="text-sm font-bold" style={{ color: prefs.corDestaque }}>
+                      {prefs.nomeAplicacao.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: '#ececf0' }}>{prefs.nomeAplicacao}</p>
+                  <p className="text-xs" style={{ color: '#6e6e7a' }}>Gerenciamento Centralizado</p>
+                </div>
+              </div>
+            </div>
+
             {/* Aviso: preview é a página inteira */}
             <div className="flex items-center gap-3 rounded-lg border border-dashed p-3" style={{ borderColor: prefs.corDestaque + '55', background: prefs.corDestaque + '08' }}>
               <Eye className="h-4 w-4 shrink-0" style={{ color: prefs.corDestaque }} />
