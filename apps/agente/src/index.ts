@@ -487,6 +487,7 @@ async function processarComando(comando: any): Promise<void> {
           comando: configuracao.comando,
           porta: configuracao.porta,
           nomePm2: configuracao.nomePm2 || configuracao.id,
+          variaveisAmbiente: configuracao.variaveisAmbiente || undefined,
         });
         if (!resultadoPm2.sucesso) throw new Error(resultadoPm2.erro || 'Falha ao iniciar serviço');
         resultado = { mensagem: 'Serviço iniciado', ...resultadoPm2 } as any;
@@ -691,6 +692,123 @@ async function processarComando(comando: any): Promise<void> {
           cwd: dirCheckoutBranch, encoding: 'utf-8', timeout: 15000,
         });
         resultado = { saida: checkoutBranchSaida, branch: branchAlvo } as unknown as Record<string, unknown>;
+        break;
+      }
+
+      // ===========================================
+      // HEALTH CHECK — Verificação HTTP de saúde
+      // ===========================================
+
+      case 'VERIFICAR_HEALTH_CHECK': {
+        const dados = (comando.dados as any) || {};
+        const porta = dados.porta;
+        const healthCheckUrl = dados.healthCheckUrl;
+        const servicoId = dados.servicoId;
+        if (!porta) throw new Error('Porta do serviço não informada');
+        if (!healthCheckUrl) throw new Error('URL de health check não informada');
+
+        const http = await import('http');
+        const urlBase = `http://localhost:${porta}`;
+        const caminho = healthCheckUrl.startsWith('/') ? healthCheckUrl : `/${healthCheckUrl}`;
+        const urlCompleta = `${urlBase}${caminho}`;
+
+        const resposta = await new Promise<{ status: number; corpo: string; tempoMs: number }>((resolve, reject) => {
+          const inicioReq = Date.now();
+          const requisicao = http.get(urlCompleta, { timeout: 5000 }, (res) => {
+            let corpo = '';
+            res.on('data', (chunk) => { corpo += chunk; });
+            res.on('end', () => {
+              resolve({ status: res.statusCode || 0, corpo: corpo.slice(0, 500), tempoMs: Date.now() - inicioReq });
+            });
+          });
+          requisicao.on('error', (err) => {
+            reject(new Error(`Health check falhou: ${err.message}`));
+          });
+          requisicao.on('timeout', () => {
+            requisicao.destroy();
+            reject(new Error('Health check timeout (5s)'));
+          });
+        });
+
+        resultado = {
+          saudavel: resposta.status >= 200 && resposta.status < 400,
+          status: resposta.status,
+          tempoMs: resposta.tempoMs,
+          url: urlCompleta,
+          corpo: resposta.corpo,
+          servicoId,
+        } as unknown as Record<string, unknown>;
+        break;
+      }
+
+      // ===========================================
+      // VERIFICAR_PORTA — Verificar se uma porta está em uso
+      // ===========================================
+
+      case 'VERIFICAR_PORTA': {
+        const dados = (comando.dados as any) || {};
+        const portaVerificar = Number(dados.porta);
+        if (!portaVerificar || portaVerificar < 1 || portaVerificar > 65535) {
+          throw new Error(`Porta inválida: ${dados.porta}`);
+        }
+
+        const net = await import('net');
+        const emUso = await new Promise<boolean>((resolve) => {
+          const servidor = net.createServer();
+          servidor.once('error', () => resolve(true));
+          servidor.once('listening', () => {
+            servidor.close();
+            resolve(false);
+          });
+          servidor.listen(portaVerificar, '127.0.0.1');
+        });
+
+        resultado = {
+          porta: portaVerificar,
+          emUso,
+          disponivel: !emUso,
+        } as unknown as Record<string, unknown>;
+        break;
+      }
+
+      // ===========================================
+      // VERIFICAR_DIRETORIO — Verificar se diretório existe
+      // ===========================================
+
+      case 'VERIFICAR_DIRETORIO': {
+        const dados = (comando.dados as any) || {};
+        const caminhoDir = dados.caminho;
+        if (!caminhoDir || typeof caminhoDir !== 'string') {
+          throw new Error('Caminho do diretório não informado');
+        }
+
+        const fs = await import('fs');
+        const existe = fs.existsSync(caminhoDir);
+        let ehDiretorio = false;
+        let temArquivos = false;
+        let arquivosCount = 0;
+
+        if (existe) {
+          const stat = fs.statSync(caminhoDir);
+          ehDiretorio = stat.isDirectory();
+          if (ehDiretorio) {
+            try {
+              const arquivos = fs.readdirSync(caminhoDir);
+              arquivosCount = arquivos.length;
+              temArquivos = arquivosCount > 0;
+            } catch {
+              // Sem permissão de leitura ou outro erro
+            }
+          }
+        }
+
+        resultado = {
+          caminho: caminhoDir,
+          existe,
+          ehDiretorio,
+          temArquivos,
+          arquivosCount,
+        } as unknown as Record<string, unknown>;
         break;
       }
 

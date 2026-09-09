@@ -302,6 +302,43 @@ A página mostra:
    - **Ambiente**: máquina onde o serviço vai rodar
 3. Clique em "Criar serviço"
 
+### Configurar um serviço
+
+Ao cadastrar ou editar um serviço, você pode configurar:
+
+#### Variáveis de ambiente
+
+Permite definir variáveis de ambiente que serão injetadas no serviço quando ele for iniciado via PM2.
+
+1. Na edição do serviço, encontre a seção "Variáveis de ambiente"
+2. Adicione pares chave-valor (ex: `PORT=3000`, `NODE_ENV=production`)
+3. As variáveis são salvas no banco e injetadas automaticamente pelo agente
+
+**Importante:** Variáveis configuradas aqui são injetadas no processo PM2, não em arquivos `.env`.
+
+#### Health Check
+
+Configura um endpoint de verificação de saúde para o serviço.
+
+1. Na edição do serviço, encontre o campo "Health Check URL"
+2. Informe o caminho do endpoint (ex: `/api/health`, `/health`)
+3. Ao clicar no botão "HC" na listagem, o sistema verifica se o endpoint responde
+
+O resultado mostra:
+- **Saudável**: HTTP 2xx/3xx (resposta OK)
+- **Instável**: HTTP 4xx/5xx ou timeout
+- Tempo de resposta em milissegundos
+
+#### Verificações de serviço
+
+Na listagem de serviços, existem botões para verificar o estado do serviço:
+
+| Botão | Ação |
+|-------|------|
+| **HC** | Verifica se o endpoint de health check responde |
+| **Porta** | Verifica se a porta está disponível ou em uso |
+| **Dir** | Verifica se o diretório existe e contém arquivos |
+
 ### Tipos de serviço
 
 | Tipo | Exemplo | Quando usar |

@@ -497,14 +497,20 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
 
   private mapearStatus(id: string, processo: ProcessoPm2): StatusProcesso {
     const ambiente = processo.pm2_env;
+    const pm2Status = ambiente?.status || 'desconhecido';
+    // Mapear estados do PM2 para estados expandidos do painel
     const status =
-      ambiente?.status === 'online'
+      pm2Status === 'online'
         ? 'online'
-        : ambiente?.status === 'stopped'
+        : pm2Status === 'stopped'
           ? 'offline'
-          : ambiente?.status === 'errored'
+          : pm2Status === 'errored'
             ? 'erro'
-            : 'desconhecido';
+            : pm2Status === 'launching'
+              ? 'iniciando'
+              : pm2Status === 'stopping'
+                ? 'parando'
+                : 'desconhecido';
     const inicio = ambiente?.pm_uptime ? new Date(ambiente.pm_uptime).toISOString() : undefined;
     return {
       processoId: id,

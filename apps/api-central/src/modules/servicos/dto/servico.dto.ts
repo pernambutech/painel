@@ -39,6 +39,16 @@ export class CriarServicoDto {
   @IsOptional()
   @IsString({ message: 'AmbienteId deve ser um UUID válido' })
   ambienteId?: string;
+
+  // Variáveis de ambiente do serviço (ex: { "NODE_ENV": "production", "DATABASE_URL": "..." })
+  @IsOptional()
+  variaveisAmbiente?: Record<string, string>;
+
+  // Endpoint de health check (ex: "/api/health")
+  @IsOptional()
+  @IsString({ message: 'HealthCheckUrl deve ser uma string' })
+  @MaxLength(500, { message: 'HealthCheckUrl deve ter no máximo 500 caracteres' })
+  healthCheckUrl?: string;
 }
 
 // ===========================================
@@ -78,6 +88,16 @@ export class AtualizarServicoDto {
   @IsOptional()
   @IsString({ message: 'AmbienteId deve ser um UUID válido' })
   ambienteId?: string | null;
+
+  // Variáveis de ambiente do serviço
+  @IsOptional()
+  variaveisAmbiente?: Record<string, string> | null;
+
+  // Endpoint de health check
+  @IsOptional()
+  @IsString({ message: 'HealthCheckUrl deve ser uma string' })
+  @MaxLength(500, { message: 'HealthCheckUrl deve ter no máximo 500 caracteres' })
+  healthCheckUrl?: string | null;
 }
 
 // ===========================================
@@ -91,6 +111,8 @@ export interface RespostaServico {
   diretorio: string | null;
   comando: string | null;
   porta: number | null;
+  variaveisAmbiente: Record<string, string> | null;
+  healthCheckUrl: string | null;
   projetoId: string;
   ambienteId: string | null;
   organizacaoId: string;

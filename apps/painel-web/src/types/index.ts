@@ -126,6 +126,8 @@ export interface Servico {
   diretorio: string | null;
   comando: string | null;
   porta: number | null;
+  variaveisAmbiente: Record<string, string> | null;
+  healthCheckUrl: string | null;
   projetoId: string;
   ambienteId: string | null;
   organizacaoId: string;
@@ -146,6 +148,8 @@ export interface CriarServicoDto {
   comando?: string;
   porta?: number;
   ambienteId?: string;
+  variaveisAmbiente?: Record<string, string>;
+  healthCheckUrl?: string;
 }
 
 export interface AtualizarServicoDto {
@@ -192,7 +196,7 @@ export interface Execucao {
 // ===========================================
 
 export interface StatusPm2 {
-  status: 'online' | 'stopped' | 'errored' | 'desconhecido';
+  status: 'online' | 'stopped' | 'errored' | 'iniciando' | 'parando' | 'reiniciando' | 'desconhecido';
   pid: number | null;
   uptimeMs: number | null;
   reinicios: number | null;

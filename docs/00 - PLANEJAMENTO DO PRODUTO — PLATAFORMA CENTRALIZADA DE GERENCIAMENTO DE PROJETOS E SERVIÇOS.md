@@ -1053,20 +1053,28 @@ A V1 deve ser discutida e refinada, mas inicialmente considerar:
 - Registrar ambiente
 - Conectar agente
 - Ver status online/offline
+- Soft delete (deletadoEm para auditoria)
 
 ## Projetos
 
 - Criar
 - Editar
 - Visualizar
+- Arquivar/reativar (soft delete com deletadoEm)
 
 ## Serviços
 
 - Cadastrar
+- Editar
 - Configurar diretório
 - Configurar comando
 - Configurar porta
 - Associar PM2
+- Variáveis de ambiente por serviço
+- Health check configurável (URL de health check)
+- Verificar porta disponível
+- Verificar existência de diretório
+- Soft delete (deletadoEm para auditoria)
 
 ## PM2
 
@@ -1074,13 +1082,20 @@ A V1 deve ser discutida e refinada, mas inicialmente considerar:
 - Stop
 - Restart
 - Status
-- Métricas básicas
+- Métricas básicas (PID, uptime, CPU, memória, reinícios)
 - Logs básicos
+- PM2 Save
+- Estados expandidos (iniciando, parando, reiniciando, erro, desconhecido)
 
 ## Git
 
 - Status
+- Branch
 - Pull
+- Commits recentes
+- Branches disponíveis
+- Checkout por hash
+- Checkout por branch
 
 ## Dashboard
 
@@ -1089,10 +1104,30 @@ A V1 deve ser discutida e refinada, mas inicialmente considerar:
 - Serviços online
 - Serviços parados
 - Serviços com erro
+- Agentes offline
 
 ## Histórico
 
 - Registro básico de ações
+
+## Configurações
+
+- Preferências de aparência (tema, layout, densidade)
+- Persistência de preferências no banco de dados
+- Aba Geral, Segurança, Notificações, Integrações
+
+## Health Check
+
+- Verificação HTTP de saúde do serviço
+- Exibição de status saudável/instável
+- Tempo de resposta
+- Código de status HTTP
+
+## Verificações
+
+- Verificar porta disponível (net.createServer)
+- Verificar existência de diretório
+- Contagem de arquivos
 
 ---
 

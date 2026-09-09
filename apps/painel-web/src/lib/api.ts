@@ -356,6 +356,8 @@ export const servicosApi = {
       comando?: string;
       porta?: number;
       ambienteId?: string;
+      variaveisAmbiente?: Record<string, string>;
+      healthCheckUrl?: string;
     },
   ) => {
     const resposta = await api.post(
@@ -377,6 +379,8 @@ export const servicosApi = {
       comando?: string;
       porta?: number | null;
       ambienteId?: string | null;
+      variaveisAmbiente?: Record<string, string> | null;
+      healthCheckUrl?: string | null;
     },
   ) => {
     const resposta = await api.put(
@@ -491,6 +495,39 @@ export const servicosApi = {
     const resposta = await api.post(
       `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/git/checkout-branch`,
       { branch },
+    );
+    return resposta.data;
+  },
+
+  // ===========================================
+  // HEALTH CHECK — Verificação de saúde
+  // ===========================================
+
+  verificarHealthCheck: async (organizacaoId: string, projetoId: string, id: string) => {
+    const resposta = await api.get(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/health-check`,
+    );
+    return resposta.data;
+  },
+
+  // ===========================================
+  // VERIFICAÇÃO DE PORTA
+  // ===========================================
+
+  verificarPorta: async (organizacaoId: string, projetoId: string, id: string) => {
+    const resposta = await api.get(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/verificar-porta`,
+    );
+    return resposta.data;
+  },
+
+  // ===========================================
+  // VERIFICAÇÃO DE DIRETÓRIO
+  // ===========================================
+
+  verificarDiretorio: async (organizacaoId: string, projetoId: string, id: string) => {
+    const resposta = await api.get(
+      `/organizacoes/${organizacaoId}/projetos/${projetoId}/servicos/${id}/verificar-diretorio`,
     );
     return resposta.data;
   },

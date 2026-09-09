@@ -26,11 +26,13 @@ import {
   Edit3,
   ExternalLink,
   FileText,
+  FolderCheck,
   FolderKanban,
   GitBranch,
   GitCommit,
   GitPullRequest,
   HardDrive,
+  HeartPulse,
   Network,
   Play,
   Plus,
@@ -39,6 +41,7 @@ import {
   Square,
   Terminal,
   Trash2,
+  Wifi,
   X,
 } from 'lucide-react';
 import { CommitsModal } from '@/components/CommitsModal';
@@ -118,6 +121,21 @@ export default function ProjetoDetalhePage() {
 
   // Estado do modal de edição de serviço
   const [servicoEditando, setServicoEditando] = useState<Servico | null>(null);
+
+  // Estado do health check
+  const [healthCheckResultado, setHealthCheckResultado] = useState<Record<string, any> | null>(null);
+  const [healthCheckServicoId, setHealthCheckServicoId] = useState<string | null>(null);
+  const [carregandoHealthCheck, setCarregandoHealthCheck] = useState(false);
+
+  // Estado da verificação de porta
+  const [portaResultado, setPortaResultado] = useState<Record<string, any> | null>(null);
+  const [portaServicoId, setPortaServicoId] = useState<string | null>(null);
+  const [carregandoPorta, setCarregandoPorta] = useState(false);
+
+  // Estado da verificação de diretório
+  const [diretorioResultado, setDiretorioResultado] = useState<Record<string, any> | null>(null);
+  const [diretorioServicoId, setDiretorioServicoId] = useState<string | null>(null);
+  const [carregandoDiretorio, setCarregandoDiretorio] = useState(false);
 
   useEffect(() => {
     if (organizacao && projetoId) {
@@ -420,6 +438,60 @@ export default function ProjetoDetalhePage() {
     }
   };
 
+  const verificarHealthCheck = async (servico: Servico) => {
+    if (!organizacao) return;
+    try {
+      setCarregandoHealthCheck(true);
+      setHealthCheckServicoId(servico.id);
+      setHealthCheckResultado(null);
+      const resultado = await servicosApi.verificarHealthCheck(organizacao.id, projetoId, servico.id);
+      setHealthCheckResultado(resultado);
+    } catch (err: any) {
+      setHealthCheckResultado({
+        saudavel: false,
+        erro: err.response?.data?.message || err.message || 'Erro ao verificar health check',
+      });
+    } finally {
+      setCarregandoHealthCheck(false);
+    }
+  };
+
+  const verificarPorta = async (servico: Servico) => {
+    if (!organizacao) return;
+    try {
+      setCarregandoPorta(true);
+      setPortaServicoId(servico.id);
+      setPortaResultado(null);
+      const resultado = await servicosApi.verificarPorta(organizacao.id, projetoId, servico.id);
+      setPortaResultado(resultado);
+    } catch (err: any) {
+      setPortaResultado({
+        emUso: null,
+        erro: err.response?.data?.message || err.message || 'Erro ao verificar porta',
+      });
+    } finally {
+      setCarregandoPorta(false);
+    }
+  };
+
+  const verificarDiretorio = async (servico: Servico) => {
+    if (!organizacao) return;
+    try {
+      setCarregandoDiretorio(true);
+      setDiretorioServicoId(servico.id);
+      setDiretorioResultado(null);
+      const resultado = await servicosApi.verificarDiretorio(organizacao.id, projetoId, servico.id);
+      setDiretorioResultado(resultado);
+    } catch (err: any) {
+      setDiretorioResultado({
+        existe: null,
+        erro: err.response?.data?.message || err.message || 'Erro ao verificar diretório',
+      });
+    } finally {
+      setCarregandoDiretorio(false);
+    }
+  };
+
   const tipoLabels: Record<string, string> = {
     frontend: 'Frontend',
     backend: 'Backend',
@@ -690,7 +762,11 @@ export default function ProjetoDetalhePage() {
                     ? 'offline'
                     : estado === 'errored'
                       ? 'erro'
-                      : 'neutro';
+                      : estado === 'iniciando' || estado === 'reiniciando'
+                        ? 'aviso'
+                        : estado === 'parando'
+                          ? 'aviso'
+                          : 'neutro';
               const carregandoAcao = controleCarregando?.endsWith(servico.id);
               const expandido = servicoExpandidoId === servico.id;
               return (
@@ -710,6 +786,11 @@ export default function ProjetoDetalhePage() {
                           {tipoLabels[servico.tipo] || servico.tipo}
                         </BadgeSimples>
                         <BadgeSimples variante={varianteStatus as any}>{estado}</BadgeSimples>
+                        {servico.healthCheckUrl && (
+                          <span className="flex items-center gap-1 text-[10px] text-emerald-400">
+                            <HeartPulse className="w-3 h-3" /> HC
+                          </span>
+                        )}
                         {status?.pid && (
                           <span className="text-xs text-zinc-500">PID {status.pid}</span>
                         )}
@@ -821,6 +902,15 @@ export default function ProjetoDetalhePage() {
                               </div>
                             )}
                             {servico.ambiente && <div><span className="text-zinc-600">Ambiente:</span> {servico.ambiente.nome}</div>}
+                            {servico.healthCheckUrl && <div><span className="text-zinc-600">Health Check:</span> <span className="font-mono text-[#8ca2ff]">{servico.healthCheckUrl}</span></div>}
+                            {servico.variaveisAmbiente && Object.keys(servico.variaveisAmbiente).length > 0 && (
+                              <div>
+                                <span className="text-zinc-600">Variáveis:</span>{' '}
+                                <span className="font-mono text-zinc-500">
+                                  {Object.keys(servico.variaveisAmbiente).join(', ')}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                         {/* Coluna 2: Status e ações */}
@@ -834,6 +924,61 @@ export default function ProjetoDetalhePage() {
                             )}
                             {status?.reinicios != null && (
                               <div><span className="text-zinc-600">Reinícios:</span> {status.reinicios}</div>
+                            )}
+                            {/* Resultado do health check */}
+                            {healthCheckServicoId === servico.id && healthCheckResultado && (
+                              <div className="mt-1 p-2 rounded border border-[#2a2a32] bg-[#0d0d0f]">
+                                <div className="flex items-center gap-1.5 text-xs">
+                                  <HeartPulse className={`w-3 h-3 ${healthCheckResultado.saudavel ? 'text-emerald-400' : 'text-red-400'}`} />
+                                  <span className={healthCheckResultado.saudavel ? 'text-emerald-400' : 'text-red-400'}>
+                                    {healthCheckResultado.saudavel ? 'Saudável' : 'Instável'}
+                                  </span>
+                                </div>
+                                {healthCheckResultado.status && (
+                                  <div className="text-[11px] text-zinc-500 mt-1">
+                                    HTTP {healthCheckResultado.status} — {healthCheckResultado.tempoMs}ms
+                                  </div>
+                                )}
+                                {healthCheckResultado.erro && (
+                                  <div className="text-[11px] text-red-400/70 mt-1">
+                                    {healthCheckResultado.erro}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {/* Resultado da verificação de porta */}
+                            {portaServicoId === servico.id && portaResultado && (
+                              <div className="mt-1 p-2 rounded border border-[#2a2a32] bg-[#0d0d0f]">
+                                <div className="flex items-center gap-1.5 text-xs">
+                                  <Wifi className={`w-3 h-3 ${portaResultado.disponivel ? 'text-emerald-400' : 'text-amber-400'}`} />
+                                  <span className={portaResultado.disponivel ? 'text-emerald-400' : 'text-amber-400'}>
+                                    Porta {portaResultado.porta}: {portaResultado.disponivel ? 'Disponível' : 'Em uso'}
+                                  </span>
+                                </div>
+                                {portaResultado.erro && (
+                                  <div className="text-[11px] text-red-400/70 mt-1">
+                                    {portaResultado.erro}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {/* Resultado da verificação de diretório */}
+                            {diretorioServicoId === servico.id && diretorioResultado && (
+                              <div className="mt-1 p-2 rounded border border-[#2a2a32] bg-[#0d0d0f]">
+                                <div className="flex items-center gap-1.5 text-xs">
+                                  <FolderCheck className={`w-3 h-3 ${diretorioResultado.existe ? 'text-emerald-400' : 'text-red-400'}`} />
+                                  <span className={diretorioResultado.existe ? 'text-emerald-400' : 'text-red-400'}>
+                                    {diretorioResultado.existe
+                                      ? `Diretório existe${diretorioResultado.temArquivos ? ` (${diretorioResultado.arquivosCount} itens)` : ' (vazio)'}`
+                                      : 'Diretório não encontrado'}
+                                  </span>
+                                </div>
+                                {diretorioResultado.erro && (
+                                  <div className="text-[11px] text-red-400/70 mt-1">
+                                    {diretorioResultado.erro}
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
                           <div className="flex items-center gap-1.5 pt-1">
@@ -872,6 +1017,39 @@ export default function ProjetoDetalhePage() {
                             >
                               <Terminal className="w-4 h-4 text-violet-400" /> <span className="text-xs">PM2</span>
                             </Button>
+                            {servico.healthCheckUrl && (
+                              <Button
+                                variante="fantasma"
+                                tamanho="pequeno"
+                                title="Verificar Health Check"
+                                onClick={(e) => { e.stopPropagation(); verificarHealthCheck(servico); }}
+                                carregando={carregandoHealthCheck && healthCheckServicoId === servico.id}
+                              >
+                                <HeartPulse className="w-4 h-4 text-emerald-400" /> <span className="text-xs">HC</span>
+                              </Button>
+                            )}
+                            {servico.porta && (
+                              <Button
+                                variante="fantasma"
+                                tamanho="pequeno"
+                                title="Verificar Porta"
+                                onClick={(e) => { e.stopPropagation(); verificarPorta(servico); }}
+                                carregando={carregandoPorta && portaServicoId === servico.id}
+                              >
+                                <Wifi className="w-4 h-4 text-sky-400" /> <span className="text-xs">Porta</span>
+                              </Button>
+                            )}
+                            {servico.diretorio && (
+                              <Button
+                                variante="fantasma"
+                                tamanho="pequeno"
+                                title="Verificar Diretório"
+                                onClick={(e) => { e.stopPropagation(); verificarDiretorio(servico); }}
+                                carregando={carregandoDiretorio && diretorioServicoId === servico.id}
+                              >
+                                <FolderCheck className="w-4 h-4 text-amber-400" /> <span className="text-xs">Dir</span>
+                              </Button>
+                            )}
                             <div className="ml-1 h-6 w-px bg-[#2a2a32]" />
                             <Button
                               variante="fantasma"

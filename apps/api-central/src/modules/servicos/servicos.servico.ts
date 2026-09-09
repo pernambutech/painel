@@ -75,6 +75,8 @@ export class ServicosServico {
         diretorio: dados.diretorio || null,
         comando: dados.comando || null,
         porta: dados.porta ?? null,
+        variaveisAmbiente: dados.variaveisAmbiente ? (dados.variaveisAmbiente as any) : null,
+        healthCheckUrl: dados.healthCheckUrl || null,
         projetoId,
         ambienteId: dados.ambienteId || null,
         organizacaoId,
@@ -218,6 +220,8 @@ export class ServicosServico {
         ...(dados.comando !== undefined && { comando: dados.comando }),
         ...(dados.porta !== undefined && { porta: dados.porta }),
         ...(dados.ambienteId !== undefined && { ambienteId: dados.ambienteId }),
+        ...(dados.variaveisAmbiente !== undefined && { variaveisAmbiente: dados.variaveisAmbiente as any }),
+        ...(dados.healthCheckUrl !== undefined && { healthCheckUrl: dados.healthCheckUrl }),
       },
       include: {
         ambiente: {
@@ -302,6 +306,7 @@ export class ServicosServico {
             comando: servico.comando,
             porta: servico.porta ?? undefined,
             nomePm2: nomePm2,
+            variaveisAmbiente: (servico as any).variaveisAmbiente || undefined,
           },
         },
       });
@@ -611,6 +616,90 @@ export class ServicosServico {
     return (comando.resultado as Record<string, unknown>) || {};
   }
 
+  // ===========================================
+  // HEALTH CHECK — Verificação de saúde do serviço
+  // ===========================================
+
+  async verificarHealthCheck(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente } = await this.obterServicoEAgente(id, projetoId, organizacaoId, usuarioId);
+
+    if (!servico.porta) {
+      throw new BadRequestException('Serviço sem porta configurada');
+    }
+
+    const healthCheckUrl = (servico as any).healthCheckUrl;
+    if (!healthCheckUrl) {
+      throw new BadRequestException('Serviço sem endpoint de health check configurado');
+    }
+
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'VERIFICAR_HEALTH_CHECK',
+      dados: {
+        servicoId: servico.id,
+        porta: servico.porta,
+        healthCheckUrl,
+      },
+    });
+
+    return (comando.resultado as Record<string, unknown>) || { saudavel: false };
+  }
+
+  // ===========================================
+  // VERIFICAR PORTA — Checar se porta está em uso
+  // ===========================================
+
+  async verificarPorta(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente } = await this.obterServicoEAgente(id, projetoId, organizacaoId, usuarioId);
+
+    if (!servico.porta) {
+      throw new BadRequestException('Serviço sem porta configurada');
+    }
+
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'VERIFICAR_PORTA',
+      dados: { porta: servico.porta },
+    });
+
+    return (comando.resultado as Record<string, unknown>) || { emUso: null, disponivel: null };
+  }
+
+  // ===========================================
+  // VERIFICAR DIRETÓRIO — Checar existência do diretório
+  // ===========================================
+
+  async verificarDiretorio(
+    id: string,
+    projetoId: string,
+    organizacaoId: string,
+    usuarioId: string,
+  ): Promise<Record<string, unknown>> {
+    const { servico, agente } = await this.obterServicoEAgente(id, projetoId, organizacaoId, usuarioId);
+
+    if (!servico.diretorio) {
+      throw new BadRequestException('Serviço sem diretório configurado');
+    }
+
+    const comando = await this.comandosServico.enviarEAguardar({
+      agenteId: agente.id,
+      tipo: 'VERIFICAR_DIRETORIO',
+      dados: { caminho: servico.diretorio },
+    });
+
+    return (comando.resultado as Record<string, unknown>) || { existe: null };
+  }
+
   private async obterServicoEAgente(
     id: string,
     projetoId: string,
@@ -737,6 +826,8 @@ export class ServicosServico {
       diretorio: servico.diretorio,
       comando: servico.comando,
       porta: servico.porta,
+      variaveisAmbiente: servico.variaveisAmbiente || null,
+      healthCheckUrl: servico.healthCheckUrl || null,
       projetoId: servico.projetoId,
       ambienteId: servico.ambienteId,
       organizacaoId: servico.organizacaoId,

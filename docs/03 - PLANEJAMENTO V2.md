@@ -31,12 +31,14 @@ A V1 resolveu o problema central: **gerenciar projetos e serviços a partir de u
 |---------|----|----|
 | Autenticação | Token sem expiração | Tokens com expiração + rotação |
 | Usuários | Single-user por organização | Multiusuário com RBAC |
-| Git | Status + Pull | Fetch, Add, Commit, Push, branches remotas |
-| Monitoramento | Status online/offline | Health checks HTTP, métricas, crash loop detection |
-| Logs | Visualização básica | Busca, filtros, tempo real, exportação |
+| Git | Status + Pull + Branches + Checkout | Fetch, Add, Commit, Push, branches remotas |
+| Monitoramento | Status online/offline + Health checks HTTP + Verificação de porta | Métricas, crash loop detection |
+| Logs | Visualização básica com terminal | Busca, filtros, tempo real, exportação |
 | Automação | Manual | Fluxos configuráveis, ações compostas |
 | Agentes | PM2 only | PM2 + Docker + SO |
 | Segurança | 3 pilares | 8+ pilares |
+| Variáveis de ambiente | Por serviço (injetadas no PM2) | Variáveis globais, templates, secrets |
+| Processos | Estados expandidos (iniciando, parando, etc.) | Métricas por serviço, crash loop |
 
 ---
 
@@ -265,23 +267,17 @@ FASE 4 — Polish + UX (Semanas 17-20)
 
 ## 5. MONITORAMENTO / HEALTH CHECKS
 
-### 5.1 Health checks HTTP configuráveis 🔴
+### 5.1 Health checks HTTP configuráveis ✅ V1
 
-**Descrição:** Permitir ao usuário configurar um endpoint de health check para cada serviço (ex: `/api/health`), com verificação periódica de status HTTP.
+**Status:** Implementado na V1. Verificação manual de saúde por serviço via endpoint configurável.
 
-**Por que é necessário:** Um processo pode estar ativo mas a aplicação indisponível. Atualmente só se verifica se o processo PM2 está online.
+**Evolução V2:** Verificação periódica automática, notificações de instabilidade, dashboard de health checks.
 
-**Complexidade:** Média
-**Dependências:** Nenhuma
+### 5.2 Verificação de disponibilidade de porta ✅ V1
 
-### 5.2 Verificação de disponibilidade de porta 🟡
+**Status:** Implementado na V1. Verificação manual de porta por serviço via agente.
 
-**Descrição:** Consultar se uma porta está em uso, qual processo a utiliza, e se corresponde ao serviço esperado.
-
-**Por que é necessário:** Detectar conflitos de porta e processos "fantasma".
-
-**Complexidade:** Baixa
-**Dependências:** Parse de portas (já implementado no agente)
+**Evolução V2:** Monitoramento contínuo, detecção automática de conflitos, alertas de processos "fantasma".
 
 ### 5.3 Métricas de CPU e memória por serviço 🟡
 
@@ -301,20 +297,17 @@ FASE 4 — Polish + UX (Semanas 17-20)
 **Complexidade:** Média
 **Dependências:** Métricas por serviço (5.3)
 
-### 5.5 Estilos de status expandidos 🟡
+### 5.5 Estilos de status expandidos ✅ V1
 
-**Descrição:** Implementar estados além de online/stopped/errored: INICIANDO, PARANDO, REINICIANDO, DESCONHECIDO, DESCONECTADO.
+**Status:** Implementado na V1. Estados: online, offline, iniciando, parando, reiniciando, erro, desconhecido.
 
-**Por que é necessário:** Diferenciar "processo online" de "aplicação saudável".
+**Evolução V2:** Estados adicionais: crash_loop, manutencao, escalando.
 
-**Complexidade:** Baixa
-**Dependências:** Nenhuma
+### 5.6 Verificação de diretório do serviço ✅ V1
 
-### 5.6 Verificação de diretório do serviço 🟡
+**Status:** Implementado na V1. Verificação manual de existência de diretório via agente.
 
-**Descrição:** Verificar se o diretório configurado existe na máquina remota antes de iniciar um serviço.
-
-**Por que é necessário:** "Diretório alterado" é um cenário que deve ser considerado. Atualmente o serviço falha silenciosamente.
+**Evolução V2:** Verificação automática antes de iniciar serviço, alertas de diretório inacessível.
 
 **Complexidade:** Baixa
 **Dependências:** Nenhuma
@@ -457,14 +450,11 @@ FASE 4 — Polish + UX (Semanas 17-20)
 **Complexidade:** Alta
 **Dependências:** WebSocket (já implementado)
 
-### 8.3 Variáveis de ambiente no agente 🔴
+### 8.3 Variáveis de ambiente no agente ✅ V1
 
-**Descrição:** Permitir configurar e injetar variáveis de ambiente nos serviços via painel, sem editar arquivos `.env` manualmente.
+**Status:** Implementado na V1. Variáveis de ambiente configuráveis por serviço, injetadas no PM2.
 
-**Por que é necessário:** "Variáveis de ambiente" listadas como propriedade de serviço no planejamento.
-
-**Complexidade:** Média
-**Dependências:** Nenhuma
+**Evolução V2:** Variáveis globais por organização, templates de variáveis, secrets encriptografados, importação de arquivos .env.
 
 ### 8.4 Presets de serviços (templates) 🟡
 

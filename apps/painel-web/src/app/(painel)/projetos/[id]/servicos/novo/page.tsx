@@ -10,6 +10,7 @@ import { servicosApi, ambientesApi } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
+import { EditorVariaveisAmbiente } from '@/components/EditorVariaveisAmbiente';
 import { ArrowLeft } from 'lucide-react';
 import type { Ambiente } from '@/types';
 
@@ -34,6 +35,8 @@ export default function NovoServicoPage() {
   const [comando, setComando] = useState('');
   const [porta, setPorta] = useState('');
   const [ambienteId, setAmbienteId] = useState('');
+  const [variaveisAmbiente, setVariaveisAmbiente] = useState<Record<string, string>>({});
+  const [healthCheckUrl, setHealthCheckUrl] = useState('');
   const [ambientes, setAmbientes] = useState<Ambiente[]>([]);
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(false);
@@ -76,6 +79,8 @@ export default function NovoServicoPage() {
         comando: comando.trim() || undefined,
         porta: portaNum,
         ambienteId: ambienteId || undefined,
+        variaveisAmbiente: Object.keys(variaveisAmbiente).length > 0 ? variaveisAmbiente : undefined,
+        healthCheckUrl: healthCheckUrl.trim() || undefined,
       });
       router.push(`/projetos/${projetoId}`);
     } catch (err: any) {
@@ -197,6 +202,37 @@ export default function NovoServicoPage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Variáveis de ambiente */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-zinc-300">
+              Variáveis de ambiente <span className="text-zinc-500">(opcional)</span>
+            </label>
+            <p className="text-xs text-zinc-500">
+              Variáveis injetadas no processo via PM2 (ex: NODE_ENV, DATABASE_URL).
+            </p>
+            <EditorVariaveisAmbiente
+              valor={variaveisAmbiente}
+              aoMudar={setVariaveisAmbiente}
+            />
+          </div>
+
+          {/* Health Check URL */}
+          <div className="space-y-2">
+            <label htmlFor="healthcheck" className="block text-sm font-medium text-zinc-300">
+              Health Check URL <span className="text-zinc-500">(opcional)</span>
+            </label>
+            <Input
+              id="healthcheck"
+              type="text"
+              value={healthCheckUrl}
+              onChange={(e) => setHealthCheckUrl(e.target.value)}
+              placeholder="Ex.: /api/health"
+            />
+            <p className="text-xs text-zinc-500">
+              Endpoint relativo para verificação de saúde do serviço.
+            </p>
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-2">

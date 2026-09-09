@@ -26,7 +26,10 @@ export type TipoComando =
   | 'GIT_PULL'
   | 'GIT_LOG'
   | 'GIT_CHECKOUT'
-  | 'GIT_CHECKOUT_BRANCH';
+  | 'GIT_CHECKOUT_BRANCH'
+  | 'VERIFICAR_HEALTH_CHECK'
+  | 'VERIFICAR_PORTA'
+  | 'VERIFICAR_DIRETORIO';
 
 // ===========================================
 // STATUS DO COMANDO

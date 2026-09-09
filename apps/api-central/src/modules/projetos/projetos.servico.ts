@@ -163,6 +163,7 @@ export class ProjetosServico {
       where: { id },
       data: {
         ativo: false,
+        deletadoEm: new Date(),
       },
     });
 
@@ -193,6 +194,7 @@ export class ProjetosServico {
       where: { id },
       data: {
         ativo: true,
+        deletadoEm: null,
       },
     });
 

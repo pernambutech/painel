@@ -638,21 +638,29 @@ A V1 deve possuir:
 - Visualizar status.
 - Online.
 - Offline.
+- Soft delete (deletadoEm para auditoria).
 
 ## Projetos
 
 - Criar projeto.
 - Editar projeto.
 - Visualizar projeto.
-- Arquivar projeto.
+- Arquivar projeto (soft delete com deletadoEm).
+- Reativar projeto.
 
 ## Serviços
 
 - Criar serviço.
+- Editar serviço.
 - Definir diretório.
 - Definir comando.
 - Definir porta.
 - Associar ambiente.
+- Variáveis de ambiente por serviço.
+- Health check configurável por serviço (URL de health check).
+- Verificar porta disponível (endpoint com agente).
+- Verificar existência de diretório (endpoint com agente).
+- Soft delete (deletadoEm para auditoria).
 
 ## Processos
 
@@ -660,23 +668,32 @@ A V1 deve possuir:
 - Parar.
 - Reiniciar.
 - Consultar status.
+- Estados expandidos: online, offline, iniciando, parando, reiniciando, erro, desconhecido.
+- Métricas: PID, uptime, reinícios, CPU, memória.
 
 ## PM2
 
 - Utilização através do agente.
 - Não expor PM2 diretamente na arquitetura do painel.
+- Salvar processos (PM2 Save).
 
 ## Git
-
-Inicialmente:
 
 - Consultar status.
 - Consultar branch.
 - Executar Git Pull.
+- Listar commits recentes.
+- Listar branches.
+- Checkout por hash.
+- Checkout por branch.
 
 ## Logs
 
 - Visualizar logs básicos dos serviços.
+- Visualização estilo terminal.
+- Timestamps com parseamento robusto (DD/MM/YYYY, ISO 8601).
+- Filtro por nível (info, warn, error).
+- Remoção de códigos ANSI.
 
 ## Histórico
 
@@ -692,6 +709,27 @@ Visualizar:
 - Serviços com erro.
 - Ambientes.
 - Agentes offline.
+
+## Configurações
+
+- Aba Geral: Preferências de aparência (tema, layout, densidade, idioma).
+- Aba Segurança: Senha, autenticação, sessões.
+- Aba Notificações: Configurações de alertas.
+- Aba Integrações: Configurações de agentes.
+- Persistência de preferências no banco de dados (campo JSON na tabela organizacoes).
+
+## Health Check
+
+- Verificação HTTP de saúde do serviço.
+- Exibição do status saudável/instável.
+- Tempo de resposta.
+- Código de status HTTP.
+
+## Verificações
+
+- Verificar porta disponível (net.createServer).
+- Verificar existência de diretório.
+- Contagem de arquivos no diretório.
 
 ---
 

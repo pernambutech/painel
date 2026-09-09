@@ -1,5 +1,5 @@
 // Modal de edição de serviço
-// Permite editar nome, tipo, diretório, comando, porta e ambiente
+// Permite editar nome, tipo, diretório, comando, porta, ambiente, variáveis de ambiente e health check
 
 'use client';
 
@@ -9,6 +9,7 @@ import { servicosApi, ambientesApi } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { EditorVariaveisAmbiente } from '@/components/EditorVariaveisAmbiente';
 import { X } from 'lucide-react';
 import type { Servico, Ambiente } from '@/types';
 
@@ -51,6 +52,10 @@ export function EditarServicoModal({
   const [comando, setComando] = useState(servico.comando || '');
   const [porta, setPorta] = useState(servico.porta ? String(servico.porta) : '');
   const [ambienteId, setAmbienteId] = useState(servico.ambienteId || '');
+  const [variaveisAmbiente, setVariaveisAmbiente] = useState<Record<string, string>>(
+    servico.variaveisAmbiente || {}
+  );
+  const [healthCheckUrl, setHealthCheckUrl] = useState(servico.healthCheckUrl || '');
 
   // Estado
   const [ambientes, setAmbientes] = useState<Ambiente[]>([]);
@@ -107,6 +112,8 @@ export function EditarServicoModal({
         comando: comando.trim() || undefined,
         porta: portaNum,
         ambienteId: ambienteId || null,
+        variaveisAmbiente: Object.keys(variaveisAmbiente).length > 0 ? variaveisAmbiente : null,
+        healthCheckUrl: healthCheckUrl.trim() || null,
       });
       aoAtualizar?.();
       aoFechar();
@@ -237,6 +244,36 @@ export function EditarServicoModal({
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Variáveis de ambiente */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-zinc-400">
+              Variáveis de ambiente <span className="text-zinc-600">(opcional)</span>
+            </label>
+            <p className="text-[11px] text-zinc-600">
+              Variáveis injetadas no processo via PM2 (ex: NODE_ENV, DATABASE_URL).
+            </p>
+            <EditorVariaveisAmbiente
+              valor={variaveisAmbiente}
+              aoMudar={setVariaveisAmbiente}
+            />
+          </div>
+
+          {/* Health Check URL */}
+          <div className="space-y-1.5">
+            <label htmlFor="servico-healthcheck" className="text-xs font-medium text-zinc-400">
+              Health Check URL <span className="text-zinc-600">(opcional)</span>
+            </label>
+            <Input
+              id="servico-healthcheck"
+              value={healthCheckUrl}
+              onChange={(e) => setHealthCheckUrl(e.target.value)}
+              placeholder="Ex.: /api/health"
+            />
+            <p className="text-[11px] text-zinc-600">
+              Endpoint relativo para verificação de saúde (ex: /api/health).
+            </p>
           </div>
 
           {/* Botões */}

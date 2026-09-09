@@ -233,6 +233,48 @@ export class ServicosController {
   }
 
   // ===========================================
+  // HEALTH CHECK — Verificação de saúde
+  // ===========================================
+
+  @Get('projetos/:projetoId/servicos/:id/health-check')
+  async verificarHealthCheck(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Request() req,
+  ) {
+    return this.servicosServico.verificarHealthCheck(id, projetoId, organizacaoId, req.user.id);
+  }
+
+  // ===========================================
+  // VERIFICAR PORTA — Checar se porta está em uso
+  // ===========================================
+
+  @Get('projetos/:projetoId/servicos/:id/verificar-porta')
+  async verificarPorta(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Request() req,
+  ) {
+    return this.servicosServico.verificarPorta(id, projetoId, organizacaoId, req.user.id);
+  }
+
+  // ===========================================
+  // VERIFICAR DIRETÓRIO — Checar existência do diretório
+  // ===========================================
+
+  @Get('projetos/:projetoId/servicos/:id/verificar-diretorio')
+  async verificarDiretorio(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('projetoId') projetoId: string,
+    @Param('id') id: string,
+    @Request() req,
+  ) {
+    return this.servicosServico.verificarDiretorio(id, projetoId, organizacaoId, req.user.id);
+  }
+
+  // ===========================================
   // DASHBOARD — DADOS CONSOLIDADOS
   // ===========================================
 
