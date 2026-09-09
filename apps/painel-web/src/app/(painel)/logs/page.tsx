@@ -260,7 +260,11 @@ export default function LogsPage() {
           )}
 
           {/* Terminal */}
-          <TerminalLog logs={logsFiltrados} carregando={carregandoLogs} />
+          <TerminalLog
+            logs={logsFiltrados}
+            carregando={carregandoLogs}
+            nomeArquivo={servicoSelecionado ? `logs-${servicoSelecionado.nome}` : 'logs'}
+          />
         </div>
       )}
     </div>

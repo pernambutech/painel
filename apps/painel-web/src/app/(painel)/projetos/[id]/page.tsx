@@ -1192,7 +1192,12 @@ export default function ProjetoDetalhePage() {
             {erroLogs}
           </div>
         )}
-        <TerminalLog logs={logs} carregando={carregandoLogs} maxHeight="50vh" />
+        <TerminalLog
+          logs={logs}
+          carregando={carregandoLogs}
+          maxHeight="50vh"
+          nomeArquivo={logsModalServico ? `logs-${logsModalServico.nome}` : 'logs'}
+        />
       </Modal>
 
       {/* Modal de Git */}
