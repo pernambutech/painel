@@ -10,31 +10,44 @@ import { Spinner } from '@/components/ui/Spinner';
 import { ACAO_LABELS } from '@/lib/constantes';
 import type { Execucao } from '@/types';
 
+const ITENS_POR_PAGINA_OPCOES = [10, 25, 50, 100];
+
 export default function ExecucoesPage() {
   const { organizacao } = useAuth();
   const [execucoes, setExecucoes] = useState<Execucao[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [pagina, setPagina] = useState(1);
+  const [itensPorPagina, setItensPorPagina] = useState(25);
+  const [totalItens, setTotalItens] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(0);
 
   const carregar = useCallback(async () => {
     if (!organizacao) return;
     try {
       setCarregando(true);
-      const dados = await execucoesApi.listarPorOrganizacao(organizacao.id, 50);
+      const dados = await execucoesApi.listarPorOrganizacao(organizacao.id, itensPorPagina, pagina);
       setExecucoes(dados.dados || []);
+      setTotalItens(dados.total || 0);
+      setTotalPaginas(dados.paginas || 0);
     } catch {
       setErro('Erro ao carregar execuções.');
     } finally {
       setCarregando(false);
     }
-  }, [organizacao]);
+  }, [organizacao, pagina, itensPorPagina]);
 
   useEffect(() => {
     if (organizacao) carregar();
   }, [organizacao, carregar]);
 
+  // Resetar para página 1 ao mudar itens por página
+  useEffect(() => {
+    setPagina(1);
+  }, [itensPorPagina]);
+
   const formatarHora = (data: string) => {
-    return new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return new Date(data).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   const calcularDuracao = (exec: Execucao) => {
@@ -70,9 +83,24 @@ export default function ExecucoesPage() {
   return (
     <div>
       {/* Cabeçalho */}
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Execuções</h1>
-        <p className="text-sm mt-1" style={{ color: '#a8a8b3' }}>Acompanhe ações em tempo real.</p>
+      <div style={{ marginBottom: '28px' }} className="flex items-center justify-between">
+        <div>
+          <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Execuções</h1>
+          <p className="text-sm mt-1" style={{ color: '#a8a8b3' }}>Acompanhe ações em tempo real.</p>
+        </div>
+        {/* Seletor de itens por página */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs" style={{ color: '#6e6e7a' }}>Itens por página:</span>
+          <select
+            value={itensPorPagina}
+            onChange={(e) => setItensPorPagina(Number(e.target.value))}
+            className="rounded-md border border-[#2a2a32] bg-[#1e1e24] px-2 py-1 text-xs text-zinc-300 focus:outline-none"
+          >
+            {ITENS_POR_PAGINA_OPCOES.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Erro */}
@@ -142,6 +170,71 @@ export default function ExecucoesPage() {
           </table>
         )}
       </div>
+
+      {/* Paginação */}
+      {!carregando && totalPaginas > 1 && (
+        <div className="flex items-center justify-between mt-4 px-2">
+          <span className="text-xs" style={{ color: '#6e6e7a' }}>
+            {totalItens} execução(ões) — Página {pagina} de {totalPaginas}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPagina(1)}
+              disabled={pagina === 1}
+              className="px-2 py-1 text-xs rounded border border-[#2a2a32] text-zinc-400 hover:bg-[#1e1e24] disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              «
+            </button>
+            <button
+              onClick={() => setPagina((p) => Math.max(1, p - 1))}
+              disabled={pagina === 1}
+              className="px-2 py-1 text-xs rounded border border-[#2a2a32] text-zinc-400 hover:bg-[#1e1e24] disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              ‹
+            </button>
+            {Array.from({ length: Math.min(5, totalPaginas) }, (_, i) => {
+              let numPagina: number;
+              if (totalPaginas <= 5) {
+                numPagina = i + 1;
+              } else if (pagina <= 3) {
+                numPagina = i + 1;
+              } else if (pagina >= totalPaginas - 2) {
+                numPagina = totalPaginas - 4 + i;
+              } else {
+                numPagina = pagina - 2 + i;
+              }
+              return (
+                <button
+                  key={numPagina}
+                  onClick={() => setPagina(numPagina)}
+                  className="px-2 py-1 text-xs rounded border text-zinc-400 hover:bg-[#1e1e24]"
+                  style={{
+                    borderColor: numPagina === pagina ? '#5b7cfa' : '#2a2a32',
+                    color: numPagina === pagina ? '#5b7cfa' : undefined,
+                    background: numPagina === pagina ? '#5b7cfa10' : undefined,
+                  }}
+                >
+                  {numPagina}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+              disabled={pagina === totalPaginas}
+              className="px-2 py-1 text-xs rounded border border-[#2a2a32] text-zinc-400 hover:bg-[#1e1e24] disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              ›
+            </button>
+            <button
+              onClick={() => setPagina(totalPaginas)}
+              disabled={pagina === totalPaginas}
+              className="px-2 py-1 text-xs rounded border border-[#2a2a32] text-zinc-400 hover:bg-[#1e1e24] disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              »
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

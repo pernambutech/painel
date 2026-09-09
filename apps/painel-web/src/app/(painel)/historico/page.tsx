@@ -10,31 +10,43 @@ import { Spinner } from '@/components/ui/Spinner';
 import { ACAO_LABELS } from '@/lib/constantes';
 import type { Execucao } from '@/types';
 
+const ITENS_POR_PAGINA_OPCOES = [10, 25, 50, 100];
+
 export default function HistoricoPage() {
   const { organizacao } = useAuth();
   const [execucoes, setExecucoes] = useState<Execucao[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [pagina, setPagina] = useState(1);
+  const [itensPorPagina, setItensPorPagina] = useState(25);
+  const [totalItens, setTotalItens] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(0);
 
   const carregar = useCallback(async () => {
     if (!organizacao) return;
     try {
       setCarregando(true);
-      const dados = await execucoesApi.listarPorOrganizacao(organizacao.id, 30);
+      const dados = await execucoesApi.listarPorOrganizacao(organizacao.id, itensPorPagina, pagina);
       setExecucoes(dados.dados || []);
+      setTotalItens(dados.total || 0);
+      setTotalPaginas(dados.paginas || 0);
     } catch {
       setErro('Erro ao carregar histórico.');
     } finally {
       setCarregando(false);
     }
-  }, [organizacao]);
+  }, [organizacao, pagina, itensPorPagina]);
 
   useEffect(() => {
     if (organizacao) carregar();
   }, [organizacao, carregar]);
 
+  useEffect(() => {
+    setPagina(1);
+  }, [itensPorPagina]);
+
   const formatarHora = (data: string) => {
-    return new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return new Date(data).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   const montarDescricao = (exec: Execucao) => {
@@ -71,9 +83,23 @@ export default function HistoricoPage() {
   return (
     <div>
       {/* Cabeçalho */}
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Histórico</h1>
-        <p className="text-sm mt-1" style={{ color: '#a8a8b3' }}>Linha do tempo de eventos.</p>
+      <div style={{ marginBottom: '28px' }} className="flex items-center justify-between">
+        <div>
+          <h1 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.4px' }} className="text-zinc-100">Histórico</h1>
+          <p className="text-sm mt-1" style={{ color: '#a8a8b3' }}>Linha do tempo de eventos.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs" style={{ color: '#6e6e7a' }}>Itens por página:</span>
+          <select
+            value={itensPorPagina}
+            onChange={(e) => setItensPorPagina(Number(e.target.value))}
+            className="rounded-md border border-[#2a2a32] bg-[#1e1e24] px-2 py-1 text-xs text-zinc-300 focus:outline-none"
+          >
+            {ITENS_POR_PAGINA_OPCOES.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Erro */}
@@ -110,14 +136,13 @@ export default function HistoricoPage() {
                     fontSize: '13px',
                   }}
                 >
-                  <span style={{ color: '#6e6e7a', fontSize: '12px', width: '56px', flexShrink: 0 }}>
+                  <span style={{ color: '#6e6e7a', fontSize: '12px', width: '120px', flexShrink: 0 }}>
                     {formatarHora(exec.criadoEm)}
                   </span>
                   <span style={{ color: '#a8a8b3' }}>
                     <strong style={{ color: '#ececf0', fontWeight: 500 }}>{nomeUsuario}</strong>
                     {' '}
                     {partes.map((parte, i) => {
-                      // Partes que são nomes (serviço, projeto) ficam em bold
                       const ehNome = i === 1 && partes.length > 1 && !parte.startsWith('(') && !parte.startsWith('apresentou') && !parte.startsWith('falhou');
                       const ehProjeto = parte.startsWith('(');
                       if (ehNome || (i === 2 && ehProjeto)) {
@@ -132,6 +157,71 @@ export default function HistoricoPage() {
           </div>
         )}
       </div>
+
+      {/* Paginação */}
+      {!carregando && totalPaginas > 1 && (
+        <div className="flex items-center justify-between mt-4 px-2">
+          <span className="text-xs" style={{ color: '#6e6e7a' }}>
+            {totalItens} evento(s) — Página {pagina} de {totalPaginas}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPagina(1)}
+              disabled={pagina === 1}
+              className="px-2 py-1 text-xs rounded border border-[#2a2a32] text-zinc-400 hover:bg-[#1e1e24] disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              «
+            </button>
+            <button
+              onClick={() => setPagina((p) => Math.max(1, p - 1))}
+              disabled={pagina === 1}
+              className="px-2 py-1 text-xs rounded border border-[#2a2a32] text-zinc-400 hover:bg-[#1e1e24] disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              ‹
+            </button>
+            {Array.from({ length: Math.min(5, totalPaginas) }, (_, i) => {
+              let numPagina: number;
+              if (totalPaginas <= 5) {
+                numPagina = i + 1;
+              } else if (pagina <= 3) {
+                numPagina = i + 1;
+              } else if (pagina >= totalPaginas - 2) {
+                numPagina = totalPaginas - 4 + i;
+              } else {
+                numPagina = pagina - 2 + i;
+              }
+              return (
+                <button
+                  key={numPagina}
+                  onClick={() => setPagina(numPagina)}
+                  className="px-2 py-1 text-xs rounded border text-zinc-400 hover:bg-[#1e1e24]"
+                  style={{
+                    borderColor: numPagina === pagina ? '#5b7cfa' : '#2a2a32',
+                    color: numPagina === pagina ? '#5b7cfa' : undefined,
+                    background: numPagina === pagina ? '#5b7cfa10' : undefined,
+                  }}
+                >
+                  {numPagina}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+              disabled={pagina === totalPaginas}
+              className="px-2 py-1 text-xs rounded border border-[#2a2a32] text-zinc-400 hover:bg-[#1e1e24] disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              ›
+            </button>
+            <button
+              onClick={() => setPagina(totalPaginas)}
+              disabled={pagina === totalPaginas}
+              className="px-2 py-1 text-xs rounded border border-[#2a2a32] text-zinc-400 hover:bg-[#1e1e24] disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              »
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
