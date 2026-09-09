@@ -6,9 +6,20 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useAparencia } from '@/lib/hooks/useAparencia';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
+import {
+  Box, Code2, Cpu, Database, Globe, Hammer, Layers, Layout,
+  Monitor, Rocket, Server, ShieldCheck, Terminal, Wrench, Zap,
+  LucideIcon,
+} from 'lucide-react';
+
+const ICONES_MAP: Record<string, LucideIcon> = {
+  Box, Code2, Cpu, Database, Globe, Hammer, Layers, Layout,
+  Monitor, Rocket, Server, ShieldCheck, Terminal, Wrench, Zap,
+};
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -18,6 +29,7 @@ export default function LoginPage() {
 
   const { login } = useAuth();
   const router = useRouter();
+  const { prefs } = useAparencia();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,16 +49,34 @@ export default function LoginPage() {
     }
   };
 
+  const renderizarLogo = () => {
+    if (prefs.iconeLogo && ICONES_MAP[prefs.iconeLogo]) {
+      const IconeLogo = ICONES_MAP[prefs.iconeLogo];
+      return <IconeLogo className="h-6 w-6" style={{ color: prefs.corDestaque }} />;
+    }
+    return (
+      <div
+        className="flex h-6 w-6 items-center justify-center rounded text-xs font-bold text-white"
+        style={{ background: prefs.corDestaque }}
+      >
+        {prefs.nomeAplicacao.charAt(0).toUpperCase()}
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: prefs.corFundo }}>
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">P</span>
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: `${prefs.corDestaque}20` }}
+          >
+            {renderizarLogo()}
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-zinc-100">Painel</h1>
+            <h1 className="text-xl font-semibold text-zinc-100">{prefs.nomeAplicacao}</h1>
             <p className="text-xs text-zinc-500">Gerenciamento Centralizado</p>
           </div>
         </div>
@@ -89,7 +119,7 @@ export default function LoginPage() {
 
             <p className="text-center text-sm text-zinc-500">
               Não tem uma conta?{' '}
-              <Link href="/cadastro" className="text-indigo-400 hover:text-indigo-300">
+              <Link href="/cadastro" className="hover:text-zinc-300" style={{ color: prefs.corDestaque }}>
                 Criar conta
               </Link>
             </p>
