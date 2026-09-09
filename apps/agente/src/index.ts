@@ -731,19 +731,27 @@ async function processarComando(comando: any): Promise<void> {
         const servicoId = dados.servicoId;
         if (!porta || isNaN(porta) || porta < 1 || porta > 65535) throw new Error(`Porta inválida: ${dados.porta}`);
         if (!healthCheckUrl || typeof healthCheckUrl !== 'string') throw new Error('URL de health check não informada');
-        // Sanitizar URL — apenas caracteres seguros
-        if (!/^[a-zA-Z0-9\/._\-?&=%+#~@!]*$/.test(healthCheckUrl)) {
-          throw new Error('URL de health check contém caracteres não permitidos');
-        }
 
-        const http = await import('http');
-        const urlBase = `http://localhost:${porta}`;
-        const caminho = healthCheckUrl.startsWith('/') ? healthCheckUrl : `/${healthCheckUrl}`;
-        const urlCompleta = `${urlBase}${caminho}`;
+        // Determinar URL completa:
+        // - Se já é URL absoluta (http:// ou https://), usar direto
+        // - Se é caminho relativo (começa com / ou não), montar com localhost:porta
+        let urlCompleta: string;
+        const httpModulo = await import('http');
+        const httpsModulo = await import('https');
+
+        if (/^https?:\/\//i.test(healthCheckUrl)) {
+          // URL absoluta — usar direto
+          urlCompleta = healthCheckUrl;
+        } else {
+          // Caminho relativo — montar com localhost
+          const caminho = healthCheckUrl.startsWith('/') ? healthCheckUrl : `/${healthCheckUrl}`;
+          urlCompleta = `http://localhost:${porta}${caminho}`;
+        }
 
         const resposta = await new Promise<{ status: number; corpo: string; tempoMs: number }>((resolve, reject) => {
           const inicioReq = Date.now();
-          const requisicao = http.get(urlCompleta, { timeout: 5000 }, (res) => {
+          const modHttp = urlCompleta.startsWith('https') ? httpsModulo : httpModulo;
+          const requisicao = modHttp.get(urlCompleta, { timeout: 5000 }, (res) => {
             let corpo = '';
             res.on('data', (chunk) => { corpo += chunk; });
             res.on('end', () => {

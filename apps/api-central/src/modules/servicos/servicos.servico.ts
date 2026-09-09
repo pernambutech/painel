@@ -647,6 +647,11 @@ export class ServicosServico {
       },
     });
 
+    // Se o comando falhou, retornar erro em vez de fallback negativo
+    if (comando.status === 'falhou') {
+      throw new BadRequestException(comando.erro || 'Health check falhou');
+    }
+
     return (comando.resultado as Record<string, unknown>) || { saudavel: false };
   }
 
@@ -672,6 +677,11 @@ export class ServicosServico {
       dados: { porta: servico.porta },
     });
 
+    // Se o comando falhou, retornar erro em vez de fallback negativo
+    if (comando.status === 'falhou') {
+      throw new BadRequestException(comando.erro || 'Verificação de porta falhou');
+    }
+
     return (comando.resultado as Record<string, unknown>) || { emUso: null, disponivel: null };
   }
 
@@ -696,6 +706,11 @@ export class ServicosServico {
       tipo: 'VERIFICAR_DIRETORIO',
       dados: { caminho: servico.diretorio },
     });
+
+    // Se o comando falhou, retornar erro em vez de fallback negativo
+    if (comando.status === 'falhou') {
+      throw new BadRequestException(comando.erro || 'Verificação de diretório falhou');
+    }
 
     return (comando.resultado as Record<string, unknown>) || { existe: null };
   }
