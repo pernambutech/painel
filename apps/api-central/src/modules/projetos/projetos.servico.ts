@@ -231,6 +231,7 @@ export class ProjetosServico {
       descricao: projeto.descricao,
       organizacaoId: projeto.organizacaoId,
       ativo: projeto.ativo,
+      deletadoEm: projeto.deletadoEm || null,
       criadoEm: projeto.criadoEm,
       atualizadoEm: projeto.atualizadoEm,
     };
@@ -244,6 +245,7 @@ export class ProjetosServico {
       descricao: projeto.descricao,
       organizacaoId: projeto.organizacaoId,
       ativo: projeto.ativo,
+      deletadoEm: projeto.deletadoEm || null,
       criadoEm: projeto.criadoEm,
       atualizadoEm: projeto.atualizadoEm,
       totalServicos: projeto.totalServicos,

@@ -46,6 +46,7 @@ export interface RespostaProjeto {
   descricao: string | null;
   organizacaoId: string;
   ativo: boolean;
+  deletadoEm: Date | null;
   criadoEm: Date;
   atualizadoEm: Date;
 }
@@ -57,6 +58,7 @@ export interface RespostaListagemProjeto {
   descricao: string | null;
   organizacaoId: string;
   ativo: boolean;
+  deletadoEm: Date | null;
   criadoEm: Date;
   atualizadoEm: Date;
   totalServicos: number;
