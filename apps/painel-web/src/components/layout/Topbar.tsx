@@ -262,10 +262,20 @@ export function Topbar({ aoAbrirSidebar }: TopbarProps) {
               </div>
 
               <Link
-                href="/configuracoes"
+                href="/perfil"
                 onClick={() => setMenuAberto(null)}
                 role="menuitem"
                 className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]"
+              >
+                <UserRound className="h-4 w-4" />
+                Meu perfil
+              </Link>
+
+              <Link
+                href="/configuracoes"
+                onClick={() => setMenuAberto(null)}
+                role="menuitem"
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-zinc-300 hover:bg-[#28282f]"
               >
                 <Settings className="h-4 w-4" />
                 Configurações

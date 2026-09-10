@@ -96,14 +96,14 @@ const itensNavegacao: ItemNavegacao[] = [
 
 const itensInferior = [
   {
+    nome: 'Perfil',
+    href: '/perfil',
+    icone: User,
+  },
+  {
     nome: 'Configurações',
     href: '/configuracoes',
     icone: Settings,
-  },
-  {
-    nome: 'Perfil',
-    href: '/configuracoes',
-    icone: User,
   },
 ];
 

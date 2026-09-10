@@ -4,7 +4,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Building2, Check, Eye, KeyRound, LockKeyhole, Palette, Save, Settings, Shield, UserRound } from 'lucide-react';
+import { Building2, Check, Eye, KeyRound, LockKeyhole, Palette, Save, Settings, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -18,7 +18,6 @@ import { ITENS_POR_PAGINA_OPCOES } from '@/lib/constantes';
 // ===========================================
 
 const abas = [
-  { chave: 'conta', rotulo: 'Conta', icone: UserRound },
   { chave: 'organizacao', rotulo: 'Organização', icone: Building2 },
   { chave: 'preferencias', rotulo: 'Preferências', icone: Settings },
   { chave: 'aparencia', rotulo: 'Aparência', icone: Palette },
@@ -68,16 +67,9 @@ const opcoesIcones = [
 // ===========================================
 
 export default function ConfiguracoesPage() {
-  const { usuario, organizacao, recarregarPerfil, recarregarOrganizacao } = useAuth();
+  const { organizacao, recarregarOrganizacao } = useAuth();
   const { prefs, temAlteracoesPendentes, salvandoPreferencias, atualizarRascunho, confirmar, cancelar, redefinir } = useAparencia();
-  const [abaAtiva, setAbaAtiva] = useState<AbaChave>('conta');
-
-  // ── Estado da conta ──
-  const [nome, setNome] = useState('');
-  const [sobrenome, setSobrenome] = useState('');
-  const [email, setEmail] = useState('');
-  const [cargo, setCargo] = useState('');
-  const [timezone, setTimezone] = useState('America/Sao_Paulo');
+  const [abaAtiva, setAbaAtiva] = useState<AbaChave>('organizacao');
 
   // ── Estado da organização ──
   const [nomeOrganizacao, setNomeOrganizacao] = useState('');
@@ -101,15 +93,10 @@ export default function ConfiguracoesPage() {
   // ===========================================
 
   useEffect(() => {
-    setNome(usuario?.nome || '');
-    setSobrenome(usuario?.sobrenome || '');
-    setEmail(usuario?.email || '');
-    setCargo(usuario?.cargo || '');
-    setTimezone(usuario?.timezone || 'America/Sao_Paulo');
     setNomeOrganizacao(organizacao?.nome || '');
     setItensPagina(localStorage.getItem('preferencia_itens_pagina') || '20');
     setAtualizacaoAutomatica(localStorage.getItem('preferencia_atualizacao_automatica') !== 'false');
-  }, [usuario, organizacao]);
+  }, [organizacao]);
 
   // Limpa mensagens ao trocar de aba
   useEffect(() => {
@@ -134,20 +121,6 @@ export default function ConfiguracoesPage() {
       setSalvando(false);
     }
   };
-
-  const salvarConta = () =>
-    executar(async () => {
-      const atualizado = await autenticacaoApi.atualizarPerfil({
-        nome,
-        sobrenome: sobrenome || undefined,
-        email,
-        cargo: cargo || undefined,
-        timezone,
-      });
-      localStorage.setItem('usuario_painel', JSON.stringify(atualizado));
-      // Recarregar perfil no contexto para atualizar sidebar/topbar
-      await recarregarPerfil();
-    });
 
   const salvarOrganizacao = () =>
     executar(async () => {
@@ -231,118 +204,6 @@ export default function ConfiguracoesPage() {
         >
           {erro}
         </div>
-      )}
-
-      {/* ========================================= */}
-      {/* ABA: CONTA */}
-      {/* ========================================= */}
-      {abaAtiva === 'conta' && (
-        <Card>
-          <div className="mb-5 flex items-center gap-2">
-            <UserRound className="h-4 w-4 text-[#8ca2ff]" />
-            <h2 className="font-semibold text-zinc-100">Perfil</h2>
-          </div>
-
-          {/* Avatar + nome */}
-          <div className="mb-6 flex items-center gap-4">
-            <div
-              className="flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold"
-              style={{
-                background: `linear-gradient(135deg, #5b7cfa 0%, #8b5cf6 100%)`,
-                color: '#fff',
-              }}
-            >
-              {usuario?.nome?.charAt(0)?.toUpperCase() || '?'}
-            </div>
-            <div>
-              <p className="text-lg font-semibold text-zinc-100">
-                {usuario?.nome} {usuario?.sobrenome || ''}
-              </p>
-              <p className="text-sm" style={{ color: '#a8a8b3' }}>
-                {usuario?.cargo || 'Sem cargo definido'}
-              </p>
-            </div>
-          </div>
-
-          {/* Campos editáveis */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <Input rotulo="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
-            <Input
-              rotulo="Sobrenome"
-              value={sobrenome}
-              onChange={(e) => setSobrenome(e.target.value)}
-              placeholder="Opcional"
-            />
-            <Input rotulo="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <Input
-              rotulo="Cargo / Função"
-              value={cargo}
-              onChange={(e) => setCargo(e.target.value)}
-              placeholder="Ex: Desenvolvedor, Admin"
-            />
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-zinc-300">Timezone</label>
-              <select
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                className="w-full rounded-lg border border-[#2a2a32] bg-[#17171c] px-3.5 py-2.5 text-sm text-zinc-100 outline-none focus:border-[#5b7cfa]"
-              >
-                <option value="America/Sao_Paulo">Brasília (GMT-3)</option>
-                <option value="America/Manaus">Manaus (GMT-4)</option>
-                <option value="America/Noronha">Fernando de Noronha (GMT-2)</option>
-                <option value="America/Santarem">Santarém (GMT-3)</option>
-                <option value="America/Belem">Belém (GMT-3)</option>
-                <option value="America/Fortaleza">Fortaleza (GMT-3)</option>
-                <option value="America/Bahia">Salvador (GMT-3)</option>
-                <option value="America/Recife">Recife (GMT-3)</option>
-                <option value="America/Nuuk">Groenlândia (GMT-3)</option>
-                <option value="America/Maceio">Maceió (GMT-3)</option>
-                <option value="America/Aracaju">Aracaju (GMT-3)</option>
-                <option value="America/Cuiaba">Cuiabá (GMT-4)</option>
-                <option value="America/Campo_Grande">Campo Grande (GMT-4)</option>
-                <option value="America/Porto_Velho">Porto Velho (GMT-4)</option>
-                <option value="America/Boa_Vista">Boa Vista (GMT-4)</option>
-                <option value="America/Rio_Branco">Rio Branco (GMT-5)</option>
-                <option value="UTC">UTC</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Informações da conta */}
-          <div className="mt-5 rounded-lg p-4" style={{ background: '#1e1e24', border: '1px solid #2a2a32' }}>
-            <div className="grid gap-3 text-sm sm:grid-cols-2 md:grid-cols-4">
-              <div>
-                <span style={{ color: '#6e6e7a' }}>Papel</span>
-                <p className="mt-0.5 font-medium text-zinc-200 capitalize">{organizacao?.papel || 'membro'}</p>
-              </div>
-              <div>
-                <span style={{ color: '#6e6e7a' }}>Conta criada</span>
-                <p className="mt-0.5 font-medium text-zinc-200">
-                  {usuario?.criadoEm
-                    ? new Date(usuario.criadoEm).toLocaleDateString('pt-BR')
-                    : '—'}
-                </p>
-              </div>
-              <div>
-                <span style={{ color: '#6e6e7a' }}>Último acesso</span>
-                <p className="mt-0.5 font-medium text-zinc-200">
-                  {usuario?.ultimoLoginEm
-                    ? new Date(usuario.ultimoLoginEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                    : '—'}
-                </p>
-              </div>
-              <div>
-                <span style={{ color: '#6e6e7a' }}>ID</span>
-                <p className="mt-0.5 font-mono text-xs text-zinc-400">{usuario?.id?.slice(0, 8)}...</p>
-              </div>
-            </div>
-          </div>
-
-          <Button className="mt-5" onClick={salvarConta} carregando={salvando}>
-            <Save className="h-4 w-4" />
-            Salvar perfil
-          </Button>
-        </Card>
       )}
 
       {/* ========================================= */}
