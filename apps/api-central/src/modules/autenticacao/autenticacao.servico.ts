@@ -1,11 +1,25 @@
 // Serviço de autenticação
-// Gerencia cadastro, login e validação de usuários
+// Gerencia cadastro, login, perfil e validação de usuários
 
 import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaServico } from '../database/prisma.servico';
 import { AlterarSenhaDto, AtualizarPerfilDto, CadastroDto, LoginDto, RespostaAutenticacao } from './dto/autenticacao.dto';
+
+// Campos retornados em respostas de perfil
+const SELECAO_PERFIL = {
+  id: true,
+  nome: true,
+  sobrenome: true,
+  email: true,
+  avatar: true,
+  cargo: true,
+  timezone: true,
+  ultimoLoginEm: true,
+  ativo: true,
+  criadoEm: true,
+} as const;
 
 @Injectable()
 export class AutenticacaoServico {
@@ -41,6 +55,7 @@ export class AutenticacaoServico {
           email: dados.email,
           senha: senhaHash,
         },
+        select: SELECAO_PERFIL,
       });
 
       // Criar organização padrão com o nome do usuário
@@ -65,7 +80,7 @@ export class AutenticacaoServico {
     });
 
     // Gerar token
-    return this.gerarToken(resultado.usuario.id, resultado.usuario.nome, resultado.usuario.email);
+    return this.gerarToken(resultado.usuario);
   }
 
   // ===========================================
@@ -89,8 +104,15 @@ export class AutenticacaoServico {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
+    // Atualizar último login
+    const usuarioAtualizado = await this.prisma.usuario.update({
+      where: { id: usuario.id },
+      data: { ultimoLoginEm: new Date() },
+      select: SELECAO_PERFIL,
+    });
+
     // Gerar token
-    return this.gerarToken(usuario.id, usuario.nome, usuario.email);
+    return this.gerarToken(usuarioAtualizado);
   }
 
   // ===========================================
@@ -100,12 +122,7 @@ export class AutenticacaoServico {
   async validarUsuario(id: string) {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id },
-      select: {
-        id: true,
-        nome: true,
-        email: true,
-        ativo: true,
-      },
+      select: SELECAO_PERFIL,
     });
 
     if (!usuario || !usuario.ativo) {
@@ -115,17 +132,37 @@ export class AutenticacaoServico {
     return usuario;
   }
 
+  // ===========================================
+  // ATUALIZAR PERFIL
+  // ===========================================
+
   async atualizarPerfil(id: string, dados: AtualizarPerfilDto) {
+    // Verificar se o email já está em uso por outro usuário
     if (dados.email) {
-      const existente = await this.prisma.usuario.findFirst({ where: { email: dados.email, NOT: { id } } });
+      const existente = await this.prisma.usuario.findFirst({
+        where: { email: dados.email, NOT: { id } },
+      });
       if (existente) throw new ConflictException('Email já cadastrado');
     }
+
+    // Montar dados de atualização
+    const dadosAtualizacao: Record<string, unknown> = {};
+    if (dados.nome !== undefined) dadosAtualizacao.nome = dados.nome;
+    if (dados.sobrenome !== undefined) dadosAtualizacao.sobrenome = dados.sobrenome || null;
+    if (dados.email !== undefined) dadosAtualizacao.email = dados.email;
+    if (dados.cargo !== undefined) dadosAtualizacao.cargo = dados.cargo || null;
+    if (dados.timezone !== undefined) dadosAtualizacao.timezone = dados.timezone;
+
     return this.prisma.usuario.update({
       where: { id },
-      data: { ...(dados.nome !== undefined && { nome: dados.nome }), ...(dados.email !== undefined && { email: dados.email }) },
-      select: { id: true, nome: true, email: true, ativo: true },
+      data: dadosAtualizacao,
+      select: SELECAO_PERFIL,
     });
   }
+
+  // ===========================================
+  // ALTERAR SENHA
+  // ===========================================
 
   async alterarSenha(id: string, dados: AlterarSenhaDto) {
     const usuario = await this.prisma.usuario.findUnique({ where: { id } });
@@ -156,17 +193,29 @@ export class AutenticacaoServico {
   // GERAR TOKEN
   // ===========================================
 
-  private gerarToken(id: string, nome: string, email: string): RespostaAutenticacao {
-    const payload = { sub: id, email };
+  private gerarToken(usuario: {
+    id: string;
+    nome: string;
+    sobrenome: string | null;
+    email: string;
+    avatar: string | null;
+    cargo: string | null;
+    timezone: string;
+  }): RespostaAutenticacao {
+    const payload = { sub: usuario.id, email: usuario.email };
 
     const token = this.jwtService.sign(payload);
 
     return {
       token,
       usuario: {
-        id,
-        nome,
-        email,
+        id: usuario.id,
+        nome: usuario.nome,
+        sobrenome: usuario.sobrenome,
+        email: usuario.email,
+        avatar: usuario.avatar,
+        cargo: usuario.cargo,
+        timezone: usuario.timezone,
       },
     };
   }

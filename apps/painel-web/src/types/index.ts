@@ -7,7 +7,14 @@
 export interface Usuario {
   id: string;
   nome: string;
+  sobrenome: string | null;
   email: string;
+  avatar: string | null;
+  cargo: string | null;
+  timezone: string;
+  ultimoLoginEm: string | null;
+  criadoEm: string;
+  ativo: boolean;
 }
 
 // ===========================================

@@ -15,13 +15,18 @@ datasource db {
 // ===========================================
 
 model Usuario {
-  id           String   @id @default(uuid()) @db.Uuid
-  nome         String
-  email        String   @unique
-  senha        String
-  ativo        Boolean  @default(true)
-  criadoEm     DateTime @default(now()) @map("criado_em")
-  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+  id             String    @id @default(uuid()) @db.Uuid
+  nome           String
+  sobrenome      String?   @map("sobrenome")
+  email          String    @unique
+  senha          String
+  avatar         String?   @map("avatar")
+  cargo          String?   @map("cargo")
+  timezone       String    @default("America/Sao_Paulo") @map("timezone")
+  ultimoLoginEm  DateTime? @map("ultimo_login_em")
+  ativo          Boolean   @default(true)
+  criadoEm       DateTime  @default(now()) @map("criado_em")
+  atualizadoEm   DateTime  @updatedAt @map("atualizado_em")
 
   // Relacionamento com organizações
   membros MembroOrganizacao[]

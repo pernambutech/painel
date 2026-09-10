@@ -101,7 +101,13 @@ export const autenticacaoApi = {
     return resposta.data;
   },
 
-  atualizarPerfil: async (dados: { nome?: string; email?: string }) => {
+  atualizarPerfil: async (dados: {
+    nome?: string;
+    sobrenome?: string;
+    email?: string;
+    cargo?: string;
+    timezone?: string;
+  }) => {
     const resposta = await api.put('/auth/perfil', dados);
     return resposta.data;
   },

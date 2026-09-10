@@ -1,5 +1,5 @@
 // DTOs para autenticação
-// Data Transfer Objects para cadastro e login
+// Data Transfer Objects para cadastro, login e perfil
 
 import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 
@@ -35,6 +35,10 @@ export class LoginDto {
   senha: string;
 }
 
+// ===========================================
+// DTO DE ATUALIZAÇÃO DE PERFIL
+// ===========================================
+
 export class AtualizarPerfilDto {
   @IsOptional()
   @IsString()
@@ -42,9 +46,28 @@ export class AtualizarPerfilDto {
   nome?: string;
 
   @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  sobrenome?: string;
+
+  @IsOptional()
   @IsEmail()
   email?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  cargo?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  timezone?: string;
 }
+
+// ===========================================
+// DTO DE ALTERAÇÃO DE SENHA
+// ===========================================
 
 export class AlterarSenhaDto {
   @IsString()
@@ -65,6 +88,10 @@ export interface RespostaAutenticacao {
   usuario: {
     id: string;
     nome: string;
+    sobrenome: string | null;
     email: string;
+    avatar: string | null;
+    cargo: string | null;
+    timezone: string;
   };
 }

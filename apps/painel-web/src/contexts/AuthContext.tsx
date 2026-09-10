@@ -23,6 +23,7 @@ export interface AuthContextType {
   login: (email: string, senha: string) => Promise<void>;
   cadastro: (nome: string, email: string, senha: string) => Promise<void>;
   logout: () => void;
+  recarregarPerfil: () => Promise<void>;
   recarregarOrganizacao: () => Promise<void>;
   alterarOrganizacao: (organizacao: Organizacao) => void;
 }
@@ -148,6 +149,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // ===========================================
+  // RECARREGAR PERFIL
+  // ===========================================
+
+  const recarregarPerfil = async () => {
+    try {
+      const perfil = await autenticacaoApi.obterPerfil();
+      setUsuario(perfil);
+      localStorage.setItem('usuario_painel', JSON.stringify(perfil));
+    } catch (erro) {
+      console.error('Erro ao recarregar perfil:', erro);
+    }
+  };
+
+  // ===========================================
   // RECARREGAR ORGANIZAÇÃO
   // ===========================================
 
@@ -179,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     cadastro,
     logout,
+    recarregarPerfil,
     recarregarOrganizacao,
     alterarOrganizacao,
   };
