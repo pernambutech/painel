@@ -29,8 +29,6 @@ painel/
 │   ├── install.sh           # Instalação automatizada (Linux/macOS)
 │   └── install.bat          # Instalação automatizada (Windows)
 │
-├── start-pm2.bat            # Inicia processos via PM2 (Windows)
-├── start-pm2.sh             # Inicia processos via PM2 (Linux/macOS)
 └── ecosystem.config.js      # Configuração do PM2
 ```
 
@@ -153,14 +151,12 @@ pm2 save
 ```
 
 **Windows:**
-```bash
-# Use o startup script fornecido
-start-pm2.bat
+```batch
+pm2-startup install
+pm2 save
 ```
 
-Para configurar no Windows, você pode:
-1. Adicionar `start-pm2.bat` à pasta "Inicializar" do Windows
-2. Ou usar o Task Scheduler para executar no logon
+Ou adicione manualmente `pm2 start ecosystem.config.js` ao agendador de tarefas do Windows.
 
 ### Comandos úteis do PM2
 
@@ -238,7 +234,7 @@ O Painel funciona em **Windows**, **Linux** e **macOS**. Diferenças por SO:
 |---------|---------|-------|-------|
 | Detecção de portas | `netstat -ano` | `ss` / `netstat` | `lsof` / `netstat` |
 | PM2 | ✅ | ✅ | ✅ |
-| Scripts de inicialização | `start-pm2.bat` | `start-pm2.sh` | `start-pm2.sh` |
+| Scripts de instalação | `install.bat` | `install.sh` | `install.sh` |
 | Detecção automática de SO | ✅ | ✅ | ✅ |
 
 O agente detecta automaticamente o sistema operacional onde está executando e se adapta.
@@ -277,6 +273,8 @@ Após a instalação:
 - [Guia de Uso do Painel](docs/02%20-%20GUIA%20DE%20USO%20DO%20PAINEL.md)
 - [Planejamento V2](docs/03%20-%20PLANEJAMENTO%20V2.md)
 - [Credenciais e Configurações](docs/03%20-%20Credenciais%20e%20Configuracoes.md)
+- [Auditoria V1](docs/AUDITORIA_V1.md)
+- [Plano de Correções V1](docs/PLANO_CORRECOES_V1.md)
 
 ## Licença
 
