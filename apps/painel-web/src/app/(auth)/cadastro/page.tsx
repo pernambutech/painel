@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useAparencia } from '@/lib/hooks/useAparencia';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -19,6 +20,7 @@ export default function CadastroPage() {
   const [carregando, setCarregando] = useState(false);
 
   const { cadastro } = useAuth();
+  const { prefs } = useAparencia();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,15 +54,22 @@ export default function CadastroPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+    <div className="cor-fundo min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">P</span>
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: prefs.corDestaque || '#5b7cfa' }}
+          >
+            <span className="text-white font-bold text-lg">
+              {prefs.iconeLogo || 'P'}
+            </span>
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-zinc-100">Painel</h1>
+            <h1 className="text-xl font-semibold text-zinc-100">
+              {prefs.nomeAplicacao || 'Painel'}
+            </h1>
             <p className="text-xs text-zinc-500">Gerenciamento Centralizado</p>
           </div>
         </div>
@@ -121,7 +130,11 @@ export default function CadastroPage() {
 
             <p className="text-center text-sm text-zinc-500">
               Já tem uma conta?{' '}
-              <Link href="/login" className="text-indigo-400 hover:text-indigo-300">
+              <Link
+                href="/login"
+                className="hover:opacity-80 transition-opacity"
+                style={{ color: prefs.corDestaque || '#818cf8' }}
+              >
                 Entrar
               </Link>
             </p>
