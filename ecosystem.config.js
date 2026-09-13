@@ -19,10 +19,10 @@ const variaveisEnv = Object.fromEntries(
 );
 const ambiente = {
   ...variaveisEnv,
-  NODE_ENV: process.env.NODE_ENV || 'production',
-  DATABASE_URL: process.env.DATABASE_URL,
-  JWT_SECRET: process.env.JWT_SECRET,
-  JWT_EXPIRACAO: process.env.JWT_EXPIRACAO || '86400',
+  NODE_ENV: process.env.NODE_ENV || variaveisEnv.NODE_ENV || 'production',
+  DATABASE_URL: process.env.DATABASE_URL || variaveisEnv.DATABASE_URL,
+  JWT_SECRET: process.env.JWT_SECRET || variaveisEnv.JWT_SECRET,
+  JWT_EXPIRACAO: process.env.JWT_EXPIRACAO || variaveisEnv.JWT_EXPIRACAO || '86400',
 };
 
 module.exports = {
