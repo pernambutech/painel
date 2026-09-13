@@ -12,7 +12,7 @@
 
 set -e
 
-PAINEL_DIR="$(cd "$(dirname "$0")" && pwd)"
+PAINEL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PAINEL_DIR"
 
 echo "========================================="
@@ -167,7 +167,7 @@ echo "Próximos passos:"
 echo "  1. Acesse: http://localhost:4000"
 echo "  2. Faça login com:"
 echo "     Email: $PAINEL_EMAIL"
-echo "     Senha: $PAINEL_SENHA"
+echo "     Senha: (a senha que você definiu)"
 echo "  3. Crie seu primeiro ambiente e agente"
 echo "  4. Configure seus projetos e serviços"
 echo ""
