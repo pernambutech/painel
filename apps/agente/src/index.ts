@@ -309,7 +309,10 @@ function validarDiretorio(diretorio: string | undefined): { valido: boolean; mot
 
   const permitido = CONFIGURACAO.DIRETORIOS_AUTORIZADOS.some((autorizado) => {
     const autorizadoNormalizado = path.resolve(autorizado);
-    return dirNormalizado.startsWith(autorizadoNormalizado);
+    // Verificar se o diretório é exatamente o autorizado ou está dentro dele
+    // (com separador de path para evitar bypass como /autorizado-projeto)
+    return dirNormalizado === autorizadoNormalizado
+      || dirNormalizado.startsWith(autorizadoNormalizado + path.sep);
   });
 
   if (!permitido) {
