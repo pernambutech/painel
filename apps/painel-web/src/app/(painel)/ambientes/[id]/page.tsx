@@ -231,7 +231,7 @@ export default function AmbienteDetalhePage() {
 
   const obterComandoWindows = () => {
     const urlApi = obterUrlApi();
-    return `$env:AGENT_TOKEN="${tokenAgente}"\n$env:AGENT_API_URL="${urlApi}"\nSet-Location "C:\\caminho\\do\\agente"\nnpx tsx src/index.ts`;
+    return `$env:AGENT_TOKEN="${tokenAgente}"\n$env:AGENT_API_URL="${urlApi}"\nnpx tsx src/index.ts`;
   };
 
   const obterComandoLinux = () => {
