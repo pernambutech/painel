@@ -10,9 +10,15 @@ REM 4. Migrações de banco
 REM 5. Registro do primeiro usuário
 REM 6. Início dos processos
 
+REM Resolver diretório raiz do projeto (independente de onde o script é chamado)
+cd /d "%~dp0.."
+set "RAIZ_DO_PROJETO=%cd%"
+
 echo =========================================
 echo    Painel - Instalação Automatizada
 echo =========================================
+echo.
+echo 📁 Diretório do projeto: %RAIZ_DO_PROJETO%
 echo.
 
 REM Função para verificar se comando existe
@@ -96,13 +102,26 @@ echo ✅ Build concluído
 echo.
 echo 👤 Etapa 5: Registrando primeiro usuário...
 
-REM Registrar o painel (usando valores padrão para não travar)
-REM O usuário pode personalizar via variáveis de ambiente se necessário
+REM Definir valores padrão
+if not defined PAINEL_ADMIN_EMAIL set "PAINEL_ADMIN_EMAIL=admin@painel.local"
+if not defined PAINEL_ADMIN_SENHA set "PAINEL_ADMIN_SENHA=admin123"
+if not defined PAINEL_ADMIN_NOME set "PAINEL_ADMIN_NOME=Administrador"
+if not defined PAINEL_ORG_NOME set "PAINEL_ORG_NOME=Minha Organização"
+
+echo    Email: %PAINEL_ADMIN_EMAIL%
+echo    Organização: %PAINEL_ORG_NOME%
+
+REM Registrar o painel com variáveis de ambiente
+set "PAINEL_ADMIN_EMAIL=%PAINEL_ADMIN_EMAIL%"
+set "PAINEL_ADMIN_SENHA=%PAINEL_ADMIN_SENHA%"
+set "PAINEL_ADMIN_NOME=%PAINEL_ADMIN_NOME%"
+set "PAINEL_ORG_NOME=%PAINEL_ORG_NOME%"
 call npm run pm2:registrar-painel
 if %errorlevel% neq 0 (
     echo ⚠️  Falha ao registrar painel. Você pode fazer isso manualmente depois.
+) else (
+    echo ✅ Registro concluído
 )
-echo ✅ Registro concluído
 
 echo.
 echo 🚀 Etapa 6: Iniciando processos...
@@ -111,6 +130,10 @@ REM Iniciar via PM2
 pm2 start ecosystem.config.js
 pm2 save
 echo ✅ Processos iniciados
+
+echo.
+echo 🔄 Configurando inicialização automática...
+pm2-startup install 2>nul || echo    (pule se não tiver permissão de administrador)
 
 echo.
 echo =========================================
