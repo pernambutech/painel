@@ -226,7 +226,7 @@ export default function AmbienteDetalhePage() {
     if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) {
       return process.env.NEXT_PUBLIC_API_URL;
     }
-    return 'http://localhost:3001';
+    return 'http://localhost:4001';
   };
 
   const obterComandoWindows = () => {
