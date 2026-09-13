@@ -1,9 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Filtro global de exceções — evita vazamento de stack traces
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   // Headers de segurança (X-Content-Type-Options, X-Frame-Options, etc.)
   // Helmet é um middleware que adiciona cabeçalhos HTTP de segurança
@@ -11,10 +15,17 @@ async function bootstrap() {
   const { default: helmet } = await import('helmet');
   app.use(helmet());
 
-  // Configurações globais - CORS para desenvolvimento
-  // origin: true reflete o Origin do request (permite qualquer IP/local na rede local)
+  // Configurações globais - CORS
+  // Em produção: restringir para origens conhecidas
+  // Em desenvolvimento: permitir qualquer origem (redelocal)
+  const origensPermitidas = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+    : process.env.NODE_ENV === 'production'
+      ? ['http://localhost:4000']
+      : true;
+
   app.enableCors({
-    origin: true,
+    origin: origensPermitidas,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
