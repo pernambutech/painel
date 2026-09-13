@@ -131,15 +131,27 @@ O Painel pode ser executado em produção usando o PM2 para gerenciar os process
 ### Primeira vez (registrar no PM2)
 
 ```bash
-# Linux/macOS
+# Todos os sistemas
 npm run build
-pm2 start ecosystem.config.js
-pm2 save
+npm run start:pm2
+npm run save:pm2
+```
 
-# Windows
-npm run build
+Ou diretamente:
+```bash
 pm2 start ecosystem.config.js
 pm2 save
+```
+
+### Atalhos PM2 disponíveis
+
+```bash
+npm run start:pm2      # Iniciar processos
+npm run stop:pm2       # Parar todos
+npm run restart:pm2    # Reiniciar todos
+npm run status:pm2     # Ver status
+npm run logs:pm2       # Ver logs
+npm run save:pm2       # Salvar estado
 ```
 
 ### Configurar inicialização automática
@@ -152,11 +164,11 @@ pm2 save
 
 **Windows:**
 ```batch
-pm2-startup install
 pm2 save
 ```
-
-Ou adicione manualmente `pm2 start ecosystem.config.js` ao agendador de tarefas do Windows.
+No Windows, o PM2 não possui `pm2 startup` nativo. Para auto-start:
+1. Adicione `start-pm2.bat` à pasta "Inicializar" do Windows (`shell:startup`)
+2. Ou crie uma tarefa agendada que execute `pm2 resurrect` no logon
 
 ### Comandos úteis do PM2
 
@@ -263,7 +275,27 @@ Após a instalação:
 2. Faça login com as credenciais criadas:
    - **Padrão**: `admin@painel.local` / `admin123` (altere após primeiro login!)
    - **Personalizado**: o que você definiu no `npm run pm2:registrar-painel`
-3. Crie um ambiente e configure um agente para começar a gerenciar serviços
+3. Vá em **Ambientes** e crie um ambiente
+4. No detalhe do ambiente, clique em **Gerar Token** para obter o token do agente
+5. Copie o token e configure no arquivo `.env`:
+   ```
+   AGENT_TOKEN=painel_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ```
+6. Reinicie o agente: `pm2 restart painel-agente`
+7. O ambiente ficará **ONLINE** quando o agente conectar
+8. Crie um projeto e serviços para começar a gerenciar
+
+### Fluxo do Agente
+
+```
+Painel Web → Ambientes → Gerar Token → Copia para .env
+                                              ↓
+                                         pm2 restart painel-agente
+                                              ↓
+                                        Agente conecta à API
+                                              ↓
+                                        Ambiente fica ONLINE
+```
 
 ## Documentação
 
