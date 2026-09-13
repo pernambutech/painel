@@ -47,6 +47,22 @@ const COMANDOS_QUE_EXIGEM_DIRETORIO = [
 // CONFIGURAÇÃO
 // ===========================================
 
+function parsearDiretoriosAutorizados(): string[] {
+  const valor = process.env.AGENT_DIRECTORIES;
+  if (!valor || valor.trim() === '') return [];
+  try {
+    const parsed = JSON.parse(valor);
+    if (!Array.isArray(parsed)) {
+      console.warn('⚠️  AGENT_DIRECTORIES não é um array. Usando lista vazia.');
+      return [];
+    }
+    return parsed.filter((item: unknown) => typeof item === 'string');
+  } catch (erro) {
+    console.warn(`⚠️  AGENT_DIRECTORIES contém JSON inválido. Usando lista vazia. Erro: ${(erro as Error).message}`);
+    return [];
+  }
+}
+
 const CONFIGURACAO = {
   URL_API: process.env.AGENT_API_URL || 'http://localhost:4001',
   TOKEN_AGENTE: process.env.AGENT_TOKEN || '',
@@ -58,7 +74,7 @@ const CONFIGURACAO = {
   INTERVALO_HEARTBEAT: 30000,
   // Diretórios autorizados (JSON array via env ou vazio = todos permitidos)
   // Exemplo: '["C:\\Projetos","/home/user/projetos"]'
-  DIRETORIOS_AUTORIZADOS: JSON.parse(process.env.AGENT_DIRECTORIES || '[]') as string[],
+  DIRETORIOS_AUTORIZADOS: parsearDiretoriosAutorizados(),
 };
 
 // ===========================================
