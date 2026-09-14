@@ -136,6 +136,11 @@ if not exist "%PM2%" (
     exit /b 1
 )
 
+REM Parar processos PM2 antigos antes de iniciar novos
+echo    Parando processos PM2 antigos...
+"%PM2%" stop all >nul 2>&1
+"%PM2%" delete all >nul 2>&1
+
 REM Iniciar via PM2 local
 "%PM2%" start ecosystem.config.js
 "%PM2%" save
@@ -143,7 +148,7 @@ echo ✅ Processos iniciados
 
 echo.
 echo =========================================
-echo    Instalação Concluída! 🎉
+echo    Instalação Concluída!
 echo =========================================
 echo.
 echo Próximos passos:
@@ -151,10 +156,16 @@ echo   1. Acesse: http://localhost:4000
 echo   2. Faça login com as credenciais criadas
 echo   3. Crie seu primeiro ambiente e agente
 echo.
-echo Comandos úteis:
+echo Comandos úteis (produção):
 echo   npx pm2 status    - Ver status dos processos
 echo   npx pm2 logs      - Ver logs em tempo real
-echo   npm run dev       - Iniciar modo desenvolvimento
+echo   start-pm2.bat     - Reiniciar todos os processos
+echo.
+echo IMPORTANTE: O install.bat inicia os processos em modo producao (PM2).
+echo   Para modo desenvolvimento, NÃO use install.bat.
+echo   Em vez disso, use em terminais separados:
+echo     npm run dev       - API (porta 4001)
+echo     npm run dev:web   - Frontend (porta 4000)
 echo.
 echo Para mais informações, consulte o README.md
 echo.

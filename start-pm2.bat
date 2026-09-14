@@ -66,6 +66,12 @@ if not exist "%RAIZ_DO_PROJETO%\apps\agente\dist\index.js" (
     exit /b 1
 )
 
+REM Parar processos antigos antes de iniciar novos
+echo.
+echo 🛑 Parando processos PM2 antigos...
+"%PM2%" stop all >nul 2>&1
+"%PM2%" delete all >nul 2>&1
+
 REM Verificar argumento
 if "%1"=="--resurrect" (
     echo.
