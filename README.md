@@ -173,34 +173,68 @@ No Windows, o PM2 não possui `pm2 startup` nativo. Para auto-start:
 ### Comandos úteis do PM2
 
 ```bash
-pm2 status                    # Ver status dos processos
-pm2 logs                      # Ver logs em tempo real
-pm2 logs painel-api           # Logs específicos
-pm2 restart all               # Reiniciar todos
-pm2 stop all                  # Parar todos
-pm2 delete all                # Remover todos
-pm2 resurrect                 # Restaurar processos salvos
+npm run status:pm2              # Ver status dos processos
+npm run logs:pm2                # Ver logs em tempo real
+npm run restart:pm2             # Reiniciar todos
+npm run stop:pm2                # Parar todos
+npm run save:pm2                # Salvar estado
+
+# Ou diretamente:
+npx pm2 status
+npx pm2 logs
+npx pm2 restart all
+npx pm2 stop all
+npx pm2 resurrect               # Restaurar processos salvos
 ```
 
 ## Desenvolvimento
 
-### Iniciar todos os serviços (modo dev)
+### Comandos de desenvolvimento
 
+```bash
+npm run dev          # Inicia a API Central (porta 4001)
+npm run dev:web      # Inicia o Painel Web (porta 4000)
+npm run dev:api      # Inicia a API Central (porta 4001)
+npm run dev:agente   # Inicia o Agente (precisa de AGENT_TOKEN)
+npm run dev:tudo     # Inicia todos os workspaces (inclui agente)
+```
+
+### Fluxo recomendado
+
+**Terminal 1 — API:**
 ```bash
 npm run dev
 ```
 
-### Iniciar apenas um serviço
-
+**Terminal 2 — Frontend:**
 ```bash
-# Painel Web (porta 4000)
-npm run dev -w apps/painel-web
+npm run dev:web
+```
 
-# API Central (porta 4001)
-npm run dev -w apps/api-central
+**Terminal 3 — Agente (opcional):**
+```bash
+# Primeiro, gere um token via Painel Web → Ambientes → Gerar Token
+# Depois configure:
+set AGENT_TOKEN=painel_xxxxx    # Windows
+export AGENT_TOKEN=painel_xxxxx # Linux/macOS
+npm run dev:agente
+```
 
-# Agente
-npm run dev -w apps/agente
+### Sobre o agente
+
+O agente **não inicia** automaticamente com `npm run dev`. Isso é intencional — ele precisa de um `AGENT_TOKEN` válido para conectar à API.
+
+Para executar o agente:
+1. Acesse o Painel Web → Ambientes → Gerar Token
+2. Copie o token gerado
+3. Configure a variável `AGENT_TOKEN` no ambiente
+4. Execute `npm run dev:agente`
+
+Sem token, o agente apresentará:
+```
+❌ Token do agente não configurado.
+   Defina a variável de ambiente AGENT_TOKEN
+   Exemplo: AGENT_TOKEN=painel_xxxxx npm run dev:agente
 ```
 
 ### Build (produção)
