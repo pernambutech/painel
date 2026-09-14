@@ -2,9 +2,10 @@
 // Em dev (nest start --watch), o CWD é apps/api-central, então o .env
 // da raiz não é encontrado automaticamente. Por isso, resolvemos o caminho
 // explicitamente subindo 2 níveis (api-central → apps → raiz do projeto).
+// override: true garante que o .env da raiz sempre prevaleça sobre .envs locais.
 import * as dotenv from 'dotenv';
 import * as path from 'path';
-dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env') });
+dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env'), override: true });
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
