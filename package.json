@@ -13,7 +13,7 @@
     "dev:api": "npm run dev -w apps/api-central",
     "dev:agente": "npm run dev -w apps/agente",
     "dev:tudo": "npm run dev --workspaces --if-present",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build -w packages/tipos && npm run build -w packages/contratos && npm run build -w packages/configuracoes && npm run build -w apps/agente && npm run build -w apps/api-central && npm run build -w apps/painel-web",
     "start:pm2": "pm2 start ecosystem.config.js",
     "stop:pm2": "pm2 stop all",
     "restart:pm2": "pm2 restart all",
