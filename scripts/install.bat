@@ -130,6 +130,7 @@ if %errorlevel% neq 0 (
 )
 "%PM2%" save
 echo   Processos iniciados OK
+"%PM2%" status
 
 REM SUCESSO
 echo.
@@ -143,5 +144,7 @@ echo Senha: %PAINEL_ADMIN_SENHA%
 
 :fim
 echo.
-echo Pressione qualquer tecla para fechar...
-pause
+echo =========================================
+echo    FIM DA INSTALACAO
+echo =========================================
+echo.
