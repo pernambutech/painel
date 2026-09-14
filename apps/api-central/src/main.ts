@@ -1,3 +1,8 @@
+// Carrega variáveis de ambiente do .env ANTES de qualquer outro import
+// Isso garante que JWT_SECRET, DATABASE_URL etc. estejam disponíveis
+// tanto em `nest start --watch` (dev) quanto em `node dist/main` (produção)
+import 'dotenv/config';
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
