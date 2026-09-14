@@ -126,14 +126,20 @@ if %errorlevel% neq 0 (
 echo.
 echo 🚀 Etapa 6: Iniciando processos...
 
-REM Iniciar via PM2
-pm2 start ecosystem.config.js
-pm2 save
-echo ✅ Processos iniciados
+REM Definir caminho do PM2 local
+set "PM2=%RAIZ_DO_PROJETO%\node_modules\.bin\pm2.cmd"
 
-echo.
-echo 🔄 Configurando inicialização automática...
-pm2-startup install 2>nul || echo    (pule se não tiver permissão de administrador)
+REM Verificar se PM2 local existe
+if not exist "%PM2%" (
+    echo ❌ PM2 local nao encontrado. Verifique se 'npm install' foi executado.
+    pause
+    exit /b 1
+)
+
+REM Iniciar via PM2 local
+"%PM2%" start ecosystem.config.js
+"%PM2%" save
+echo ✅ Processos iniciados
 
 echo.
 echo =========================================
@@ -146,9 +152,9 @@ echo   2. Faça login com as credenciais criadas
 echo   3. Crie seu primeiro ambiente e agente
 echo.
 echo Comandos úteis:
-echo   pm2 status    - Ver status dos processos
-echo   pm2 logs      - Ver logs em tempo real
-echo   npm run dev   - Reiniciar em modo desenvolvimento
+echo   npx pm2 status    - Ver status dos processos
+echo   npx pm2 logs      - Ver logs em tempo real
+echo   npm run dev       - Iniciar modo desenvolvimento
 echo.
 echo Para mais informações, consulte o README.md
 echo.
