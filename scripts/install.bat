@@ -3,6 +3,12 @@ REM ================================================
 REM Painel - Instalacao Completa (Windows)
 REM ================================================
 
+REM Se executado pelo PowerShell, reabre em cmd para manter janela aberta
+if defined PSModulePath (
+    cmd /c "%~f0"
+    exit /b
+)
+
 cd /d "%~dp0.."
 
 echo.
@@ -147,4 +153,6 @@ echo.
 echo =========================================
 echo    FIM DA INSTALACAO
 echo =========================================
+echo.
+pause
 echo.
