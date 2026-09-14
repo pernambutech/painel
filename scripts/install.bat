@@ -124,14 +124,14 @@ if not exist "%PM2%" (
 )
 echo   PM2 encontrado: %PM2%
 echo   Parando processos antigos...
-"%PM2%" stop all 2>nul
-"%PM2%" delete all 2>nul
+call "%PM2%" stop all >nul 2>&1
+call "%PM2%" delete all >nul 2>&1
 echo   Iniciando processos...
-"%PM2%" start ecosystem.config.js
+call "%PM2%" start ecosystem.config.js
 echo   Salvando estado...
-"%PM2%" save 2>nul
+call "%PM2%" save >nul 2>&1
 echo   Verificando status...
-"%PM2%" status 2>nul
+call "%PM2%" status
 echo   Processos iniciados
 
 REM SUCESSO
