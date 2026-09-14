@@ -150,13 +150,18 @@ npm run pm2:registrar-painel
 echo ""
 echo "🚀 Etapa 7: Iniciando processos..."
 
-# Iniciar via PM2
-pm2 start ecosystem.config.js
-pm2 save
+# Definir caminho do PM2 local
+PM2="./node_modules/.bin/pm2"
 
-echo ""
-echo "✅ Inicialização automática..."
-pm2 startup 2>/dev/null || echo "   (pule o pm2 startup se não tiver permissão)"
+# Verificar se PM2 local existe
+if [ ! -f "$PM2" ]; then
+    echo "❌ PM2 local nao encontrado. Verifique se 'npm install' foi executado."
+    exit 1
+fi
+
+# Iniciar via PM2 local
+$PM2 start ecosystem.config.js
+$PM2 save
 
 echo ""
 echo "========================================="
@@ -172,8 +177,8 @@ echo "  3. Crie seu primeiro ambiente e agente"
 echo "  4. Configure seus projetos e serviços"
 echo ""
 echo "Comandos úteis:"
-echo "  pm2 status    - Ver status dos processos"
-echo "  pm2 logs      - Ver logs em tempo real"
-echo "  npm run dev   - Reiniciar em modo desenvolvimento"
+echo "  npx pm2 status    - Ver status dos processos"
+echo "  npx pm2 logs      - Ver logs em tempo real"
+echo "  npm run dev       - Iniciar em modo desenvolvimento"
 echo ""
 echo "Para mais informações, consulte o README.md"
