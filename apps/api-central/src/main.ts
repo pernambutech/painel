@@ -1,7 +1,10 @@
 // Carrega variáveis de ambiente do .env ANTES de qualquer outro import
-// Isso garante que JWT_SECRET, DATABASE_URL etc. estejam disponíveis
-// tanto em `nest start --watch` (dev) quanto em `node dist/main` (produção)
-import 'dotenv/config';
+// Em dev (nest start --watch), o CWD é apps/api-central, então o .env
+// da raiz não é encontrado automaticamente. Por isso, resolvemos o caminho
+// explicitamente subindo 2 níveis (api-central → apps → raiz do projeto).
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env') });
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
