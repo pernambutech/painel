@@ -219,10 +219,13 @@ function obterStatus() {
 
 function conectar(): void {
   if (!CONFIGURACAO.TOKEN_AGENTE) {
-    console.error('❌ Token do agente não configurado.');
-    console.error('   Defina a variável de ambiente AGENT_TOKEN');
-    console.error('   Exemplo: AGENT_TOKEN=painel_xxxxx npm run dev');
-    process.exit(1);
+    console.warn('⚠️  Token do agente não configurado.');
+    console.warn('   O agente aguardará até que AGENT_TOKEN seja definido.');
+    console.warn('   Para configurar: gere um token na web em Ambientes > Gerar Token');
+    console.warn('   Reinicie o agente após definir o token.');
+    console.warn(`   Retry em ${CONFIGURACAO.INTERVALO_TENTATIVA / 1000}s...`);
+    setTimeout(conectar, CONFIGURACAO.INTERVALO_TENTATIVA);
+    return;
   }
 
   console.log('🤖 Agente iniciado');

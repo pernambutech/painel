@@ -45,7 +45,7 @@ REM [3/8] Variaveis de ambiente
 echo.
 echo [3/8] Configurando variaveis de ambiente...
 if not exist ".env" (
-    copy ".env.example" ".env" >nul 2>&1
+    copy ".env.example" .env >nul 2>&1
 )
 if exist ".env" (
     echo   Arquivo .env OK
@@ -54,15 +54,14 @@ if exist ".env" (
     goto :fim
 )
 
-REM Gerar JWT_SECRET se ainda estiver com placeholder
-findstr /C:"JWT_SECRET=TROQUE" ".env" >nul 2>&1
-if %errorlevel% equ 0 (
-    echo   Gerando JWT_SECRET...
-    for /f "tokens=*" %%i in ('node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"') do set "NOVO_SECRET=%%i"
-    if defined NOVO_SECRET (
-        powershell -Command "(Get-Content '.env') -replace 'JWT_SECRET=TROQUE-POR-UMA-CHAVE-SECRETA-SEGURA-AQUI', 'JWT_SECRET=%NOVO_SECRET%' | Set-Content '.env'" >nul 2>&1
-        echo   JWT_SECRET gerado OK
-    )
+REM Gerar JWT_SECRET diretamente via node (evita problemas com findstr/powershell)
+echo   Gerando JWT_SECRET...
+for /f "tokens=*" %%i in ('node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"') do set "NOVO_SECRET=%%i"
+if defined NOVO_SECRET (
+    node -e "const fs=require('fs'),c=fs.readFileSync('.env','utf8').split(/\r?\n/);const o=c.map(l=>l.startsWith('JWT_SECRET=')?'JWT_SECRET=%NOVO_SECRET%':l);fs.writeFileSync('.env',o.join('\n'),'utf8');console.log('JWT_SECRET atualizado')"
+    echo   JWT_SECRET gerado OK
+) else (
+    echo AVISO: Nao foi possivel gerar JWT_SECRET
 )
 echo   Variaveis de ambiente OK
 
