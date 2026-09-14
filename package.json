@@ -8,7 +8,11 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "npm run dev -w apps/api-central",
+    "dev:web": "npm run dev -w apps/painel-web",
+    "dev:api": "npm run dev -w apps/api-central",
+    "dev:agente": "npm run dev -w apps/agente",
+    "dev:tudo": "npm run dev --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "start:pm2": "pm2 start ecosystem.config.js",
     "stop:pm2": "pm2 stop all",
