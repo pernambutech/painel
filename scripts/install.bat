@@ -6,7 +6,6 @@ REM
 REM Executa TUDO necessario para instalar o Painel.
 REM Apos executar, o Painel estara pronto em http://localhost:4000
 
-@echo on
 REM Resolver diretorio raiz do projeto
 cd /d "%~dp0.."
 set "RAIZ_DO_PROJETO=%cd%"
