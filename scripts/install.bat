@@ -118,19 +118,20 @@ echo.
 echo [8/8] Iniciando processos via PM2...
 set "PM2=%cd%\node_modules\.bin\pm2.cmd"
 if not exist "%PM2%" (
-    echo ERRO: PM2 nao encontrado.
+    echo ERRO: PM2 nao encontrado em: %PM2%
     goto :fim
 )
-"%PM2%" stop all >nul 2>&1
-"%PM2%" delete all >nul 2>&1
-"%PM2%" start ecosystem.config.js
-if %errorlevel% neq 0 (
-    echo ERRO: Falha ao iniciar PM2.
-    goto :fim
-)
-"%PM2%" save
-echo   Processos iniciados OK
-"%PM2%" status
+echo   PM2 encontrado: %PM2%
+echo   Parando processos antigos...
+"%PM2%" stop all 2>nul
+"%PM2%" delete all 2>nul
+echo   Iniciando processos...
+"%PM2%" start ecosystem.config.js --no-daemon 2>nul || "%PM2%" start ecosystem.config.js
+echo   Salvando estado...
+"%PM2%" save 2>nul
+echo   Verificando status...
+"%PM2%" status 2>nul
+echo   Processos iniciados
 
 REM SUCESSO
 echo.
@@ -139,8 +140,16 @@ echo    Instalacao Concluida com Sucesso!
 echo =========================================
 echo.
 echo Acesse: http://localhost:4000
-echo Email: %PAINEL_ADMIN_EMAIL%
-echo Senha: %PAINEL_ADMIN_SENHA%
+echo.
+echo Credenciais:
+echo   Email: %PAINEL_ADMIN_EMAIL%
+echo   Senha: %PAINEL_ADMIN_SENHA%
+echo.
+echo Comandos uteis:
+echo   npx pm2 status       Ver status
+echo   npx pm2 logs         Ver logs
+echo   start-pm2.bat        Reiniciar
+echo.
 
 :fim
 echo.
