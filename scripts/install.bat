@@ -4,6 +4,7 @@ REM Painel - Instalacao Completa (Windows)
 REM ================================================
 
 cd /d "%~dp0.."
+set "RAIZ_DO_PROJETO=%cd%"
 
 echo.
 echo =========================================
@@ -116,7 +117,7 @@ echo   Senha: %PAINEL_ADMIN_SENHA%
 REM [8/8] PM2
 echo.
 echo [8/8] Iniciando processos via PM2...
-set "PM2=%cd%\node_modules\.bin\pm2.cmd"
+set "PM2=%RAIZ_DO_PROJETO%\node_modules\.bin\pm2.cmd"
 if not exist "%PM2%" (
     echo ERRO: PM2 nao encontrado em: %PM2%
     goto :fim
@@ -126,7 +127,7 @@ echo   Parando processos antigos...
 "%PM2%" stop all 2>nul
 "%PM2%" delete all 2>nul
 echo   Iniciando processos...
-"%PM2%" start ecosystem.config.js --no-daemon 2>nul || "%PM2%" start ecosystem.config.js
+"%PM2%" start ecosystem.config.js
 echo   Salvando estado...
 "%PM2%" save 2>nul
 echo   Verificando status...
