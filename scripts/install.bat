@@ -61,11 +61,31 @@ echo 🌍 Etapa 2: Configurando ambiente...
 
 REM Copiar .env.example se .env não existir
 if not exist ".env" (
-    copy .env.example .env >nul
-    echo ✅ Arquivo .env criado a partir do .env.example
-    echo    ⚠️  Lembre-se de editar o arquivo .env com suas configurações
+    copy ".env.example" ".env" >nul 2>&1
+    if exist ".env" (
+        echo ✅ Arquivo .env criado a partir do .env.example
+    ) else (
+        echo ❌ Falha ao criar .env. Copie manualmente: copy .env.example .env
+        pause
+        exit /b 1
+    )
 ) else (
-    echo ✅ Arquivo .env já existe
+    echo ✅ Arquivo .env ja existe
+)
+
+REM Verificar se JWT_SECRET está vazio ou é o placeholder
+findstr /C:"JWT_SECRET=TROQUE" ".env" >nul 2>&1
+if %errorlevel% equ 0 (
+    echo.
+    echo ⚠️  JWT_SECRET está com valor padrão. Gerando valor aleatório...
+    for /f "tokens=*" %%i in ('node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"') do set "NOVO_SECRET=%%i"
+    if defined NOVO_SECRET (
+        REM Usar PowerShell para substituir o valor no .env
+        powershell -Command "(Get-Content '.env') -replace 'JWT_SECRET=TROQUE-POR-UMA-CHAVE-SECRETA-SEGURA-AQUI', 'JWT_SECRET=%NOVO_SECRET%' | Set-Content '.env'" >nul 2>&1
+        echo ✅ JWT_SECRET gerado automaticamente
+    ) else (
+        echo ⚠️  Não foi possível gerar JWT_SECRET. Edite manualmente o .env
+    )
 )
 
 echo.
