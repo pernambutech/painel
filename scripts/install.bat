@@ -1,192 +1,230 @@
 @echo off
-REM Painel - Script de Instalação Automatizada (Windows)
-REM Suporta: Windows
+REM ================================================
+REM Painel - Instalacao Completa (Windows)
+REM ================================================
 REM
-REM Este script executa todas as etapas necessárias para uma instalação do zero:
-REM 1. Verificação de dependências
-REM 2. Instalação de pacotes
-REM 3. Configuração de ambiente
-REM 4. Migrações de banco
-REM 5. Registro do primeiro usuário
-REM 6. Início dos processos
+REM Executa TUDO necessario para instalar o Painel:
+REM 1. Verifica dependencias (Node.js, npm)
+REM 2. Instala pacotes (npm install)
+REM 3. Cria .env com valores validos
+REM 4. Gera Prisma Client
+REM 5. Aplica migracoes do banco
+REM 6. Build dos 3 projetos
+REM 7. Registra primeiro usuario
+REM 8. Inicia processos via PM2
+REM
+REM Apos executar este script, o Painel estara pronto.
+REM Nao e necessario rodar nenhum comando adicional.
 
-REM Resolver diretório raiz do projeto (independente de onde o script é chamado)
+REM Resolver diretorio raiz do projeto
 cd /d "%~dp0.."
 set "RAIZ_DO_PROJETO=%cd%"
 
+echo.
 echo =========================================
-echo    Painel - Instalação Automatizada
+echo    Painel - Instalacao Completa
 echo =========================================
 echo.
-echo 📁 Diretório do projeto: %RAIZ_DO_PROJETO%
+echo Diretorio: %RAIZ_DO_PROJETO%
 echo.
 
-REM Função para verificar se comando existe
+REM =============================================
+REM VERIFICACAO DE DEPENDENCIAS
+REM =============================================
+
+echo [1/8] Verificando dependencias...
+
 where.exe node >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ❌ Node.js não encontrado. Por favor, instale o Node.js >= 18.0.0
-    echo    https://nodejs.org
+    echo ERRO: Node.js nao encontrado.
+    echo Instale o Node.js >= 18.0.0 em: https://nodejs.org
     pause
     exit /b 1
-) else (
-    for /f "tokens=*" %%i in ('node --version') do set NODE_VER=%%i
-    echo ✅ Node.js %NODE_VER% encontrado
 )
+for /f "tokens=*" %%i in ('node --version') do set NODE_VER=%%i
+echo   Node.js %NODE_VER% OK
 
 where.exe npm >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ❌ npm não encontrado
+    echo ERRO: npm nao encontrado.
     pause
     exit /b 1
-) else (
-    for /f "tokens=*" %%i in ('npm --version') do set NPM_VER=%%i
-    echo ✅ npm %NPM_VER% encontrado
 )
+for /f "tokens=*" %%i in ('npm --version') do set NPM_VER=%%i
+echo   npm %NPM_VER% OK
+
+REM =============================================
+REM INSTALACAO DE PACOTES
+REM =============================================
 
 echo.
-echo 🔍 Dependências verificadas com sucesso!
-echo.
-
-echo 📦 Etapa 1: Instalando dependências...
-npm install
+echo [2/8] Instalando dependencias...
+call npm install
 if %errorlevel% neq 0 (
-    echo ❌ Falha ao instalar dependências
+    echo ERRO: Falha ao instalar dependencias.
     pause
     exit /b 1
 )
-echo ✅ Dependências instaladas
+echo   Dependencias instaladas OK
+
+REM =============================================
+REM CRIACAO DO .ENV
+REM =============================================
 
 echo.
-echo 🌍 Etapa 2: Configurando ambiente...
+echo [3/8] Configurando variaveis de ambiente...
 
-REM Copiar .env.example se .env não existir
+REM Criar .env se nao existir
 if not exist ".env" (
     copy ".env.example" ".env" >nul 2>&1
     if exist ".env" (
-        echo ✅ Arquivo .env criado a partir do .env.example
+        echo   Arquivo .env criado a partir do .env.example
     ) else (
-        echo ❌ Falha ao criar .env. Copie manualmente: copy .env.example .env
+        echo ERRO: Nao foi possivel criar o arquivo .env
         pause
         exit /b 1
     )
 ) else (
-    echo ✅ Arquivo .env ja existe
+    echo   Arquivo .env ja existe
 )
 
-REM Verificar se JWT_SECRET está vazio ou é o placeholder
+REM Verificar se JWT_SECRET esta com valor placeholder
 findstr /C:"JWT_SECRET=TROQUE" ".env" >nul 2>&1
 if %errorlevel% equ 0 (
-    echo.
-    echo ⚠️  JWT_SECRET está com valor padrão. Gerando valor aleatório...
+    echo   Gerando JWT_SECRET aleatorio...
     for /f "tokens=*" %%i in ('node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"') do set "NOVO_SECRET=%%i"
     if defined NOVO_SECRET (
-        REM Usar PowerShell para substituir o valor no .env
         powershell -Command "(Get-Content '.env') -replace 'JWT_SECRET=TROQUE-POR-UMA-CHAVE-SECRETA-SEGURA-AQUI', 'JWT_SECRET=%NOVO_SECRET%' | Set-Content '.env'" >nul 2>&1
-        echo ✅ JWT_SECRET gerado automaticamente
+        echo   JWT_SECRET gerado com sucesso
     ) else (
-        echo ⚠️  Não foi possível gerar JWT_SECRET. Edite manualmente o .env
+        echo   AVISO: Edite o .env e defina um valor para JWT_SECRET
     )
 )
 
-echo.
-echo 🗄️  Etapa 3: Configurando banco de dados...
-
-REM Gerar cliente Prisma
-npm run prisma:generate -w apps/api-central
+REM Verificar se DATABASE_URL esta configurado
+findstr /C:"DATABASE_URL=" ".env" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ❌ Falha ao gerar Prisma Client
+    echo ERRO: DATABASE_URL nao encontrado no .env
     pause
     exit /b 1
 )
+echo   Variaveis de ambiente OK
 
-REM Aplicar migrações
-echo    Aplicando migrações...
-npm run prisma:migrate -w apps/api-central
+REM =============================================
+REM PRISMA
+REM =============================================
+
+echo.
+echo [4/8] Gerando Prisma Client...
+call npx prisma generate --schema=apps/api-central/prisma/schema.prisma
 if %errorlevel% neq 0 (
-    echo ❌ Falha ao aplicar migrações
+    echo ERRO: Falha ao gerar Prisma Client
     pause
     exit /b 1
 )
-echo ✅ Banco de dados configurado
+echo   Prisma Client gerado OK
+
+REM =============================================
+REM MIGRACOES
+REM =============================================
 
 echo.
-echo 🏗️  Etapa 4: Build dos projetos...
-npm run build
+echo [5/8] Aplicando migracoes do banco de dados...
+call npx prisma migrate deploy --schema=apps/api-central/prisma/schema.prisma
 if %errorlevel% neq 0 (
-    echo ❌ Falha no build
+    echo ERRO: Falha ao aplicar migracoes.
+    echo Verifique se o PostgreSQL esta rodando e o DATABASE_URL esta correto no .env
     pause
     exit /b 1
 )
-echo ✅ Build concluído
+echo   Migracoes aplicadas OK
+
+REM =============================================
+REM BUILD
+REM =============================================
 
 echo.
-echo 👤 Etapa 5: Registrando primeiro usuário...
+echo [6/8] Compilando projetos...
+call npm run build
+if %errorlevel% neq 0 (
+    echo ERRO: Falha ao compilar projetos
+    pause
+    exit /b 1
+)
+echo   Build concluido OK
 
-REM Definir valores padrão
+REM =============================================
+REM REGISTRO DO PRIMEIRO USUARIO
+REM =============================================
+
+echo.
+echo [7/8] Registrando primeiro usuario...
+
 if not defined PAINEL_ADMIN_EMAIL set "PAINEL_ADMIN_EMAIL=admin@painel.local"
 if not defined PAINEL_ADMIN_SENHA set "PAINEL_ADMIN_SENHA=admin123"
 if not defined PAINEL_ADMIN_NOME set "PAINEL_ADMIN_NOME=Administrador"
-if not defined PAINEL_ORG_NOME set "PAINEL_ORG_NOME=Minha Organização"
+if not defined PAINEL_ORG_NOME set "PAINEL_ORG_NOME=Minha Organizacao"
 
-echo    Email: %PAINEL_ADMIN_EMAIL%
-echo    Organização: %PAINEL_ORG_NOME%
-
-REM Registrar o painel com variáveis de ambiente
 set "PAINEL_ADMIN_EMAIL=%PAINEL_ADMIN_EMAIL%"
 set "PAINEL_ADMIN_SENHA=%PAINEL_ADMIN_SENHA%"
 set "PAINEL_ADMIN_NOME=%PAINEL_ADMIN_NOME%"
 set "PAINEL_ORG_NOME=%PAINEL_ORG_NOME%"
 call npm run pm2:registrar-painel
 if %errorlevel% neq 0 (
-    echo ⚠️  Falha ao registrar painel. Você pode fazer isso manualmente depois.
+    echo   AVISO: Falha ao registrar usuario. Voce pode fazer manualmente depois.
 ) else (
-    echo ✅ Registro concluído
+    echo   Usuario registrado OK
 )
+echo   Email: %PAINEL_ADMIN_EMAIL%
+echo   Senha: %PAINEL_ADMIN_SENHA%
+
+REM =============================================
+REM INICIO VIA PM2
+REM =============================================
 
 echo.
-echo 🚀 Etapa 6: Iniciando processos...
+echo [8/8] Iniciando processos via PM2...
 
-REM Definir caminho do PM2 local
 set "PM2=%RAIZ_DO_PROJETO%\node_modules\.bin\pm2.cmd"
 
-REM Verificar se PM2 local existe
 if not exist "%PM2%" (
-    echo ❌ PM2 local nao encontrado. Verifique se 'npm install' foi executado.
+    echo ERRO: PM2 local nao encontrado em: %PM2%
     pause
     exit /b 1
 )
 
-REM Parar processos PM2 antigos antes de iniciar novos
-echo    Parando processos PM2 antigos...
+REM Parar processos antigos
 "%PM2%" stop all >nul 2>&1
 "%PM2%" delete all >nul 2>&1
 
-REM Iniciar via PM2 local
+REM Iniciar todos os processos
 "%PM2%" start ecosystem.config.js
+if %errorlevel% neq 0 (
+    echo ERRO: Falha ao iniciar processos PM2
+    pause
+    exit /b 1
+)
 "%PM2%" save
-echo ✅ Processos iniciados
+echo   Processos iniciados OK
+
+REM =============================================
+REM CONCLUIDO
+REM =============================================
 
 echo.
 echo =========================================
-echo    Instalação Concluída!
+echo    Instalacao Concluida com Sucesso!
 echo =========================================
 echo.
-echo Próximos passos:
-echo   1. Acesse: http://localhost:4000
-echo   2. Faça login com as credenciais criadas
-echo   3. Crie seu primeiro ambiente e agente
+echo Acesse: http://localhost:4000
 echo.
-echo Comandos úteis (produção):
-echo   npx pm2 status    - Ver status dos processos
-echo   npx pm2 logs      - Ver logs em tempo real
-echo   start-pm2.bat     - Reiniciar todos os processos
+echo Credenciais:
+echo   Email: %PAINEL_ADMIN_EMAIL%
+echo   Senha: %PAINEL_ADMIN_SENHA%
 echo.
-echo IMPORTANTE: O install.bat inicia os processos em modo producao (PM2).
-echo   Para modo desenvolvimento, NÃO use install.bat.
-echo   Em vez disso, use em terminais separados:
-echo     npm run dev       - API (porta 4001)
-echo     npm run dev:web   - Frontend (porta 4000)
-echo.
-echo Para mais informações, consulte o README.md
+echo Comandos uteis:
+echo   npx pm2 status         Ver status dos processos
+echo   npx pm2 logs           Ver logs em tempo real
+echo   start-pm2.bat          Reiniciar processos
 echo.
 pause
