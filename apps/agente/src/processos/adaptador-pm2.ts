@@ -97,8 +97,12 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
       // reais ([YYYY-MM-DD HH:mm:ss]) em cada linha de log. No Linux o PM2
       // sozinha grava logs sem formato parseável, causando timestamp "agora".
       const script = 'node';
+      // O runner-comando.js precisa SEMPRE estar no dist/, pois o PM2 executa
+      // com "node" (não tsx). Quando o agente roda em dev via tsx, __dirname
+      // aponta para src/processos/, mas o .js compilado está em dist/processos/.
+      const raizAgente = path.resolve(__dirname, '..', '..');
       const argumentos = [
-        path.join(__dirname, 'runner-comando.js'),
+        path.join(raizAgente, 'dist', 'processos', 'runner-comando.js'),
         caminhoOut,
         caminhoErro,
         comandoCompleto,
