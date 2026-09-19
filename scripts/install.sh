@@ -25,6 +25,36 @@ comando_existe() {
     command -v "$1" >/dev/null 2>&1
 }
 
+echo "🧹 Etapa 0: Limpando estado anterior..."
+
+# Parar e matar daemon PM2
+if comando_existe pm2; then
+    pm2 kill 2>/dev/null || true
+elif [ -f "./node_modules/.bin/pm2" ]; then
+    ./node_modules/.bin/pm2 kill 2>/dev/null || true
+fi
+
+# Deletar dump do PM2 (lista de processos salvos)
+if [ -f "$HOME/.pm2/dump.pm2" ]; then
+    rm -f "$HOME/.pm2/dump.pm2"
+    echo "   Dump PM2 removido"
+fi
+
+# Limpar logs antigos do PM2
+if [ -d "$HOME/.pm2/logs" ]; then
+    rm -f "$HOME/.pm2/logs/"*.log "$HOME/.pm2/logs/"*.err 2>/dev/null
+    echo "   Logs PM2 limpos"
+fi
+
+# Resetar banco de dados
+if [ -f "./node_modules/.bin/prisma" ] || comando_existe npx; then
+    echo "   Resetando banco de dados..."
+    npx prisma migrate reset --force --schema=apps/api-central/prisma/schema.prisma 2>/dev/null || true
+    echo "   Banco resetado OK"
+fi
+echo "   Estado limpo OK"
+
+echo ""
 echo "🔍 Etapa 1: Verificando dependências..."
 
 # Verificar Node.js

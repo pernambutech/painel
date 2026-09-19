@@ -5,6 +5,7 @@ REM ================================================
 
 cd /d "%~dp0.."
 set "RAIZ_DO_PROJETO=%cd%"
+set "PM2=%RAIZ_DO_PROJETO%\node_modules\.bin\pm2.cmd"
 
 echo.
 echo =========================================
@@ -14,8 +15,40 @@ echo.
 echo Diretorio: %cd%
 echo.
 
-REM [1/8] Dependencias
-echo [1/8] Verificando dependencias...
+REM [0/9] Limpar estado anterior (PM2 + banco)
+echo [0/9] Limpando estado anterior...
+
+REM Parar e matar daemon PM2 (tenta global, depois local)
+where pm2 >nul 2>&1
+if %errorlevel% equ 0 (
+    pm2 kill >nul 2>&1
+) else if exist "%PM2%" (
+    call "%PM2%" kill >nul 2>&1
+)
+REM Deletar dump do PM2 (lista de processos salvos)
+if exist "%USERPROFILE%\.pm2\dump.pm2" (
+    del /q "%USERPROFILE%\.pm2\dump.pm2" >nul 2>&1
+    echo   Dump PM2 removido
+)
+REM Limpar logs antigos do PM2
+if exist "%USERPROFILE%\.pm2\logs" (
+    del /q "%USERPROFILE%\.pm2\logs\*.log" >nul 2>&1
+    del /q "%USERPROFILE%\.pm2\logs\*.err" >nul 2>&1
+    echo   Logs PM2 limpos
+)
+REM Resetar banco de dados (drop + recreate + migrate)
+if exist "node_modules\.bin\prisma.cmd" (
+    echo   Resetando banco de dados...
+    call npx prisma migrate reset --force --schema=apps/api-central/prisma/schema.prisma >nul 2>&1
+    echo   Banco resetado OK
+) else (
+    echo   AVISO: Prisma nao encontrado. Pule esta etapa se for primeira instalacao.
+)
+echo   Estado limpo OK
+
+REM [2/9] Dependencias
+echo.
+echo [2/9] Verificando dependencias...
 where.exe node >nul 2>&1
 if %errorlevel% neq 0 (
     echo ERRO: Node.js nao encontrado. Instale em https://nodejs.org
@@ -31,9 +64,9 @@ if %errorlevel% neq 0 (
 for /f "tokens=*" %%i in ('npm --version') do set NPM_VER=%%i
 echo   npm %NPM_VER% OK
 
-REM [2/8] Dependencias
+REM [3/9] Dependencias
 echo.
-echo [2/8] Instalando dependencias...
+echo [3/9] Instalando dependencias...
 call npm install
 if %errorlevel% neq 0 (
     echo ERRO: Falha ao instalar dependencias.
@@ -41,9 +74,9 @@ if %errorlevel% neq 0 (
 )
 echo   Dependencias instaladas OK
 
-REM [3/8] Variaveis de ambiente
+REM [4/9] Variaveis de ambiente
 echo.
-echo [3/8] Configurando variaveis de ambiente...
+echo [4/9] Configurando variaveis de ambiente...
 if not exist ".env" (
     copy ".env.example" .env >nul 2>&1
 )
@@ -65,9 +98,9 @@ if defined NOVO_SECRET (
 )
 echo   Variaveis de ambiente OK
 
-REM [4/8] Prisma
+REM [5/9] Prisma
 echo.
-echo [4/8] Gerando Prisma Client...
+echo [5/9] Gerando Prisma Client...
 call npx prisma generate --schema=apps/api-central/prisma/schema.prisma
 if %errorlevel% neq 0 (
     echo ERRO: Falha ao gerar Prisma Client.
@@ -75,9 +108,9 @@ if %errorlevel% neq 0 (
 )
 echo   Prisma Client gerado OK
 
-REM [5/8] Migracoes
+REM [6/9] Migracoes
 echo.
-echo [5/8] Aplicando migracoes do banco de dados...
+echo [6/9] Aplicando migracoes do banco de dados...
 call npx prisma migrate deploy --schema=apps/api-central/prisma/schema.prisma
 if %errorlevel% neq 0 (
     echo ERRO: Falha ao aplicar migracoes.
@@ -87,9 +120,9 @@ if %errorlevel% neq 0 (
 )
 echo   Migracoes aplicadas OK
 
-REM [6/8] Build
+REM [7/9] Build
 echo.
-echo [6/8] Compilando projetos...
+echo [7/9] Compilando projetos...
 call npm run build
 if %errorlevel% neq 0 (
     echo ERRO: Falha ao compilar projetos. Verifique os erros acima.
@@ -97,9 +130,9 @@ if %errorlevel% neq 0 (
 )
 echo   Build concluido OK
 
-REM [7/8] Registro
+REM [8/9] Registro
 echo.
-echo [7/8] Registrando primeiro usuario...
+echo [8/9] Registrando primeiro usuario...
 set "PAINEL_ADMIN_EMAIL=admin@painel.local"
 set "PAINEL_ADMIN_SENHA=admin123"
 set "PAINEL_ADMIN_NOME=Administrador"
@@ -113,9 +146,9 @@ if %errorlevel% neq 0 (
 echo   Email: %PAINEL_ADMIN_EMAIL%
 echo   Senha: %PAINEL_ADMIN_SENHA%
 
-REM [8/8] PM2
+REM [9/9] PM2
 echo.
-echo [8/8] Iniciando processos via PM2...
+echo [9/9] Iniciando processos via PM2...
 set "PM2=%RAIZ_DO_PROJETO%\node_modules\.bin\pm2.cmd"
 if not exist "%PM2%" (
     echo ERRO: PM2 nao encontrado em: %PM2%
