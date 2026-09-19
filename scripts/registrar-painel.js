@@ -5,7 +5,10 @@
  * - Usuário administrador inicial
  * - Organização padrão
  * - Ambiente local (detectado automaticamente)
+ * - Agente com token para o ambiente
  * - Projeto Painel Central com seus serviços
+ * 
+ * Após criar o agente, grava o AGENT_TOKEN no .env da raiz.
  * 
  * Uso:
  *   node scripts/registrar-painel.js
@@ -18,6 +21,8 @@
  */
 
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
 
@@ -114,6 +119,46 @@ async function executar() {
     },
   });
   console.log(`   ID: ${ambiente.id}`);
+
+  // Criar agente com token para o ambiente
+  console.log(`\n🔑 Criando agente e gerando token...`);
+  const token = `painel_${crypto.randomBytes(16).toString('hex')}`;
+
+  const agenteExistente = await prisma.agente.findFirst({
+    where: { ambienteId: ambiente.id, ativo: true },
+  });
+
+  let agente;
+  if (agenteExistente) {
+    agente = agenteExistente;
+    console.log(`   Agente existente reutilizado: ${agente.id}`);
+  } else {
+    agente = await prisma.agente.create({
+      data: {
+        nome: ambiente.nome,
+        token,
+        ambienteId: ambiente.id,
+        organizacaoId: organizacao.id,
+        status: 'offline',
+      },
+    });
+    console.log(`   Agente criado: ${agente.id}`);
+  }
+  console.log(`   Token: ${agente.token}`);
+
+  // Gravar AGENT_TOKEN no .env da raiz
+  const caminhoEnv = path.join(raiz, '.env');
+  if (fs.existsSync(caminhoEnv)) {
+    let conteudoEnv = fs.readFileSync(caminhoEnv, 'utf8');
+    // Substituir linha AGENT_TOKEN= existente ou adicionar
+    if (conteudoEnv.includes('AGENT_TOKEN=')) {
+      conteudoEnv =conteudoEnv.replace(/^AGENT_TOKEN=.*$/m, `AGENT_TOKEN=${agente.token}`);
+    } else {
+      conteudoEnv += `\nAGENT_TOKEN=${agente.token}\n`;
+    }
+    fs.writeFileSync(caminhoEnv, conteudoEnv, 'utf8');
+    console.log(`   AGENT_TOKEN gravado no .env`);
+  }
 
   const projeto = await prisma.projeto.upsert({
     where: { id: '00000000-0000-0000-0000-000000000002' },
