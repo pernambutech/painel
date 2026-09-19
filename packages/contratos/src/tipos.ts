@@ -35,6 +35,11 @@ export type TipoComando =
   | 'REINICIAR_SERVICO'
   | 'OBTER_STATUS_SERVICO'
   | 'OBTER_LOGS_SERVICO'
+  // Comandos PM2
+  | 'PM2_SAVE'
+  | 'PM2_VERIFY_STARTUP'
+  | 'PM2_STARTUP'
+  | 'PM2_UNSTARTUP'
   // Comandos de Git
   | 'VERIFICAR_GIT'
   | 'EXECUTAR_GIT_PULL'

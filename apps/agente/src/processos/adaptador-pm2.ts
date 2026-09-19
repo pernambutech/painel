@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
+import { execSync } from 'child_process';
 import pm2 from 'pm2';
 import type {
   ConfiguracaoServico,
@@ -222,6 +223,175 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
         concluir(new Error('PM2 não possui método de persistência disponível.'));
       });
       return { sucesso: true, dados: { comando: obterComandoStartup() } };
+    } catch (erro) {
+      return { sucesso: false, erro: this.mensagemErro(erro) };
+    }
+  }
+
+  /**
+   * Verifica se o PM2 startup está configurado no sistema.
+   * Retorna { configurado: true/false, comando?: string, mensagem?: string }.
+   */
+  async verificarStartup(): Promise<ResultadoProcesso> {
+    try {
+      const plataforma = os.platform();
+      let configurado = false;
+      let detalhes = '';
+
+      if (plataforma === 'win32') {
+        // No Windows, o PM2 startup cria uma tarefa agendada
+        try {
+          const saida = execSync('schtasks /query /tn "PM2" 2>nul', {
+            encoding: 'utf-8',
+            timeout: 5000,
+            windowsHide: true,
+          });
+          configurado = saida.includes('PM2');
+          detalhes = configurado ? 'Tarefa agendada "PM2" encontrada' : 'Tarefa agendada "PM2" não encontrada';
+        } catch {
+          configurado = false;
+          detalhes = 'Tarefa agendada "PM2" não encontrada';
+        }
+      } else {
+        // No Linux/macOS, verifica se existe script de init
+        try {
+          const saida = execSync('pm2 startup 2>&1 | head -5', {
+            encoding: 'utf-8',
+            timeout: 5000,
+          });
+          // Se já está configurado, o PM2 mostra "Already installed" ou o caminho do script
+          configurado = saida.includes('already installed') || saida.includes('systemd');
+          detalhes = saida.trim();
+        } catch (erro: any) {
+          configurado = false;
+          detalhes = erro.stdout || erro.message || 'Não configurado';
+        }
+      }
+
+      return {
+        sucesso: true,
+        dados: {
+          configurado,
+          plataforma,
+          detalhes,
+          comando: obterComandoStartup(plataforma),
+        },
+      };
+    } catch (erro) {
+      return { sucesso: false, erro: this.mensagemErro(erro) };
+    }
+  }
+
+  /**
+   * Configura o PM2 startup no sistema.
+   * No Linux, executa o comando completo de startup.
+   * No Windows, cria a tarefa agendada.
+   */
+  async configurarStartup(): Promise<ResultadoProcesso> {
+    try {
+      const plataforma = os.platform();
+      let saida = '';
+
+      if (plataforma === 'win32') {
+        // No Windows, usar pm2-startup (pacote npm) ou criar tarefa manualmente
+        try {
+          saida = execSync('pm2-startup install 2>&1', {
+            encoding: 'utf-8',
+            timeout: 15000,
+            windowsHide: true,
+          });
+        } catch {
+          // Fallback: criar tarefa agendada manualmente
+          const caminhoPm2 = execSync('where pm2', { encoding: 'utf-8', timeout: 5000 }).trim().split('\n')[0];
+          saida = execSync(
+            `schtasks /create /tn "PM2" /tr "\\"${caminhoPm2}\\" startup" /sc onlogon /rl highest /f`,
+            { encoding: 'utf-8', timeout: 10000, windowsHide: true },
+          );
+        }
+      } else {
+        // No Linux/macOS, o pm2 startup retorna o comando completo com sudo
+        // Precisamos executar o comando retornad
+        const resultado = execSync('pm2 startup -u $USER 2>&1', {
+          encoding: 'utf-8',
+          timeout: 15000,
+        });
+        saida = resultado;
+
+        // Tentar extrair e executar o comando de systemd
+        const matchComando = resultado.match(/sudo\s+.+/);
+        if (matchComando) {
+          try {
+            execSync(matchComando[0], { encoding: 'utf-8', timeout: 15000 });
+            saida += '\n✅ Comando de init executado com sucesso';
+          } catch (erro: any) {
+            saida += `\n⚠️ Execute manualmente: ${matchComando[0]}`;
+          }
+        }
+      }
+
+      return {
+        sucesso: true,
+        dados: {
+          mensagem: 'PM2 startup configurado',
+          plataforma,
+          saida: saida.trim(),
+        },
+      };
+    } catch (erro) {
+      return { sucesso: false, erro: this.mensagemErro(erro) };
+    }
+  }
+
+  /**
+   * Remove o PM2 startup do sistema.
+   * No Linux, executa pm2 unstartup.
+   * No Windows, remove a tarefa agendada.
+   */
+  async removerStartup(): Promise<ResultadoProcesso> {
+    try {
+      const plataforma = os.platform();
+      let saida = '';
+
+      if (plataforma === 'win32') {
+        try {
+          saida = execSync('schtasks /delete /tn "PM2" /f 2>&1', {
+            encoding: 'utf-8',
+            timeout: 5000,
+            windowsHide: true,
+          });
+        } catch {
+          saida = 'Tarefa agendada "PM2" não encontrada ou já removida';
+        }
+      } else {
+        saida = execSync('pm2 unstartup -f 2>&1', {
+          encoding: 'utf-8',
+          timeout: 10000,
+        });
+      }
+
+      // Limpar o dump atual para não restaurar processos antigos
+      try {
+        await this.executar<void>((concluir) => {
+          const pm2Any = pm2 as any;
+          if (typeof pm2Any.dump === 'function') {
+            // dump com null limpa o dump file
+            pm2Any.dump(concluir);
+            return;
+          }
+          concluir(null as any);
+        });
+      } catch {
+        // Ignorar erro ao limpar dump
+      }
+
+      return {
+        sucesso: true,
+        dados: {
+          mensagem: 'PM2 startup removido',
+          plataforma,
+          saida: saida.trim(),
+        },
+      };
     } catch (erro) {
       return { sucesso: false, erro: this.mensagemErro(erro) };
     }

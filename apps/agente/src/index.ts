@@ -579,6 +579,27 @@ async function processarComando(comando: any): Promise<void> {
         break;
       }
 
+      case 'PM2_VERIFY_STARTUP': {
+        const resultadoPm2 = await adaptadorPm2.verificarStartup();
+        if (!resultadoPm2.sucesso) throw new Error(resultadoPm2.erro || 'Falha ao verificar startup do PM2');
+        resultado = { mensagem: 'Startup do PM2 verificado', ...resultadoPm2 } as any;
+        break;
+      }
+
+      case 'PM2_STARTUP': {
+        const resultadoPm2 = await adaptadorPm2.configurarStartup();
+        if (!resultadoPm2.sucesso) throw new Error(resultadoPm2.erro || 'Falha ao configurar startup do PM2');
+        resultado = { mensagem: 'Startup do PM2 configurado', ...resultadoPm2 } as any;
+        break;
+      }
+
+      case 'PM2_UNSTARTUP': {
+        const resultadoPm2 = await adaptadorPm2.removerStartup();
+        if (!resultadoPm2.sucesso) throw new Error(resultadoPm2.erro || 'Falha ao remover startup do PM2');
+        resultado = { mensagem: 'Startup do PM2 removido', ...resultadoPm2 } as any;
+        break;
+      }
+
       case 'OBTER_STATUS_SERVICO': {
         const servicoId = (comando.dados as any)?.servicoId;
         const dados = (comando.dados as any) || {};

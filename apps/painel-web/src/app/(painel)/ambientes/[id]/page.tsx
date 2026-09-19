@@ -29,6 +29,9 @@ import {
   Terminal,
   Shield,
   Plus,
+  Power,
+  PowerOff,
+  RefreshCw,
 } from 'lucide-react';
 import type { Ambiente } from '@/types';
 
@@ -55,6 +58,10 @@ export default function AmbienteDetalhePage() {
   const [novoDiretorio, setNovoDiretorio] = useState('');
   const [salvandoDiretorios, setSalvandoDiretorios] = useState(false);
   const [mensagemDiretorios, setMensagemDiretorios] = useState('');
+  const [startupConfigurado, setStartupConfigurado] = useState<boolean | null>(null);
+  const [detalhesStartup, setDetalhesStartup] = useState('');
+  const [carregandoStartup, setCarregandoStartup] = useState(false);
+  const [acaoStartup, setAcaoStartup] = useState<'configurar' | 'remover' | null>(null);
 
   const agente = ambiente?.agente;
   const agenteOnline = agente?.status === 'online';
@@ -140,6 +147,67 @@ export default function AmbienteDetalhePage() {
       setSalvando(false);
     }
   };
+
+  // ===========================================
+  // PM2 STARTUP — Verificar/Configurar/Remover
+  // ===========================================
+
+  const verificarStartup = async () => {
+    if (!organizacao || !agente) return;
+
+    try {
+      setCarregandoStartup(true);
+      const resultado = await agentesApi.verificarStartupPm2(organizacao.id, agente.id);
+      setStartupConfigurado(resultado.dados?.configurado ?? false);
+      setDetalhesStartup(resultado.dados?.detalhes || '');
+      setErro('');
+    } catch (err: any) {
+      setErro(err?.response?.data?.message || err?.message || 'Erro ao verificar startup do PM2.');
+      setStartupConfigurado(null);
+    } finally {
+      setCarregandoStartup(false);
+    }
+  };
+
+  const configurarStartup = async () => {
+    if (!organizacao || !agente) return;
+
+    try {
+      setAcaoStartup('configurar');
+      setCarregandoStartup(true);
+      const resultado = await agentesApi.configurarStartupPm2(organizacao.id, agente.id);
+      setStartupConfigurado(true);
+      setDetalhesStartup(resultado.dados?.saida || 'Startup configurado com sucesso');
+      setErro('');
+    } catch (err: any) {
+      setErro(err?.response?.data?.message || err?.message || 'Erro ao configurar startup do PM2.');
+    } finally {
+      setCarregandoStartup(false);
+      setAcaoStartup(null);
+    }
+  };
+
+  const removerStartup = async () => {
+    if (!organizacao || !agente) return;
+
+    try {
+      setAcaoStartup('remover');
+      setCarregandoStartup(true);
+      const resultado = await agentesApi.removerStartupPm2(organizacao.id, agente.id);
+      setStartupConfigurado(false);
+      setDetalhesStartup(resultado.dados?.saida || 'Startup removido com sucesso');
+      setErro('');
+    } catch (err: any) {
+      setErro(err?.response?.data?.message || err?.message || 'Erro ao remover startup do PM2.');
+    } finally {
+      setCarregandoStartup(false);
+      setAcaoStartup(null);
+    }
+  };
+
+  useEffect(() => {
+    if (agente && agenteOnline) verificarStartup();
+  }, [agente, agenteOnline]);
 
   // ===========================================
   // DIRETÓRIOS AUTORIZADOS
@@ -623,7 +691,85 @@ export default function AmbienteDetalhePage() {
         </Card>
       )}
 
-      {/* Seção 3 - Serviços */}
+      {/* Seção 3 - PM2 Startup (Auto-start no boot) */}
+      {agente && agenteOnline && (
+        <Card>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Power className="h-5 w-5 text-[#8ca2ff]" />
+              <h2 className="text-lg font-semibold text-zinc-100">PM2 Startup (Auto-start)</h2>
+            </div>
+            <Button
+              variante="fantasma"
+              tamanho="pequeno"
+              onClick={verificarStartup}
+              carregando={carregandoStartup && !acaoStartup}
+              title="Verificar status"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
+          <p className="text-sm text-zinc-400 mb-4">
+            Configura o PM2 para iniciar automaticamente os processos quando o sistema operacional é iniciado.
+          </p>
+
+          <div className="rounded-lg border border-[#2a2a32] bg-[#1e1e24] p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-zinc-200">Status do Auto-start</p>
+                {startupConfigurado !== null && (
+                  <p className="text-xs text-zinc-500 mt-1">
+                    {detalhesStartup || (startupConfigurado ? 'Configurado' : 'Não configurado')}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {startupConfigurado === true && (
+                  <Badge variante="online">Configurado</Badge>
+                )}
+                {startupConfigurado === false && (
+                  <Badge variante="neutro">Não configurado</Badge>
+                )}
+                {startupConfigurado === null && !carregandoStartup && (
+                  <Badge variante="neutro">Desconhecido</Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 flex gap-3">
+              {!startupConfigurado ? (
+                <Button
+                  tamanho="pequeno"
+                  onClick={configurarStartup}
+                  carregando={carregandoStartup && acaoStartup === 'configurar'}
+                >
+                  <Power className="w-4 h-4" />
+                  Configurar Auto-start
+                </Button>
+              ) : (
+                <Button
+                  variante="perigo"
+                  tamanho="pequeno"
+                  onClick={removerStartup}
+                  carregando={carregandoStartup && acaoStartup === 'remover'}
+                >
+                  <PowerOff className="w-4 h-4" />
+                  Remover Auto-start
+                </Button>
+              )}
+            </div>
+
+            <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3">
+              <p className="text-xs text-amber-300">
+                <strong>Importante:</strong> O PM2 save já é executado automaticamente ao iniciar cada serviço.
+                O Auto-start garante que esses processos sejam restaurados após reinicialização do sistema.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Seção 4 - Serviços */}
       <Card>
         <h2 className="text-lg font-semibold text-zinc-100 mb-4">Serviços</h2>
         <div className="text-center py-8">
@@ -637,7 +783,7 @@ export default function AmbienteDetalhePage() {
         </div>
       </Card>
 
-      {/* Seção 4 - Segurança: Diretórios Autorizados */}
+      {/* Seção 5 - Segurança: Diretórios Autorizados */}
       {agente && (
         <Card>
           <div className="mb-4 flex items-center gap-2">

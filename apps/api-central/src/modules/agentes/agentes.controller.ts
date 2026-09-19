@@ -90,6 +90,9 @@ export class AgentesController {
     'PARAR_SERVICO',
     'REINICIAR_SERVICO',
     'PM2_SAVE',
+    'PM2_VERIFY_STARTUP',
+    'PM2_STARTUP',
+    'PM2_UNSTARTUP',
     'OBTER_STATUS_SERVICO',
     'OBTER_LOGS_SERVICO',
     'OBTER_TODOS_PROCESSOS',
@@ -145,6 +148,55 @@ export class AgentesController {
       agenteId: agenteId,
       tipo: 'PM2_SAVE',
       timeoutMs: 30_000,
+    });
+  }
+
+  // ===========================================
+  // PM2 STARTUP — Verificar/Configurar/Remover auto-start
+  // ===========================================
+
+  @Post(':id/pm2/verify-startup')
+  async verificarStartupPm2(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('id') agenteId: string,
+    @Request() req,
+  ) {
+    await this.agentesServico.obterPorId(agenteId, organizacaoId, req.user.id);
+
+    return this.comandosServico.enviarEAguardar({
+      agenteId: agenteId,
+      tipo: 'PM2_VERIFY_STARTUP',
+      timeoutMs: 15_000,
+    });
+  }
+
+  @Post(':id/pm2/startup')
+  async configurarStartupPm2(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('id') agenteId: string,
+    @Request() req,
+  ) {
+    await this.agentesServico.obterPorId(agenteId, organizacaoId, req.user.id);
+
+    return this.comandosServico.enviarEAguardar({
+      agenteId: agenteId,
+      tipo: 'PM2_STARTUP',
+      timeoutMs: 30_000,
+    });
+  }
+
+  @Post(':id/pm2/unstartup')
+  async removerStartupPm2(
+    @Param('organizacaoId') organizacaoId: string,
+    @Param('id') agenteId: string,
+    @Request() req,
+  ) {
+    await this.agentesServico.obterPorId(agenteId, organizacaoId, req.user.id);
+
+    return this.comandosServico.enviarEAguardar({
+      agenteId: agenteId,
+      tipo: 'PM2_UNSTARTUP',
+      timeoutMs: 15_000,
     });
   }
 

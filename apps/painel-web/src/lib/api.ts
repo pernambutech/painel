@@ -244,6 +244,24 @@ export const agentesApi = {
     return resposta.data;
   },
 
+  // Verificar se PM2 startup está configurado
+  verificarStartupPm2: async (organizacaoId: string, id: string) => {
+    const resposta = await api.post(`/organizacoes/${organizacaoId}/agentes/${id}/pm2/verify-startup`);
+    return resposta.data;
+  },
+
+  // Configurar PM2 startup (auto-start no boot do sistema)
+  configurarStartupPm2: async (organizacaoId: string, id: string) => {
+    const resposta = await api.post(`/organizacoes/${organizacaoId}/agentes/${id}/pm2/startup`);
+    return resposta.data;
+  },
+
+  // Remover PM2 startup (remover auto-start do boot do sistema)
+  removerStartupPm2: async (organizacaoId: string, id: string) => {
+    const resposta = await api.post(`/organizacoes/${organizacaoId}/agentes/${id}/pm2/unstartup`);
+    return resposta.data;
+  },
+
   // Obter diretórios autorizados do agente
   obterDiretoriosAutorizados: async (organizacaoId: string, id: string) => {
     const resposta = await api.get(`/organizacoes/${organizacaoId}/agentes/${id}/diretorios`);
@@ -275,6 +293,15 @@ export const agentesApi = {
 export const servicosPm2Api = {
   salvar: async (organizacaoId: string, agenteId: string) => {
     return agentesApi.salvarPm2(organizacaoId, agenteId);
+  },
+  verificarStartup: async (organizacaoId: string, agenteId: string) => {
+    return agentesApi.verificarStartupPm2(organizacaoId, agenteId);
+  },
+  configurarStartup: async (organizacaoId: string, agenteId: string) => {
+    return agentesApi.configurarStartupPm2(organizacaoId, agenteId);
+  },
+  removerStartup: async (organizacaoId: string, agenteId: string) => {
+    return agentesApi.removerStartupPm2(organizacaoId, agenteId);
   },
 };
 
