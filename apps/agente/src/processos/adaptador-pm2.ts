@@ -1,4 +1,5 @@
 import * as fs from 'fs/promises';
+import * as fsSync from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { execSync } from 'child_process';
@@ -28,8 +29,43 @@ interface ProcessoPm2 {
   };
 }
 
+// ===========================================
+// CONSTANTES
+// ===========================================
+
+/** Nome da tarefa agendada do Windows para auto-start do PM2 */
+const NOME_TAREFA_STARTUP = 'PainelPM2';
+
+/**
+ * Busca o diretório raiz do projeto procurando por ecosystem.config.js.
+ * Sobe a partir do diretório fornecido até encontrar o arquivo.
+ */
+function encontrarRaizProjeto(caminhoInicial: string): string | null {
+  let dir = caminhoInicial;
+  for (let i = 0; i < 10; i++) {
+    if (fsSync.existsSync(path.join(dir, 'ecosystem.config.js'))) {
+      return dir;
+    }
+    const pai = path.dirname(dir);
+    if (pai === dir) break;
+    dir = pai;
+  }
+  return null;
+}
+
+/**
+ * Resolve o caminho do PM2 local no projeto.
+ * Prioriza node_modules/.bin/pm2.cmd (Windows) ou pm2 (Linux/macOS).
+ */
+function resolverCaminhoPm2Local(raizProjeto: string): string | null {
+  const extensao = os.platform() === 'win32' ? '.cmd' : '';
+  const caminho = path.join(raizProjeto, 'node_modules', '.bin', `pm2${extensao}`);
+  if (fsSync.existsSync(caminho)) return caminho;
+  return null;
+}
+
 export function obterComandoStartup(plataforma: NodeJS.Platform = process.platform): string {
-  if (plataforma === 'win32') return 'pm2 startup';
+  if (plataforma === 'win32') return `schtasks /create /tn "${NOME_TAREFA_STARTUP}"`;
   return 'pm2 startup';
 }
 
@@ -239,18 +275,18 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
       let detalhes = '';
 
       if (plataforma === 'win32') {
-        // No Windows, o PM2 startup cria uma tarefa agendada
+        // No Windows, verifica se a tarefa agendada PainelPM2 existe
         try {
-          const saida = execSync('schtasks /query /tn "PM2" 2>nul', {
+          const saida = execSync(`schtasks /query /tn "${NOME_TAREFA_STARTUP}"`, {
             encoding: 'utf-8',
             timeout: 5000,
             windowsHide: true,
           });
-          configurado = saida.includes('PM2');
-          detalhes = configurado ? 'Tarefa agendada "PM2" encontrada' : 'Tarefa agendada "PM2" não encontrada';
+          configurado = saida.includes(NOME_TAREFA_STARTUP);
+          detalhes = configurado ? 'Tarefa agendada encontrada' : 'Tarefa agendada nao encontrada';
         } catch {
           configurado = false;
-          detalhes = 'Tarefa agendada "PM2" não encontrada';
+          detalhes = 'Tarefa agendada nao encontrada';
         }
       } else {
         // No Linux/macOS, verifica se existe script de init
@@ -285,7 +321,7 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
   /**
    * Configura o PM2 startup no sistema.
    * No Linux, executa o comando completo de startup.
-   * No Windows, cria a tarefa agendada.
+   * No Windows, cria um script .bat de resurrect + tarefa agendada no logon.
    */
   async configurarStartup(): Promise<ResultadoProcesso> {
     try {
@@ -293,24 +329,59 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
       let saida = '';
 
       if (plataforma === 'win32') {
-        // No Windows, usar pm2-startup (pacote npm) ou criar tarefa manualmente
-        try {
-          saida = execSync('pm2-startup install 2>&1', {
-            encoding: 'utf-8',
-            timeout: 15000,
-            windowsHide: true,
-          });
-        } catch {
-          // Fallback: criar tarefa agendada manualmente
-          const caminhoPm2 = execSync('where pm2', { encoding: 'utf-8', timeout: 5000 }).trim().split('\n')[0];
-          saida = execSync(
-            `schtasks /create /tn "PM2" /tr "\\"${caminhoPm2}\\" startup" /sc onlogon /rl highest /f`,
-            { encoding: 'utf-8', timeout: 10000, windowsHide: true },
+        // =============================================
+        // WINDOWS: criar script .bat + tarefa agendada
+        // O PM2 não possui pm2 startup nativo no Windows.
+        // O mecanismo correto é:
+        //   1. Criar um .bat que executa `pm2 resurrect`
+        //   2. Criar tarefa agendada que executa esse .bat no logon
+        // =============================================
+
+        // 1. Encontrar raiz do projeto e PM2 local
+        const raizProjeto = this.obterRaizProjeto();
+        const caminhoPm2 = resolverCaminhoPm2Local(raizProjeto);
+        if (!caminhoPm2) {
+          throw new Error(
+            'PM2 local nao encontrado. Execute npm install primeiro.',
           );
         }
+
+        // 2. Criar script .bat de resurrect
+        const caminhoBat = path.join(raizProjeto, 'pm2-startup.bat');
+        const conteudoBat = [
+          '@echo off',
+          'REM ============================================',
+          'REM Painel - PM2 Auto-Restore (gerenciado pelo agente)',
+          'REM Este arquivo e gerenciado automaticamente.',
+          'REM Nao edite manualmente.',
+          'REM ============================================',
+          `cd /d "${raizProjeto}"`,
+          `"${caminhoPm2}" resurrect`,
+        ].join('\r\n');
+        await fs.writeFile(caminhoBat, conteudoBat, 'utf8');
+
+        // 3. Criar tarefa agendada que executa o .bat no logon
+        //    /sc onlogon = executa ao fazer login
+        //    /rl highest = com permissoes elevadas
+        //    /f = forca recriacao se ja existir (idempotente)
+        const cmdSchtasks = `schtasks /create /tn "${NOME_TAREFA_STARTUP}" /tr "\\"${caminhoBat}\\"" /sc onlogon /rl highest /f`;
+        try {
+          saida = execSync(cmdSchtasks, {
+            encoding: 'utf-8',
+            timeout: 10000,
+            windowsHide: true,
+          });
+        } catch (erro: any) {
+          throw new Error(
+            `Falha ao criar tarefa agendada: ${erro.stderr || erro.message}`,
+          );
+        }
+
+        // 4. Salvar estado atual do PM2 para o resurrect funcionar
+        await this.salvar();
+        saida = `Script de startup criado: ${caminhoBat}\n${saida}`;
       } else {
         // No Linux/macOS, o pm2 startup retorna o comando completo com sudo
-        // Precisamos executar o comando retornad
         const resultado = execSync('pm2 startup -u $USER 2>&1', {
           encoding: 'utf-8',
           timeout: 15000,
@@ -322,9 +393,9 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
         if (matchComando) {
           try {
             execSync(matchComando[0], { encoding: 'utf-8', timeout: 15000 });
-            saida += '\n✅ Comando de init executado com sucesso';
+            saida += '\nComando de init executado com sucesso';
           } catch (erro: any) {
-            saida += `\n⚠️ Execute manualmente: ${matchComando[0]}`;
+            saida += `\nExecute manualmente: ${matchComando[0]}`;
           }
         }
       }
@@ -345,7 +416,8 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
   /**
    * Remove o PM2 startup do sistema.
    * No Linux, executa pm2 unstartup.
-   * No Windows, remove a tarefa agendada.
+   * No Windows, remove a tarefa agendada e o script .bat.
+   * NÃO remove o dump.pm2 (processos podem ser restaurados manualmente).
    */
   async removerStartup(): Promise<ResultadoProcesso> {
     try {
@@ -353,35 +425,33 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
       let saida = '';
 
       if (plataforma === 'win32') {
+        // 1. Remover tarefa agendada
         try {
-          saida = execSync('schtasks /delete /tn "PM2" /f 2>&1', {
+          saida = execSync(`schtasks /delete /tn "${NOME_TAREFA_STARTUP}" /f`, {
             encoding: 'utf-8',
             timeout: 5000,
             windowsHide: true,
           });
         } catch {
-          saida = 'Tarefa agendada "PM2" não encontrada ou já removida';
+          saida = 'Tarefa agendada nao encontrada ou ja removida';
         }
+
+        // 2. Remover script .bat de startup (se existir)
+        try {
+          const raizProjeto = this.obterRaizProjeto();
+          const caminhoBat = path.join(raizProjeto, 'pm2-startup.bat');
+          await fs.unlink(caminhoBat).catch(() => {});
+          saida += '\nScript pm2-startup.bat removido';
+        } catch {
+          // Ignorar erro ao remover .bat
+        }
+
+        // NÃO remover dump.pm2 — processos podem ser restaurados manualmente
       } else {
         saida = execSync('pm2 unstartup -f 2>&1', {
           encoding: 'utf-8',
           timeout: 10000,
         });
-      }
-
-      // Limpar o dump atual para não restaurar processos antigos
-      try {
-        await this.executar<void>((concluir) => {
-          const pm2Any = pm2 as any;
-          if (typeof pm2Any.dump === 'function') {
-            // dump com null limpa o dump file
-            pm2Any.dump(concluir);
-            return;
-          }
-          concluir(null as any);
-        });
-      } catch {
-        // Ignorar erro ao limpar dump
       }
 
       return {
@@ -604,6 +674,25 @@ export class AdaptadorPm2 implements IAdaptadorProcessos {
    */
   private pastaLogs(): string {
     return process.env.PAINEL_LOGS_DIR || path.join(os.homedir(), '.painel', 'logs');
+  }
+
+  /**
+   * Resolve o diretório raiz do projeto procurando por ecosystem.config.js.
+   * Começa a partir do diretório de trabalho do processo atual (cwd) e sobe
+   * até encontrar o arquivo de configuração do PM2.
+   */
+  private obterRaizProjeto(): string {
+    const candidatos = [
+      process.cwd(),
+      path.resolve(__dirname, '..', '..', '..'),
+      path.resolve(__dirname, '..', '..'),
+    ];
+    for (const candidato of candidatos) {
+      const raiz = encontrarRaizProjeto(candidato);
+      if (raiz) return raiz;
+    }
+    // Último recurso: diretório de trabalho atual
+    return process.cwd();
   }
 
   /**
