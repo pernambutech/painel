@@ -37,7 +37,7 @@ painel/
 - Node.js >= 18.0.0
 - npm >= 9.0.0
 - PostgreSQL >= 14
-- PM2 (apenas para produção): `npm install -g pm2`
+- PM2 (local, instalado automaticamente via npm install)
 
 ## Instalação Rápida
 
@@ -156,19 +156,28 @@ npm run save:pm2       # Salvar estado
 
 ### Configurar inicialização automática
 
-**Linux/macOS:**
-```bash
-pm2 startup
-pm2 save
-```
+O script de instalação (`install.bat` / `install.sh`) já configura o auto-start automaticamente.
 
 **Windows:**
-```batch
-pm2 save
-```
-No Windows, o PM2 não possui `pm2 startup` nativo. Para auto-start:
-1. Adicione `start-pm2.bat` à pasta "Inicializar" do Windows (`shell:startup`)
-2. Ou crie uma tarefa agendada que execute `pm2 resurrect` no logon
+- Cria um script `pm2-startup.bat` que executa `pm2 resurrect`
+- Cria uma tarefa agendada `PainelPM2` que executa esse script no logon
+- Para remover: Ambientes > detalhe > "Remover Auto-start"
+
+**Linux/macOS:**
+- Executa `pm2 startup` para configurar o init system
+- Executa `pm2 save` para persistir o estado
+- Para remover: `pm2 unstartup -f`
+
+**Diferença entre `pm2 save` e auto-start:**
+
+| Comando | O que faz |
+|---------|-----------|
+| `pm2 save` | Salva a lista atual de processos no arquivo `dump.pm2` |
+| Auto-start | Inicia o PM2 automaticamente após login e restaura o `dump.pm2` |
+| `pm2 resurrect` | Restaura os processos previamente salvos no `dump.pm2` |
+
+> `pm2 save` sozinho **não** garante que os processos voltarão após reiniciar.
+> É necessário ter o auto-start configurado.
 
 ### Comandos úteis do PM2
 
@@ -177,14 +186,16 @@ npm run status:pm2              # Ver status dos processos
 npm run logs:pm2                # Ver logs em tempo real
 npm run restart:pm2             # Reiniciar todos
 npm run stop:pm2                # Parar todos
-npm run save:pm2                # Salvar estado
+npm run save:pm2                # Salvar estado (dump.pm2)
 
 # Ou diretamente:
 npx pm2 status
 npx pm2 logs
 npx pm2 restart all
 npx pm2 stop all
-npx pm2 resurrect               # Restaurar processos salvos
+npx pm2 save                    # Salvar lista de processos
+npx pm2 resurrect               # Restaurar processos salvos (requer dump.pm2)
+npx pm2 delete all              # Remover todos os processos do PM2
 ```
 
 ## Desenvolvimento
@@ -309,27 +320,17 @@ Após a instalação:
 2. Faça login com as credenciais criadas:
    - **Padrão**: `admin@painel.local` / `admin123` (altere após primeiro login!)
    - **Personalizado**: o que você definiu no `npm run pm2:registrar-painel`
-3. Vá em **Ambientes** e crie um ambiente
-4. No detalhe do ambiente, clique em **Gerar Token** para obter o token do agente
-5. Copie o token e configure no arquivo `.env`:
-   ```
-   AGENT_TOKEN=painel_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   ```
-6. Reinicie o agente: `pm2 restart painel-agente`
-7. O ambiente ficará **ONLINE** quando o agente conectar
-8. Crie um projeto e serviços para começar a gerenciar
+3. O agente PM2 já está rodando com token configurado automaticamente pelo install
+4. O ambiente já está **ONLINE** quando o agente conectar
+5. Crie um projeto e serviços para começar a gerenciar
 
-### Fluxo do Agente
+### Auto-start configurado
 
-```
-Painel Web → Ambientes → Gerar Token → Copia para .env
-                                              ↓
-                                         pm2 restart painel-agente
-                                              ↓
-                                        Agente conecta à API
-                                              ↓
-                                        Ambiente fica ONLINE
-```
+O `install.bat`/`install.sh` configura o auto-start automaticamente:
+- **Windows**: tarefa agendada `PainelPM2` executa `pm2 resurrect` no logon
+- **Linux/macOS**: `pm2 startup` configura o init system
+
+Após reiniciar o computador, o PM2 inicia automaticamente e restaura todos os processos salvos.
 
 ## Documentação
 
