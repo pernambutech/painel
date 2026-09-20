@@ -1,7 +1,7 @@
 @echo off
 REM ================================================
 REM Painel - Instalacao Completa (Windows)
-REM Ordem correta: .env → install → reset → generate → migrate → build → register → pm2
+REM Ordem correta: .env → install → reset → generate → migrate → build → register → pm2 → startup
 REM ================================================
 
 cd /d "%~dp0.."
@@ -16,9 +16,10 @@ echo Diretorio: %cd%
 echo.
 
 REM =============================================
-REM [1/9] PM2: parar daemon e limpar estado
+REM [1/10] PM2: parar daemon e limpar estado
 REM =============================================
-echo [1/9] Limpando PM2...
+echo.
+echo [1/10] Limpando PM2...
 where pm2 >nul 2>&1
 if %errorlevel% equ 0 (
     pm2 kill >nul 2>&1
@@ -40,7 +41,7 @@ REM =============================================
 REM [2/9] Verificar dependencias (node, npm)
 REM =============================================
 echo.
-echo [2/9] Verificando dependencias...
+echo [2/10] Verificando dependencias...
 where.exe node >nul 2>&1
 if %errorlevel% neq 0 (
     echo ERRO: Node.js nao encontrado. Instale em https://nodejs.org
@@ -60,7 +61,7 @@ REM =============================================
 REM [3/9] Instalar dependencias
 REM =============================================
 echo.
-echo [3/9] Instalando dependencias...
+echo [3/10] Instalando dependencias...
 call npm install
 if %errorlevel% neq 0 (
     echo ERRO: Falha ao instalar dependencias.
@@ -72,7 +73,7 @@ REM =============================================
 REM [4/9] Configurar .env (JWT_SECRET + DATABASE_URL)
 REM =============================================
 echo.
-echo [4/9] Configurando variaveis de ambiente...
+echo [4/10] Configurando variaveis de ambiente...
 if not exist ".env" (
     copy ".env.example" .env >nul 2>&1
 )
@@ -97,7 +98,7 @@ REM =============================================
 REM [5/9] Prisma: generate
 REM =============================================
 echo.
-echo [5/9] Gerando Prisma Client...
+echo [5/10] Gerando Prisma Client...
 call npx prisma generate --schema=apps/api-central/prisma/schema.prisma
 if %errorlevel% neq 0 (
     echo ERRO: Falha ao gerar Prisma Client.
@@ -110,7 +111,7 @@ REM [6/9] Resetar banco de dados (drop + recreate)
 REM Agora .env ja existe com DATABASE_URL
 REM =============================================
 echo.
-echo [6/9] Resetando banco de dados...
+echo [6/10] Resetando banco de dados...
 call npx prisma migrate reset --force --schema=apps/api-central/prisma/schema.prisma
 if %errorlevel% neq 0 (
     echo ERRO: Falha ao resetar banco.
@@ -124,7 +125,7 @@ REM =============================================
 REM [7/9] Build dos projetos
 REM =============================================
 echo.
-echo [7/9] Compilando projetos...
+echo [7/10] Compilando projetos...
 call npm run build
 if %errorlevel% neq 0 (
     echo ERRO: Falha ao compilar projetos. Verifique os erros acima.
@@ -136,7 +137,7 @@ REM =============================================
 REM [8/9] Registrar: usuario + org + ambiente + agente + token
 REM =============================================
 echo.
-echo [8/9] Registrando primeiro usuario...
+echo [8/10] Registrando primeiro usuario...
 set "PAINEL_ADMIN_EMAIL=admin@painel.local"
 set "PAINEL_ADMIN_SENHA=admin123"
 set "PAINEL_ADMIN_NOME=Administrador"
@@ -151,10 +152,10 @@ echo   Email: %PAINEL_ADMIN_EMAIL%
 echo   Senha: %PAINEL_ADMIN_SENHA%
 
 REM =============================================
-REM [9/9] Iniciar processos via PM2
+REM [9/10] Iniciar processos via PM2
 REM =============================================
 echo.
-echo [9/9] Iniciando processos via PM2...
+echo [9/10] Iniciando processos via PM2...
 set "PM2=%RAIZ_DO_PROJETO%\node_modules\.bin\pm2.cmd"
 if not exist "%PM2%" (
     echo ERRO: PM2 nao encontrado em: %PM2%
@@ -167,6 +168,38 @@ if %errorlevel% neq 0 (
 )
 call "%PM2%" save >nul 2>&1
 call "%PM2%" status
+
+REM =============================================
+REM [10/10] Configurar auto-start no Windows
+REM =============================================
+echo.
+echo [10/10] Configurando auto-start...
+set "STARTUP_BAT=%RAIZ_DO_PROJETO%\pm2-startup.bat"
+set "PM2_STARTUP_TASK=PainelPM2"
+
+REM Criar script .bat de resurrect
+(
+    echo @echo off
+    echo REM ============================================
+    echo REM Painel - PM2 Auto-Restore ^(gerenciado pelo agente^)
+    echo REM Este arquivo e gerenciado automaticamente.
+    echo REM Nao edite manualmente.
+    echo REM ============================================
+    echo cd /d "%RAIZ_DO_PROJETO%"
+    echo "%PM2%" resurrect
+) > "%STARTUP_BAT%"
+
+REM Criar tarefa agendada que executa o .bat no logon
+schtasks /create /tn "%PM2_STARTUP_TASK%" /tr "\"%STARTUP_BAT%\"" /sc onlogon /rl highest /f >nul 2>&1
+if %errorlevel% equ 0 (
+    echo   Auto-start configurado com sucesso
+    echo   Tarefa agendada: %PM2_STARTUP_TASK%
+    echo   Script: %STARTUP_BAT%
+) else (
+    echo   AVISO: Nao foi possivel configurar auto-start automaticamente.
+    echo   Para configurar manualmente, execute como administrador:
+    echo     schtasks /create /tn "%PM2_STARTUP_TASK%" /tr "\"%STARTUP_BAT%\"" /sc onlogon /rl highest /f
+)
 
 REM =============================================
 REM SUCESSO
@@ -188,6 +221,8 @@ echo Comandos uteis:
 echo   npx pm2 status       Ver status
 echo   npx pm2 logs         Ver logs
 echo   start-pm2.bat        Reiniciar
+echo.
+echo Auto-start: configurado via tarefa agendada PainelPM2
 echo.
 
 :fim
