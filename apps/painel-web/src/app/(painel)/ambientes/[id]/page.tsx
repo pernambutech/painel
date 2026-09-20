@@ -761,8 +761,9 @@ export default function AmbienteDetalhePage() {
 
             <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3">
               <p className="text-xs text-amber-300">
-                <strong>Importante:</strong> O PM2 save já é executado automaticamente ao iniciar cada serviço.
-                O Auto-start garante que esses processos sejam restaurados após reinicialização do sistema.
+                <strong>Importante:</strong> O "Salvar PM2" persiste a lista completa de processos do PM2 deste agente
+                (nao apenas o servico clicado). O Auto-start garante que esses processos sejam restaurados apos
+                reinicializacao do sistema.
               </p>
             </div>
           </div>

@@ -1011,7 +1011,7 @@ export default function ProjetoDetalhePage() {
                             <Button
                               variante="fantasma"
                               tamanho="pequeno"
-                              title="Salvar PM2 (persiste processos para reinicialização automática do SO)"
+                              title="Salvar estado do PM2 (salva a lista de todos os processos deste agente para restauracao automatica)"
                               onClick={(e) => { e.stopPropagation(); salvarPm2DoServico(servico); }}
                               carregando={controleCarregando === `pm2-save-${servico.id}`}
                             >
